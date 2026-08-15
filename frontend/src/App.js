@@ -20,6 +20,8 @@ import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
 import Reminders from "./pages/Reminders";
 import Settings from "./pages/Settings";
+import AdminTenants from "./pages/AdminTenants";
+import AdminTenantEdit from "./pages/AdminTenantEdit";
 import PublicApproval from "./pages/PublicApproval";
 import "./App.css";
 
@@ -28,6 +30,12 @@ function Protected({ children }) {
   if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
   if (!user) return <Navigate to="/login" replace />;
   return children;
+}
+
+function IndexRoute() {
+  const { user } = useAuth();
+  if (user?.role === "super_admin") return <Navigate to="/admin/tenants" replace />;
+  return <Dashboard />;
 }
 
 export default function App() {
@@ -39,7 +47,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/onay/:token" element={<PublicApproval />} />
           <Route element={<Protected><Layout /></Protected>}>
-            <Route index element={<Dashboard />} />
+            <Route index element={<IndexRoute />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/customers/:id" element={<CustomerDetail />} />
             <Route path="/motorcycles" element={<Motorcycles />} />
@@ -48,13 +56,15 @@ export default function App() {
             <Route path="/service-orders/new" element={<ServiceOrderCreate />} />
             <Route path="/service-orders/:id" element={<ServiceOrderDetail />} />
             <Route path="/service-orders/:id/edit" element={<ServiceOrderEdit />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/services" element={<Services />} />
+            <Route path="/products" element={<Settings />} />
+            <Route path="/services" element={<Settings />} />
             <Route path="/current-accounts" element={<CurrentAccounts />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/reminders" element={<Reminders />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/admin/tenants" element={<AdminTenants />} />
+            <Route path="/admin/tenants/:id" element={<AdminTenantEdit />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

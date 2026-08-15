@@ -1,4 +1,5 @@
 import React from "react";
+import { useAuth } from "../context/AuthContext";
 
 export const FAULT_ZONES = [
   { key: "Ön Fren", cx: 60, cy: 150 },
@@ -15,6 +16,9 @@ export const FAULT_ZONES = [
 ];
 
 export default function FaultDiagram({ selected = [], onToggle }) {
+  const { tenant } = useAuth() || {};
+  const customZones = tenant?.custom_fault_zones || [];
+  const allZones = [...FAULT_ZONES, ...customZones];
   const isSel = (k) => selected.includes(k);
 
   return (
@@ -31,7 +35,7 @@ export default function FaultDiagram({ selected = [], onToggle }) {
         <circle cx="60" cy="150" r="26" fill="none" stroke="#0F172A" strokeWidth="4" />
         <circle cx="220" cy="150" r="26" fill="none" stroke="#0F172A" strokeWidth="4" />
 
-        {FAULT_ZONES.map((z) => (
+        {allZones.map((z) => (
           <g key={z.key} onClick={() => onToggle(z.key)} className="cursor-pointer">
             <circle
               cx={z.cx} cy={z.cy} r={9}
@@ -50,7 +54,7 @@ export default function FaultDiagram({ selected = [], onToggle }) {
         ))}
       </svg>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4">
-        {FAULT_ZONES.map((z) => (
+        {allZones.map((z) => (
           <button
             type="button"
             key={z.key}

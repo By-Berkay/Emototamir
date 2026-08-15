@@ -70,7 +70,7 @@ export default function PhotoUploader({ serviceOrderId, photos = [], onChange })
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row gap-2">
         <Input placeholder="Açıklama (opsiyonel) — örn. sol yan hasar" value={caption} onChange={(e)=>setCaption(e.target.value)} className="flex-1" data-testid="photo-caption" />
-        <input ref={fileRef} type="file" accept="image/*" multiple onChange={upload} className="hidden" data-testid="photo-file-input" />
+        <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" onChange={upload} className="hidden" data-testid="photo-file-input" />
         <Button onClick={()=>fileRef.current?.click()} disabled={uploading} className="bg-slate-900 hover:bg-slate-800" data-testid="btn-upload-photo">
           <Upload className="h-4 w-4 mr-2" />{uploading ? "Yükleniyor…" : "Fotoğraf Yükle"}
         </Button>

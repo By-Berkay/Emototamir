@@ -1,8 +1,9 @@
 import React from "react";
+import { API } from "../lib/api";
+import { useAuth } from "../context/AuthContext";
 
 /**
- * Detailed motorcycle silhouettes per type — real profiles with tall bodies,
- * proper wheel-to-frame connections, visible seats, handlebars, and engines.
+ * Uses tenant custom_moto_images if set for the type; otherwise renders SVG silhouette.
  */
 
 const VB = "0 0 400 220";
@@ -421,8 +422,19 @@ const MAP = {
 };
 
 export default function MotorcycleIllustration({ type = "Naked", className = "" }) {
+  const { tenant } = useAuth() || {};
+  const custom = tenant?.custom_moto_images?.[type];
   const key = (type || "").toLowerCase().trim();
   const C = MAP[key] || Naked;
+  if (custom) {
+    const token = localStorage.getItem("token");
+    return (
+      <div className={className}>
+        <img src={`${API}/files/${custom}?auth=${token}`} alt={type}
+             className="w-full h-full object-contain rounded-md bg-slate-100" />
+      </div>
+    );
+  }
   return (
     <div className={className}>
       <C />

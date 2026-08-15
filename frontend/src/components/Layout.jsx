@@ -2,20 +2,18 @@ import React, { useState } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
-  LayoutDashboard, Users, Bike, Wrench, ClipboardList, Package,
-  Hammer, Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing,
+  LayoutDashboard, Users, Bike, Wrench, ClipboardList,
+  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
-const NAV = [
+const NAV_TENANT = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
   { to: "/customers", label: "Müşteriler", icon: Users },
   { to: "/motorcycles", label: "Motosikletler", icon: Bike },
   { to: "/service-orders", label: "Servis Kayıtları", icon: Wrench },
   { to: "/service-orders/new", label: "Yeni İş Emri", icon: ClipboardList },
-  { to: "/products", label: "Parçalar", icon: Package },
-  { to: "/services", label: "Hizmetler", icon: Hammer },
   { to: "/current-accounts", label: "Cari Hesaplar", icon: Wallet },
   { to: "/payments", label: "Tahsilatlar", icon: Receipt },
   { to: "/reminders", label: "Bakım Hatırlatma", icon: BellRing },
@@ -23,11 +21,16 @@ const NAV = [
   { to: "/settings", label: "Ayarlar", icon: Settings },
 ];
 
+const NAV_SUPER = [
+  { to: "/admin/tenants", label: "Firma Yönetimi", icon: Building2, end: true },
+];
+
 export default function Layout() {
-  const { user, logout } = useAuth();
+  const { user, tenant, logout } = useAuth();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const navigate = useNavigate();
+  const NAV = user?.role === "super_admin" ? NAV_SUPER : NAV_TENANT;
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -44,12 +47,12 @@ export default function Layout() {
         data-testid="sidebar"
       >
         <div className="h-16 flex items-center px-5 border-b border-slate-800">
-          <div className="h-9 w-9 bg-orange-500 rounded-md flex items-center justify-center mr-3">
+          <div className="h-9 w-9 rounded-md flex items-center justify-center mr-3" style={{ backgroundColor: "var(--brand-primary, #F97316)" }}>
             <Wrench className="h-5 w-5 text-white" />
           </div>
-          <div>
-            <div className="font-heading font-bold text-white text-base leading-tight">MOTO SERVİS</div>
-            <div className="text-xs text-slate-400">Yönetim Sistemi</div>
+          <div className="min-w-0">
+            <div className="font-heading font-bold text-white text-base leading-tight truncate">{tenant?.name || "MOTO SERVİS"}</div>
+            <div className="text-xs text-slate-400">{user?.role === "super_admin" ? "Süper Admin" : "Yönetim Sistemi"}</div>
           </div>
           <button className="ml-auto lg:hidden" onClick={() => setOpen(false)} data-testid="close-sidebar">
             <X className="h-5 w-5" />
@@ -63,12 +66,11 @@ export default function Layout() {
               end={n.end}
               onClick={() => setOpen(false)}
               className={({ isActive }) =>
-                `flex items-center px-5 py-2.5 text-sm border-l-4 hover:bg-slate-800 hover:text-white transition-colors duration-150 ${
-                  isActive
-                    ? "border-orange-500 bg-slate-800 text-white font-medium"
-                    : "border-transparent"
+                `flex items-center px-5 py-2.5 text-sm border-l-4 border-transparent hover:bg-slate-800 hover:text-white transition-colors duration-150 ${
+                  isActive ? "bg-slate-800 text-white font-medium" : ""
                 }`
               }
+              style={({ isActive }) => (isActive ? { borderLeftColor: "var(--brand-primary, #F97316)" } : {})}
               data-testid={`nav-${n.to.replace(/\//g, "_") || "root"}`}
             >
               <n.icon className="h-4 w-4 mr-3" />
