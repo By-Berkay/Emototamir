@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList, Package,
-  Hammer, Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X,
+  Hammer, Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -18,6 +18,7 @@ const NAV = [
   { to: "/services", label: "Hizmetler", icon: Hammer },
   { to: "/current-accounts", label: "Cari Hesaplar", icon: Wallet },
   { to: "/payments", label: "Tahsilatlar", icon: Receipt },
+  { to: "/reminders", label: "Bakım Hatırlatma", icon: BellRing },
   { to: "/reports", label: "Raporlar", icon: BarChart3 },
   { to: "/settings", label: "Ayarlar", icon: Settings },
 ];

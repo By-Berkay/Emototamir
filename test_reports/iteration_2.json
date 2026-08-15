@@ -1,0 +1,100 @@
+{
+  "summary": "Iteration 2 full-stack regression completed. Backend: 23/26 pytest checks passed; PDF generation, photo lifecycle, signature persistence, WhatsApp/public approval, reminders, external payments, admin payment mutation/deletion, service-order totals/adjustments, and hard/soft deletion passed. Frontend: WhatsApp/public approval, photo upload, signature (after dependency fix), order editing/add-part, reminders, and external-payment creation passed; PDF buttons download rather than open a tab, and a runtime overlay blocks payment edit/delete.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "PUT /api/service-orders/{id}",
+        "issue": "Non-admin technician receives 200 and can replace items, totals, and status; endpoint uses get_current_user instead of require_role('admin').",
+        "priority": "CRITICAL"
+      },
+      {
+        "endpoint": "PUT /api/payments/{id}",
+        "issue": "Accepts amount=-10 and persists a negative payment even though creation enforces amount > 0; this can corrupt collection totals and linked paid_total.",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "Public OPTIONS /api/*",
+        "issue": "Public ingress answers trusted and untrusted preflights with Access-Control-Allow-Origin: * instead of the explicit frontend origin. This occurs despite FastAPI code using FRONTEND_URL, indicating ingress-level CORS override/termination.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "ServiceOrderDetail PDF actions",
+        "issue": "Kabul PDF and Teslim PDF both trigger attachment downloads rather than opening PDF tabs. Buttons are inside target=_blank anchors, but the backend sends Content-Disposition: attachment.",
+        "selector": "[data-testid='btn-pdf-kabul'], [data-testid='btn-pdf-teslim']",
+        "priority": "HIGH"
+      },
+      {
+        "component": "Payments",
+        "issue": "After creating an external payment, the webpack dev-server full-screen runtime overlay reports repeated 'ResizeObserver loop completed with undelivered notifications' errors and intercepts pointer events, making pencil/trash actions unclickable. Removing the overlay diagnostically makes edit open, confirming the underlying button works.",
+        "selector": "#webpack-dev-server-client-overlay, [data-testid^='pay-edit-'], [data-testid^='pay-del-']",
+        "priority": "HIGH"
+      }
+    ],
+    "integration_issues": [
+      {
+        "flow": "External payment UI CRUD",
+        "issue": "Create succeeds and shows Harici/500, but normal edit and delete cannot be completed because the runtime error overlay obstructs the controls.",
+        "affected_selectors": ["[data-testid='btn-new-payment']", "[data-testid^='pay-edit-']", "[data-testid^='pay-del-']"]
+      }
+    ],
+    "design_issues": [
+      {
+        "screen": "Modal dialogs",
+        "issues": [
+          "Radix warns that DialogContent has no Description/aria-describedby on WhatsApp and payment dialogs, reducing screen-reader context."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_iteration2_features.py",
+    "/app/backend/tests/cleanup_test_data.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "Protect PUT /api/service-orders/{id} with require_role('admin') and rerun RBAC plus edit persistence tests.",
+    "Validate PaymentUpdate.amount as strictly positive before changing payment, transaction, or paid_total.",
+    "Change PDF response disposition to inline (or fetch a Blob and open its object URL) so both PDF actions open a new tab as specified.",
+    "Resolve the ResizeObserver runtime error or configure the dev-server overlay to ignore only the known benign ResizeObserver messages; verify payment edit/delete with normal clicks afterward.",
+    "Fix ingress CORS so credentialed cross-origin requests use only explicit trusted origins; do not return wildcard origin.",
+    "Reconcile inventory when service-order items are added, removed, or quantity changes, ideally in a transaction with order and ledger updates.",
+    "Retest all three failing backend checks and both blocked frontend flows."
+  ],
+  "critical_code_review_comments": [
+    "update_service_order is documented/admin-presented as admin-only but authorizes every authenticated role.",
+    "PaymentUpdate has no positivity constraint; update_payment applies negative values directly to payment transactions and linked paid_total.",
+    "Service-order item edits recompute financial totals but never decrement stock for added parts, restore stock for removed parts, or apply quantity deltas.",
+    "storage_utils uses blocking requests calls inside async FastAPI endpoints, which can block the event loop for up to 120 seconds during object-storage operations.",
+    "Hard-deleting a service order does not delete or soft-delete its file_refs, so previously uploaded photos can remain authorized/downloadable and orphaned after the order is gone.",
+    "Approval tokens have no expiry or revocation metadata; links remain usable indefinitely until a decision is made.",
+    "server.py exceeds 1,200 lines and combines auth, data models, storage, PDF, approval, reporting, CRUD, and seeding; split into routers/services.",
+    "Frontend data loaders such as ServiceOrderDetail and Reminders do not render an API error state; failures can leave loading or empty content without actionable feedback."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/test_iteration2_features.py",
+    "/app/frontend/src/pages/ServiceOrderDetail.jsx",
+    "/app/frontend/src/pages/ServiceOrderEdit.jsx",
+    "/app/frontend/src/pages/Payments.jsx",
+    "/app/frontend/src/pages/Reminders.jsx",
+    "/app/frontend/package.json",
+    "/app/frontend/yarn.lock",
+    "/app/test_reports/iteration_2.json"
+  ],
+  "success_rate": {
+    "backend": "88.5% (23/26 pytest checks passed)",
+    "frontend": "70% of the 10 explicitly requested UI checks passed; additional photo, signature, and public approval checks passed"
+  },
+  "seed_data_creation": "Created isolated TEST_I2/TEST_UI customers, motorcycles, service orders, users, photos, signatures, approval decisions, and payments. API fixture teardown plus cleanup_test_data.py removed test DB records; uploaded object bytes may remain physically in object storage because the product only soft-deletes file references.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Used admin credentials from /app/memory/test_credentials.md successfully. bcrypt $2b$, HttpOnly/Secure/SameSite=None cookie, brute-force lockout after five failures, and seed password-update code all verified. /app/auth_testing.md is absent.",
+  "context_for_next_testing_agent": "Final pytest is stable at 23 passed/3 failed: explicit-origin public CORS, non-admin service-order edit, and negative payment update. Signature initially failed with react-signature-canvas 1.1.0-alpha.2 (trim_canvas is not a function); dependency was pinned to 1.0.7, frontend restarted/built, and signature drawing/save then passed. PDF clicks were diagnosed with Playwright download events. Payment creation passes, but edit/delete normal clicks are reproducibly blocked by #webpack-dev-server-client-overlay after ResizeObserver runtime errors.",
+  "rca_of_the_issue": "RBAC failure is caused by Depends(get_current_user) on update_service_order instead of require_role('admin'). Negative payments are caused by unconstrained Optional[float] in PaymentUpdate and no update-time invariant check. PDF behavior is caused by Content-Disposition: attachment. The payment obstruction is caused by webpack-dev-server surfacing ResizeObserver loop notifications as a full-screen iframe overlay. Public CORS wildcard responses appear to be emitted at ingress (204 with wildcard for both trusted and untrusted origins) before FastAPI's explicit-origin middleware handles preflight."
+}

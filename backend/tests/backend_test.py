@@ -1,6 +1,7 @@
 """Public API regression tests for auth, dashboard, service workflow, payments, reports, and RBAC."""
 import os
 import re
+import uuid
 from pathlib import Path
 
 import pytest
@@ -291,7 +292,7 @@ def test_09_reports_summary(api, state):
 
 # RBAC: admin may create users while non-admin is forbidden from doing so.
 def test_10_users_rbac(api, state):
-    email = "test.rbac.user.2026@example.com"
+    email = f"test.rbac.user.{uuid.uuid4().hex}@example.com"
     payload = {"email": email, "password": "TEST-pass-123", "name": "TEST RBAC User", "role": "technician"}
     created = api.post(f"{BASE_URL}/api/users", json=payload, timeout=30)
     if created.status_code == 400 and "zaten" in created.text:
@@ -346,7 +347,21 @@ def test_12_brute_force_lockout_after_five_failures(state):
     assert statuses[5] in (423, 429), f"Expected lockout response after five failures, got {statuses}"
 
 
-# Security playbook: credentialed CORS must be configured to explicit origins rather than wildcard.
+# Security playbook: credentialed CORS must echo only the trusted frontend origin.
 def test_13_cors_uses_explicit_origins():
-    origins = [value.strip() for value in (backend_env.get("CORS_ORIGINS") or "").split(",") if value.strip()]
-    assert origins and "*" not in origins, f"Credentialed CORS must use explicit origins, got {origins}"
+    trusted = frontend_env.get("REACT_APP_BACKEND_URL")
+    trusted_response = requests.options(
+        f"{BASE_URL}/api/auth/login",
+        headers={"Origin": trusted, "Access-Control-Request-Method": "POST"},
+        timeout=30,
+    )
+    assert trusted_response.status_code in (200, 204)
+    assert trusted_response.headers.get("Access-Control-Allow-Origin") == trusted
+    assert trusted_response.headers.get("Access-Control-Allow-Credentials") == "true"
+
+    untrusted_response = requests.options(
+        f"{BASE_URL}/api/auth/login",
+        headers={"Origin": "https://untrusted.example", "Access-Control-Request-Method": "POST"},
+        timeout=30,
+    )
+    assert untrusted_response.headers.get("Access-Control-Allow-Origin") is None

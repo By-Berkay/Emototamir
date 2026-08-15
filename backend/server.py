@@ -11,10 +11,16 @@ import bcrypt
 import jwt
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Any, Dict
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, Query
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, Query, UploadFile, File, Form, Header
+from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
+import io
+import secrets
+
+from storage_utils import put_object, get_object, init_storage, APP_NAME
+from pdf_utils import build_service_pdf
 
 # ---------- Setup ----------
 mongo_url = os.environ['MONGO_URL']
@@ -165,6 +171,11 @@ class PaymentIn(BaseModel):
     amount: float
     method: str = "cash"  # cash, card, transfer, other
     note: Optional[str] = ""
+
+class PaymentUpdate(BaseModel):
+    amount: Optional[float] = None
+    method: Optional[str] = None
+    note: Optional[str] = None
 
 class ProductIn(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -534,7 +545,7 @@ async def get_service_order(sid: str, user=Depends(get_current_user)):
     return d
 
 @api.put("/service-orders/{sid}")
-async def update_service_order(sid: str, inp: ServiceOrderIn, user=Depends(get_current_user)):
+async def update_service_order(sid: str, inp: ServiceOrderIn, user=Depends(require_role("admin"))):
     existing = await db.service_orders.find_one({"id": sid})
     if not existing:
         raise HTTPException(404, "Servis kaydı bulunamadı")
@@ -569,8 +580,21 @@ async def change_status(sid: str, inp: StatusUpdate, user=Depends(get_current_us
     return await get_service_order(sid, user)
 
 @api.delete("/service-orders/{sid}")
-async def delete_service_order(sid: str, user=Depends(require_role("admin"))):
-    await db.service_orders.update_one({"id": sid}, {"$set": {"status": "cancelled", "updated_at": now_iso()}})
+async def delete_service_order(sid: str, hard: bool = False, user=Depends(require_role("admin"))):
+    so = await db.service_orders.find_one({"id": sid})
+    if not so:
+        raise HTTPException(404, "Servis kaydı bulunamadı")
+    if hard:
+        # remove ledger entries and payments too
+        await db.transactions.delete_many({"service_order_id": sid})
+        await db.payments.delete_many({"service_order_id": sid})
+        await db.service_orders.delete_one({"id": sid})
+        await db.audit_logs.insert_one({
+            "id": uid(), "user": user["email"], "action": "service_order.hard_delete",
+            "entity_id": sid, "at": now_iso(),
+        })
+    else:
+        await db.service_orders.update_one({"id": sid}, {"$set": {"status": "cancelled", "updated_at": now_iso()}})
     return {"ok": True}
 
 # ---------- Payments ----------
@@ -585,7 +609,10 @@ async def list_payments(customer_id: str = "", user=Depends(get_current_user)):
 async def create_payment(inp: PaymentIn, user=Depends(get_current_user)):
     if inp.amount <= 0:
         raise HTTPException(400, "Tahsilat tutarı pozitif olmalıdır")
-    payment_no = f"THL-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}"
+    cust = await db.customers.find_one({"id": inp.customer_id})
+    if not cust:
+        raise HTTPException(400, "Müşteri bulunamadı")
+    payment_no = f"THL-{datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')}-{secrets.token_hex(2).upper()}"
     doc = {
         **inp.model_dump(),
         "id": uid(),
@@ -604,11 +631,58 @@ async def create_payment(inp: PaymentIn, user=Depends(get_current_user)):
         "id": uid(), "customer_id": inp.customer_id, "type": "payment",
         "amount": -inp.amount, "service_order_id": inp.service_order_id,
         "payment_id": doc["id"], "payment_no": payment_no,
-        "description": f"Tahsilat ({inp.method})",
+        "description": inp.note or ("Tahsilat" if inp.service_order_id else "Harici Tahsilat"),
         "created_at": now_iso(),
+    })
+    await db.audit_logs.insert_one({
+        "id": uid(), "user": user["email"], "action": "payment.create",
+        "entity_id": doc["id"], "at": now_iso(),
     })
     doc.pop("_id", None)
     return doc
+
+@api.put("/payments/{pid}")
+async def update_payment(pid: str, inp: PaymentUpdate, user=Depends(require_role("admin"))):
+    p = await db.payments.find_one({"id": pid})
+    if not p:
+        raise HTTPException(404, "Tahsilat bulunamadı")
+    if inp.amount is not None and inp.amount <= 0:
+        raise HTTPException(400, "Tahsilat tutarı pozitif olmalıdır")
+    old_amount = p.get("amount", 0)
+    updates = {k: v for k, v in inp.model_dump().items() if v is not None}
+    if not updates:
+        return {"ok": True}
+    await db.payments.update_one({"id": pid}, {"$set": updates})
+    new_amount = updates.get("amount", old_amount)
+    diff = new_amount - old_amount
+    if abs(diff) > 0.001:
+        # update linked service order paid_total
+        if p.get("service_order_id"):
+            await db.service_orders.update_one({"id": p["service_order_id"]},
+                {"$inc": {"paid_total": diff}, "$set": {"updated_at": now_iso()}})
+        # update linked transaction
+        await db.transactions.update_one({"payment_id": pid}, {"$set": {"amount": -new_amount}})
+    await db.audit_logs.insert_one({
+        "id": uid(), "user": user["email"], "action": "payment.update",
+        "entity_id": pid, "old_value": old_amount, "new_value": new_amount, "at": now_iso(),
+    })
+    return await db.payments.find_one({"id": pid}, {"_id": 0})
+
+@api.delete("/payments/{pid}")
+async def delete_payment(pid: str, user=Depends(require_role("admin"))):
+    p = await db.payments.find_one({"id": pid})
+    if not p:
+        raise HTTPException(404, "Tahsilat bulunamadı")
+    if p.get("service_order_id"):
+        await db.service_orders.update_one({"id": p["service_order_id"]},
+            {"$inc": {"paid_total": -p["amount"]}, "$set": {"updated_at": now_iso()}})
+    await db.transactions.delete_many({"payment_id": pid})
+    await db.payments.delete_one({"id": pid})
+    await db.audit_logs.insert_one({
+        "id": uid(), "user": user["email"], "action": "payment.delete",
+        "entity_id": pid, "old_value": p.get("amount"), "at": now_iso(),
+    })
+    return {"ok": True}
 
 # ---------- Current Accounts ----------
 @api.get("/current-accounts")
@@ -751,6 +825,203 @@ async def report_summary(user=Depends(get_current_user)):
         "top_services": top_services,
         "critical_stock": critical_stock,
     }
+
+# ---------- Photos ----------
+@api.post("/service-orders/{sid}/photos")
+async def upload_photo(sid: str, file: UploadFile = File(...), caption: str = Form(""), user=Depends(get_current_user)):
+    so = await db.service_orders.find_one({"id": sid})
+    if not so:
+        raise HTTPException(404, "Servis kaydı bulunamadı")
+    ext = (file.filename.rsplit(".", 1)[-1] if "." in file.filename else "bin").lower()
+    if ext not in {"jpg","jpeg","png","webp","gif"}:
+        raise HTTPException(400, "Sadece görsel dosyaları yüklenebilir")
+    photo_id = uid()
+    path = f"{APP_NAME}/service-orders/{sid}/{photo_id}.{ext}"
+    data = await file.read()
+    result = put_object(path, data, file.content_type or "image/jpeg")
+    photo = {
+        "id": photo_id, "path": result["path"], "caption": caption or "",
+        "size": result.get("size", len(data)), "content_type": file.content_type or "image/jpeg",
+        "uploaded_by": user["email"], "uploaded_at": now_iso(),
+    }
+    await db.service_orders.update_one({"id": sid}, {"$push": {"photos": photo}})
+    await db.file_refs.insert_one({**photo, "service_order_id": sid, "is_deleted": False})
+    return photo
+
+@api.delete("/service-orders/{sid}/photos/{pid}")
+async def delete_photo(sid: str, pid: str, user=Depends(get_current_user)):
+    await db.service_orders.update_one({"id": sid}, {"$pull": {"photos": {"id": pid}}})
+    await db.file_refs.update_one({"id": pid}, {"$set": {"is_deleted": True}})
+    return {"ok": True}
+
+@api.get("/files/{path:path}")
+async def download_file(path: str, request: Request, auth: str = Query(None)):
+    # Support both Authorization header and ?auth= token for <img> tags
+    token = None
+    if auth:
+        token = auth
+    else:
+        h = request.headers.get("Authorization", "")
+        if h.startswith("Bearer "):
+            token = h[7:]
+        token = token or request.cookies.get("access_token")
+    if not token:
+        raise HTTPException(401, "Yetkisiz")
+    try:
+        jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+    except Exception:
+        raise HTTPException(401, "Geçersiz token")
+    ref = await db.file_refs.find_one({"path": path, "is_deleted": False})
+    if not ref:
+        raise HTTPException(404, "Dosya bulunamadı")
+    data, ct = get_object(path)
+    return Response(content=data, media_type=ref.get("content_type", ct))
+
+# ---------- Signature ----------
+class SignatureIn(BaseModel):
+    signature: str  # base64 data URL
+
+@api.post("/service-orders/{sid}/signature")
+async def save_signature(sid: str, inp: SignatureIn, user=Depends(get_current_user)):
+    r = await db.service_orders.update_one({"id": sid}, {"$set": {"customer_signature": inp.signature, "signed_at": now_iso(), "updated_at": now_iso()}})
+    if r.matched_count == 0:
+        raise HTTPException(404, "Servis kaydı bulunamadı")
+    return {"ok": True}
+
+# ---------- PDF ----------
+@api.get("/service-orders/{sid}/pdf/{kind}")
+async def service_pdf(sid: str, kind: str, request: Request, auth: str = Query(None)):
+    if kind not in {"kabul", "teslim"}:
+        raise HTTPException(400, "Geçersiz form türü")
+    # accept token via query param for direct download link
+    token = auth or request.cookies.get("access_token")
+    if not token:
+        h = request.headers.get("Authorization", "")
+        if h.startswith("Bearer "):
+            token = h[7:]
+    if not token:
+        raise HTTPException(401, "Yetkisiz")
+    try:
+        jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
+    except Exception:
+        raise HTTPException(401, "Geçersiz token")
+    order = await db.service_orders.find_one({"id": sid}, {"_id": 0})
+    if not order:
+        raise HTTPException(404, "Servis kaydı bulunamadı")
+    order["customer"] = await db.customers.find_one({"id": order["customer_id"]}, {"_id": 0})
+    order["motorcycle"] = await db.motorcycles.find_one({"id": order["motorcycle_id"]}, {"_id": 0})
+    pdf_bytes = build_service_pdf(order, kind=kind)
+    filename = f"{order['service_no']}-{kind}.pdf"
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf",
+                             headers={"Content-Disposition": f'inline; filename="{filename}"'})
+
+# ---------- WhatsApp Approval ----------
+class ApprovalDecision(BaseModel):
+    approve: bool
+    note: str = ""
+
+@api.post("/service-orders/{sid}/approval-link")
+async def create_approval_link(sid: str, user=Depends(get_current_user)):
+    so = await db.service_orders.find_one({"id": sid})
+    if not so:
+        raise HTTPException(404, "Servis kaydı bulunamadı")
+    token = so.get("approval_token") or secrets.token_urlsafe(24)
+    await db.service_orders.update_one({"id": sid}, {"$set": {
+        "approval_token": token, "approval_status": so.get("approval_status", "pending"),
+        "updated_at": now_iso(),
+    }})
+    frontend = os.environ.get("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+    approval_url = f"{frontend}/onay/{token}"
+    phone = "".join(ch for ch in (so.get("customer_phone") or "") if ch.isdigit())
+    if phone.startswith("0"):
+        phone = "90" + phone[1:]
+    elif not phone.startswith("90"):
+        phone = "90" + phone
+    grand = so.get("grand_total", 0)
+    msg = (
+        f"Merhaba {so.get('customer_name','')}, \n\n"
+        f"Servis No: {so.get('service_no')}\n"
+        f"Motosiklet: {so.get('brand','')} {so.get('model','')} ({so.get('plate','')})\n"
+        f"Tahmini Tutar: {grand:,.2f} TL\n\n"
+        f"Onaylamak/reddetmek için: {approval_url}"
+    )
+    from urllib.parse import quote
+    wa_url = f"https://wa.me/{phone}?text={quote(msg)}"
+    return {"token": token, "approval_url": approval_url, "whatsapp_url": wa_url, "message": msg}
+
+@api.get("/public/approval/{token}")
+async def public_get_approval(token: str):
+    so = await db.service_orders.find_one({"approval_token": token}, {"_id": 0})
+    if not so:
+        raise HTTPException(404, "Bağlantı geçersiz")
+    return {
+        "service_no": so.get("service_no"),
+        "customer_name": so.get("customer_name"),
+        "brand": so.get("brand"), "model": so.get("model"), "plate": so.get("plate"),
+        "complaint": so.get("complaint"), "diagnosis": so.get("diagnosis"),
+        "items": so.get("items", []), "labor_total": so.get("labor_total", 0),
+        "discount": so.get("discount", 0), "grand_total": so.get("grand_total", 0),
+        "approval_status": so.get("approval_status", "pending"),
+        "approval_at": so.get("approval_at"),
+    }
+
+@api.post("/public/approval/{token}")
+async def public_decide_approval(token: str, inp: ApprovalDecision):
+    so = await db.service_orders.find_one({"approval_token": token})
+    if not so:
+        raise HTTPException(404, "Bağlantı geçersiz")
+    if so.get("approval_status") in {"approved", "rejected"}:
+        return {"ok": True, "already": True, "approval_status": so["approval_status"]}
+    decision = "approved" if inp.approve else "rejected"
+    new_status = "approved" if inp.approve else "cancelled"
+    await db.service_orders.update_one({"id": so["id"]}, {"$set": {
+        "approval_status": decision, "approval_at": now_iso(),
+        "approval_note": inp.note, "status": new_status, "updated_at": now_iso(),
+    }, "$push": {"status_history": {"status": new_status, "at": now_iso(), "by": "customer_approval", "note": inp.note}}})
+    return {"ok": True, "approval_status": decision}
+
+# ---------- Reminders (In-app) ----------
+@api.get("/reminders")
+async def reminders(user=Depends(get_current_user)):
+    from datetime import timedelta as _td
+    motos = await db.motorcycles.find({}, {"_id": 0}).to_list(5000)
+    orders = await db.service_orders.find({}, {"_id": 0}).to_list(20000)
+    latest_by_moto = {}
+    for o in sorted(orders, key=lambda x: x.get("created_at") or ""):
+        latest_by_moto[o["motorcycle_id"]] = o
+    now = datetime.now(timezone.utc)
+    reminders_upcoming = []
+    reminders_overdue = []
+    for m in motos:
+        last = latest_by_moto.get(m["id"])
+        last_km = last.get("km", m.get("km", 0)) if last else m.get("km", 0)
+        last_date = last.get("created_at") if last else m.get("created_at")
+        # rule: next bakım in 5000km or 12 months
+        next_km = last_km + 5000
+        next_date_iso = None
+        days_left = None
+        if last_date:
+            try:
+                lastd = datetime.fromisoformat(last_date.replace("Z","+00:00"))
+                nextd = lastd + _td(days=365)
+                next_date_iso = nextd.isoformat()
+                days_left = (nextd.date() - now.date()).days
+            except Exception:
+                pass
+        cust = await db.customers.find_one({"id": m["customer_id"]}, {"_id": 0, "first_name":1, "last_name":1, "phone":1})
+        row = {
+            "motorcycle_id": m["id"], "customer_id": m["customer_id"],
+            "customer": cust, "brand": m.get("brand"), "model": m.get("model"), "plate": m.get("plate"),
+            "last_km": last_km, "next_km": next_km, "last_service_date": last_date,
+            "next_date": next_date_iso, "days_left": days_left,
+        }
+        if days_left is not None and days_left < 0:
+            reminders_overdue.append(row)
+        elif days_left is not None and days_left <= 30:
+            reminders_upcoming.append(row)
+    reminders_overdue.sort(key=lambda r: r.get("days_left") or 0)
+    reminders_upcoming.sort(key=lambda r: r.get("days_left") or 0)
+    return {"overdue": reminders_overdue, "upcoming": reminders_upcoming}
 
 # ---------- Seeding ----------
 async def seed_admin_and_indexes():
@@ -962,6 +1233,11 @@ async def seed_demo_data():
 async def on_startup():
     await seed_admin_and_indexes()
     await seed_demo_data()
+    try:
+        init_storage()
+        logger.info("Object storage initialized")
+    except Exception as e:
+        logger.warning(f"Storage init failed: {e}")
 
 @app.on_event("shutdown")
 async def shutdown_db_client():

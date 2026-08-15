@@ -12,12 +12,15 @@ import MotorcycleDetail from "./pages/MotorcycleDetail";
 import ServiceOrders from "./pages/ServiceOrders";
 import ServiceOrderCreate from "./pages/ServiceOrderCreate";
 import ServiceOrderDetail from "./pages/ServiceOrderDetail";
+import ServiceOrderEdit from "./pages/ServiceOrderEdit";
 import Products from "./pages/Products";
 import Services from "./pages/Services";
 import CurrentAccounts from "./pages/CurrentAccounts";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
+import Reminders from "./pages/Reminders";
 import Settings from "./pages/Settings";
+import PublicApproval from "./pages/PublicApproval";
 import "./App.css";
 
 function Protected({ children }) {
@@ -34,6 +37,7 @@ export default function App() {
         <Toaster position="top-right" richColors />
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/onay/:token" element={<PublicApproval />} />
           <Route element={<Protected><Layout /></Protected>}>
             <Route index element={<Dashboard />} />
             <Route path="/customers" element={<Customers />} />
@@ -43,11 +47,13 @@ export default function App() {
             <Route path="/service-orders" element={<ServiceOrders />} />
             <Route path="/service-orders/new" element={<ServiceOrderCreate />} />
             <Route path="/service-orders/:id" element={<ServiceOrderDetail />} />
+            <Route path="/service-orders/:id/edit" element={<ServiceOrderEdit />} />
             <Route path="/products" element={<Products />} />
             <Route path="/services" element={<Services />} />
             <Route path="/current-accounts" element={<CurrentAccounts />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/reports" element={<Reports />} />
+            <Route path="/reminders" element={<Reminders />} />
             <Route path="/settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
