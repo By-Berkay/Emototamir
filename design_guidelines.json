@@ -1,0 +1,130 @@
+{
+  "project_name": "Motosiklet Servis Yönetim Sistemi",
+  "theme_overview": {
+    "archetype": "Archetype 4: Swiss & High-Contrast (Professional SaaS Variant)",
+    "vibe": "Modern, professional, clean, corporate, mechanical, highly functional ERP.",
+    "theme_preference": "Light mode primary for day-to-day workshop use, with an optional Dark mode toggle for low-light environments. Not overly colorful—color is strictly used for data visualization, status badging, and primary actions."
+  },
+  "typography": {
+    "fonts": {
+      "headings": {
+        "family": "Chivo",
+        "description": "A neo-grotesque sans-serif. Gives a slightly mechanical, engineered, and solid corporate feel without being overly stylized. Great for a dashboard.",
+        "fallback": "sans-serif"
+      },
+      "body": {
+        "family": "IBM Plex Sans",
+        "description": "Excellent legibility for dense tables, tabular data, and forms. Superb support for Turkish characters (İ, Ğ, Ü, Ş, Ö, Ç).",
+        "fallback": "sans-serif"
+      },
+      "monospace": {
+        "family": "JetBrains Mono",
+        "description": "To be used exclusively for License Plates, VIN numbers, Service Order IDs, and part numbers.",
+        "fallback": "monospace"
+      }
+    },
+    "hierarchy": {
+      "h1": "text-3xl sm:text-4xl font-bold tracking-tight",
+      "h2": "text-2xl sm:text-3xl font-semibold tracking-tight",
+      "h3": "text-xl sm:text-2xl font-semibold",
+      "h4": "text-lg font-medium",
+      "body": "text-sm text-slate-700 dark:text-slate-300",
+      "labels": "text-xs font-semibold uppercase tracking-wider text-slate-500"
+    }
+  },
+  "colors": {
+    "primary": {
+      "base": "#0F172A",
+      "description": "Deep Industrial Slate. Used for primary typography, sidebar backgrounds, and structural elements."
+    },
+    "accent": {
+      "base": "#F97316",
+      "hover": "#EA580C",
+      "description": "Signal Orange. Mechanical and highly visible. Used sparingly for primary CTA buttons (e.g., 'Yeni Servis Kaydı') and active state indicators."
+    },
+    "backgrounds": {
+      "app": "#F8FAFC",
+      "surface": "#FFFFFF",
+      "sidebar": "#0F172A",
+      "dark_app": "#020617",
+      "dark_surface": "#0F172A"
+    },
+    "status_badges": {
+      "new": { "bg": "#EFF6FF", "text": "#2563EB", "border": "#BFDBFE", "label": "Yeni" },
+      "in_repair": { "bg": "#FFF7ED", "text": "#EA580C", "border": "#FED7AA", "label": "Tamirde" },
+      "completed": { "bg": "#ECFDF5", "text": "#059669", "border": "#A7F3D0", "label": "Tamamlandı" },
+      "cancelled": { "bg": "#FEF2F2", "text": "#DC2626", "border": "#FECACA", "label": "İptal" },
+      "awaiting_approval": { "bg": "#FEFCE8", "text": "#CA8A04", "border": "#FEF08A", "label": "Onay Bekliyor" }
+    }
+  },
+  "visual_enhancers": {
+    "borders_and_radius": "Subtle border radiuses. Use `rounded-md` (6px) or `rounded-lg` (8px). Avoid fully rounded pill shapes except for status badges. UI must feel sharp, structured, and technical.",
+    "shadows": "Very subtle, crisp shadows. Use `shadow-sm` for cards, `shadow-md` for dropdowns/modals. No glowing shadows.",
+    "textures": "Flat and solid. Avoid gradients unless necessary for specific chart data. The interface must prioritize clarity over decoration."
+  },
+  "layouts": {
+    "app_structure": "Left fixed sidebar (`w-64`), Top fixed header (`h-16`) containing global search (Plaka, Şasi, Müşteri) and user profile. Main content area fills remaining space with standard `p-6` or `p-8` padding.",
+    "dashboard_grid": "High-density bento mode. 4-column grid (`grid-cols-1 md:grid-cols-2 lg:grid-cols-4`). Top row: 4 KPI summary cards (`col-span-1`). Middle row: Revenue Chart (`col-span-3`) + Status Donut (`col-span-1`). Bottom row: Latest Services table (`col-span-4`).",
+    "tables": "Dense styling (`py-2 px-3` cells). Zebra striping or subtle `hover:bg-slate-50` for rows. Stick to white backgrounds with 1px `border-slate-200` around the table container."
+  },
+  "components_instructions": {
+    "interactive_motorcycle_diagram": {
+      "type": "Custom SVG Component",
+      "instruction": "Create an interactive SVG diagram of a motorcycle side profile. Define clickable zones (`path` or `g` elements) for Front Brake, Rear Brake, Engine, Transmission, Exhaust, Electric, Battery, Fuel System, Suspension. On click, toggle a red highlight fill (e.g., `fill-red-500/50`) to mark damaged/faulty zones. Must be part of the 'Service Order Creation' flow."
+    },
+    "motorcycle_type_illustrations": {
+      "instruction": "Use simple, clean vector-style SVGs or distinct icons for different motorcycle types (Scooter, Naked, Sport, Touring, Adventure, Enduro, Cross, Chopper, Cruiser, Cafe Racer, Electric). Display these in the 'Motorcycle Details' card."
+    },
+    "forms": {
+      "instruction": "Use Shadcn UI forms. Align labels to the top of inputs. Use 2-column grids for long forms (e.g., Customer or Service Order creation)."
+    },
+    "sidebar": {
+      "instruction": "Dark mode styling (`bg-slate-900 text-slate-300`). Active links should have white text and a Signal Orange (`bg-orange-500`) left border indicator."
+    }
+  },
+  "icons": {
+    "library": "@phosphor-icons/react",
+    "installation": "yarn add @phosphor-icons/react",
+    "usage": "Use Phosphor Icons (Regular or Duotone weight) for clear, technical, and dense dashboard iconography."
+  },
+  "motion": {
+    "interactions": "Minimalist and snappy. `duration-150 ease-in-out` for all hover states. No bouncy animations.",
+    "page_transitions": "Fade-in only (`opacity-0` to `opacity-100`). No complex entrance staggers for data tables to avoid slowing down the user."
+  },
+  "accessibility": {
+    "contrast": "Ensure 4.5:1 minimum for all text. The status badges must use dark text over light backgrounds to ensure readability.",
+    "testing": "All interactive and key informational elements MUST include a `data-testid` attribute (e.g., `data-testid=\"btn-create-service-order\"`, `data-testid=\"input-plate-number\"`).",
+    "localization": "Ensure proper display of TL (₺) currency symbol, DD.MM.YYYY dates, and 24h time format."
+  },
+  "media": {
+    "image_urls": {
+      "motorcycle_placeholder": {
+        "url": "https://images.unsplash.com/photo-1635094742897-3f0014ccc07b?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2ODh8MHwxfHNlYXJjaHw0fHxtb3RvcmN5Y2xlJTIwc2lkZSUyMHByb2ZpbGV8ZW58MHx8fHwxNzg2Nzk0MDUyfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Motorcycle parked on the side. Good for placeholder when a customer's specific motorcycle photo isn't uploaded."
+      },
+      "mechanic_avatar": {
+        "url": "https://images.unsplash.com/photo-1636761358757-0a616eb9e17e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAxODF8MHwxfHNlYXJjaHwyfHxtZWNoYW5pYyUyMHdvcmtpbmclMjBvbiUyMG1vdG9yY3ljbGV8ZW58MHx8fHwxNzg2Nzk0MDUyfDA&ixlib=rb-4.1.0&q=85",
+        "description": "Mechanic working in garage. Good for default technician avatar or dashboard background element."
+      }
+    }
+  },
+  "universal_guidelines_for_main_agent": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur) only where appropriate (e.g., sticky headers), but NOT for data-heavy dashboard tables.",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms.",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text.",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style.",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠💭💡🔮🎯 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable.",
+    "Create new components that match the style and conventions of existing components when needed.",
+    "Examine existing components to understand the project's component patterns before creating new ones.",
+    "Use sonner for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
