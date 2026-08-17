@@ -44,8 +44,8 @@ export default function Login() {
             <Wrench className="h-6 w-6" />
           </div>
           <div>
-            <div className="font-heading font-bold text-xl">MOTO SERVİS</div>
-            <div className="text-xs text-slate-400 tracking-wider">YÖNETİM SİSTEMİ</div>
+            <div className="font-heading font-bold text-xl">E-MOTO TAMİR</div>
+            <div className="text-xs text-slate-400 tracking-wider">SERVİS YÖNETİM SİSTEMİ</div>
           </div>
         </div>
         <div className="relative">
@@ -57,7 +57,7 @@ export default function Login() {
             Türkiye'deki motosiklet servisleri için tasarlandı.
           </p>
         </div>
-        <div className="text-xs text-slate-500 relative">© Moto Servis · v1.0</div>
+        <div className="text-xs text-slate-500 relative">© E-Moto Tamir · v1.0</div>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-6">
@@ -67,8 +67,8 @@ export default function Login() {
               <Wrench className="h-5 w-5 text-white" />
             </div>
             <div>
-              <div className="font-heading font-bold text-slate-900">MOTO SERVİS</div>
-              <div className="text-xs text-slate-500">Yönetim Sistemi</div>
+              <div className="font-heading font-bold text-slate-900">E-MOTO TAMİR</div>
+              <div className="text-xs text-slate-500">Servis Yönetim Sistemi</div>
             </div>
           </div>
           <h2 className="font-heading text-3xl font-bold text-slate-900">Giriş Yap</h2>

@@ -9,9 +9,11 @@ db = client[env["DB_NAME"]]
 customer_ids = [doc["id"] for doc in db.customers.find({"first_name": {"$regex": "^TEST"}}, {"id": 1})]
 motorcycle_ids = [doc["id"] for doc in db.motorcycles.find({"$or": [{"customer_id": {"$in": customer_ids}}, {"brand": {"$regex": "^TEST"}}]}, {"id": 1})]
 order_ids = [doc["id"] for doc in db.service_orders.find({"$or": [{"customer_id": {"$in": customer_ids}}, {"motorcycle_id": {"$in": motorcycle_ids}}, {"complaint": {"$regex": "^TEST"}}]}, {"id": 1})]
+quote_ids = [doc["id"] for doc in db.quotes.find({"$or": [{"customer_id": {"$in": customer_ids}}, {"motorcycle_id": {"$in": motorcycle_ids}}, {"notes": {"$regex": "^TEST"}}]}, {"id": 1})]
 
 results = {
-    "audit_logs": db.audit_logs.delete_many({"entity_id": {"$in": order_ids}}).deleted_count,
+    "audit_logs": db.audit_logs.delete_many({"entity_id": {"$in": order_ids + quote_ids + customer_ids}}).deleted_count,
+    "quotes": db.quotes.delete_many({"id": {"$in": quote_ids}}).deleted_count,
     "transactions": db.transactions.delete_many({"$or": [{"customer_id": {"$in": customer_ids}}, {"service_order_id": {"$in": order_ids}}]}).deleted_count,
     "payments": db.payments.delete_many({"$or": [{"customer_id": {"$in": customer_ids}}, {"service_order_id": {"$in": order_ids}}, {"note": {"$regex": "^TEST"}}]}).deleted_count,
     "service_orders": db.service_orders.delete_many({"id": {"$in": order_ids}}).deleted_count,

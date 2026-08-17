@@ -133,7 +133,7 @@ def build_service_pdf(order: dict, kind: str = "kabul", tenant: dict = None, log
          Paragraph("MÜŞTERİ TELEFON", p_small), Paragraph(f"<font face='{FONT_BOLD}'>{order.get('customer_phone','')}</font>", p_normal)],
         [Paragraph("ARAÇ PLAKA", p_small), Paragraph(f"<font face='{FONT_BOLD}'>{order.get('plate','')}</font>", p_normal),
          Paragraph("ARAÇ MODEL", p_small), Paragraph(f"<font face='{FONT_BOLD}'>{order.get('brand','')} {order.get('model','')}</font>", p_normal)],
-        [Paragraph("KİLOMETRE", p_small), Paragraph(f"{order.get('km',0):,} km".replace(",","."), p_normal),
+        [Paragraph("KİLOMETRE", p_small), Paragraph(f"{(order.get('km') or 0):,} km".replace(",","."), p_normal),
          Paragraph("YAKIT", p_small), Paragraph(order.get('fuel_level','-'), p_normal)],
     ]
     cust_tbl = Table(cust_data, colWidths=[3*cm, 6*cm, 3*cm, 6*cm])
@@ -259,6 +259,10 @@ def build_service_pdf(order: dict, kind: str = "kabul", tenant: dict = None, log
         elements.append(Spacer(1, 4))
         elements.append(Paragraph(footer_note.replace("\n", "<br/>"),
                                   ParagraphStyle("fn", fontName=FONT_NAME, fontSize=8, textColor=colors.HexColor("#64748B"), leading=10, alignment=1)))
+    # Brand footer
+    elements.append(Spacer(1, 2))
+    elements.append(Paragraph("E-Moto Tamir · Servis Yönetim Sistemi",
+                              ParagraphStyle("brand", fontName=FONT_NAME, fontSize=7, textColor=colors.HexColor("#94A3B8"), leading=8, alignment=1)))
 
     doc.build(elements)
     return buf.getvalue()

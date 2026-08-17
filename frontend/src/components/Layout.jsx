@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList,
-  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History,
+  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -14,6 +14,7 @@ const NAV_TENANT = [
   { to: "/motorcycles", label: "Motosikletler", icon: Bike },
   { to: "/service-orders", label: "Servis Kayıtları", icon: Wrench },
   { to: "/service-orders/new", label: "Yeni İş Emri", icon: ClipboardList },
+  { to: "/quotes", label: "Fiyat Teklifleri", icon: FileText },
   { to: "/current-accounts", label: "Cari Hesaplar", icon: Wallet },
   { to: "/payments", label: "Tahsilatlar", icon: Receipt },
   { to: "/reminders", label: "Bakım Hatırlatma", icon: BellRing },
@@ -52,7 +53,7 @@ export default function Layout() {
             <Wrench className="h-5 w-5 text-white" />
           </div>
           <div className="min-w-0">
-            <div className="font-heading font-bold text-white text-base leading-tight truncate">{tenant?.name || "MOTO SERVİS"}</div>
+            <div className="font-heading font-bold text-white text-base leading-tight truncate">{tenant?.name || "E-MOTO TAMİR"}</div>
             <div className="text-xs text-slate-400">{user?.role === "super_admin" ? "Süper Admin" : "Yönetim Sistemi"}</div>
           </div>
           <button className="ml-auto lg:hidden" onClick={() => setOpen(false)} data-testid="close-sidebar">

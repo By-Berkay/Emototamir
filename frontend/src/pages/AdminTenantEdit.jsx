@@ -256,6 +256,30 @@ export default function AdminTenantEdit() {
             <div className="md:col-span-2 text-sm text-slate-500 border-t pt-3">
               <p><b>Not:</b> Bitiş tarihi geçen firma otomatik <b>Pasif</b> hale gelir ve kullanıcıları giriş yapamaz. Yeni abonelik girildiğinde <b>Aktif</b> yaparak tekrar açabilirsiniz.</p>
             </div>
+            <div className="md:col-span-2 border-t pt-4">
+              <Label className="text-base font-semibold">Bakım Hatırlatma Politikası</Label>
+              <p className="text-xs text-slate-500 mb-3">Bu firma için hangi motosikletlerin "vadesi doldu" sayılacağını belirler.</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>KM eşiği</Label>
+                  <Input type="number" value={t.reminder_km ?? 5000} onChange={(e)=>upd({reminder_km: Number(e.target.value)})} data-testid="rem-km" />
+                </div>
+                <div>
+                  <Label>Ay eşiği</Label>
+                  <Input type="number" value={t.reminder_months ?? 6} onChange={(e)=>upd({reminder_months: Number(e.target.value)})} data-testid="rem-months" />
+                </div>
+                <div>
+                  <Label>Mantık</Label>
+                  <Select value={t.reminder_mode || "or"} onValueChange={(v)=>upd({reminder_mode: v})}>
+                    <SelectTrigger data-testid="rem-mode"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="or">Herhangi biri (KM VEYA Ay)</SelectItem>
+                      <SelectItem value="and">İkisi de (KM VE Ay)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
           </CardContent></Card>
         </TabsContent>
 

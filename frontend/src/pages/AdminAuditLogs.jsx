@@ -5,7 +5,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { History, RefreshCw, Filter } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
+import { History, RefreshCw, Filter, ArrowRight, X } from "lucide-react";
 import { fmtDate } from "../lib/api";
 
 const ACTION_COLORS = {
@@ -27,6 +28,7 @@ export default function AdminAuditLogs() {
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(false);
   const [f, setF] = useState({ tenant_id: "", user_email: "", action: "", since: "" });
+  const [detail, setDetail] = useState(null);
 
   useEffect(() => {
     api.get("/admin/tenants").then(r => setTenants(r.data));
@@ -110,7 +112,7 @@ export default function AdminAuditLogs() {
               <table className="min-w-full text-sm">
                 <tbody>
                   {items.map(l => (
-                    <tr key={l.id} className="border-b hover:bg-slate-50" data-testid={`audit-row-${l.id}`}>
+                    <tr key={l.id} className="border-b hover:bg-slate-50 cursor-pointer" onClick={()=>setDetail(l)} data-testid={`audit-row-${l.id}`}>
                       <td className="px-3 py-2 w-24 text-xs text-slate-500 whitespace-nowrap">{fmtDate(l.at).split(" ")[1]}</td>
                       <td className="px-2 py-2 w-40"><span className={`text-[10px] uppercase font-semibold px-2 py-1 rounded border whitespace-nowrap ${badgeCls(l.action)}`}>{l.action}</span></td>
                       <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">{l.user}</td>
@@ -134,6 +136,59 @@ export default function AdminAuditLogs() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Audit detail dialog */}
+      <Dialog open={!!detail} onOpenChange={(o)=>{ if(!o) setDetail(null); }}>
+        <DialogContent className="max-w-2xl" data-testid="audit-detail-panel">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5 text-orange-500" />
+              Denetim Detayı
+            </DialogTitle>
+          </DialogHeader>
+          {detail && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><div className="text-xs text-slate-500">İşlem</div><span className={`text-[11px] uppercase font-semibold px-2 py-1 rounded border ${badgeCls(detail.action)}`}>{detail.action}</span></div>
+                <div><div className="text-xs text-slate-500">Zaman</div><div className="font-medium">{fmtDate(detail.at)}</div></div>
+                <div><div className="text-xs text-slate-500">Kullanıcı</div><div className="font-medium">{detail.user}</div></div>
+                <div><div className="text-xs text-slate-500">Firma</div><div className="font-medium">{detail.tenant_name || "— sistem —"}</div></div>
+                {detail.entity_id && <div className="col-span-2"><div className="text-xs text-slate-500">Kayıt ID</div><div className="font-mono text-xs">{detail.entity_id}</div></div>}
+              </div>
+              {Array.isArray(detail.changes) && detail.changes.length > 0 ? (
+                <div>
+                  <div className="text-xs uppercase text-slate-500 mb-2">Değişen Alanlar ({detail.changes.length})</div>
+                  <div className="border rounded-md overflow-hidden">
+                    <table className="min-w-full text-sm">
+                      <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="text-left px-3 py-2 w-1/4">Alan</th><th className="text-left px-3 py-2">Önce</th><th className="w-6"></th><th className="text-left px-3 py-2">Sonra</th></tr></thead>
+                      <tbody>
+                        {detail.changes.map((c, i) => (
+                          <tr key={i} className="border-t" data-testid={`audit-diff-${c.field}`}>
+                            <td className="px-3 py-2 font-mono text-xs text-slate-700">{c.field}</td>
+                            <td className="px-3 py-2 text-slate-500 line-through decoration-red-400/60 break-all">{c.old || <span className="italic text-slate-400">—</span>}</td>
+                            <td className="px-1 text-slate-400"><ArrowRight className="h-3 w-3" /></td>
+                            <td className="px-3 py-2 text-emerald-700 font-medium break-all">{c.new || <span className="italic text-slate-400">—</span>}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (detail.old_value !== undefined || detail.new_value !== undefined) ? (
+                <div>
+                  <div className="text-xs uppercase text-slate-500 mb-2">Değer</div>
+                  <div className="border rounded-md p-3 bg-slate-50 text-sm">
+                    {detail.old_value !== undefined && <div><span className="text-slate-500">Önce:</span> <span className="line-through decoration-red-400/60">{String(detail.old_value)}</span></div>}
+                    {detail.new_value !== undefined && <div><span className="text-slate-500">Sonra:</span> <span className="font-medium text-emerald-700">{Array.isArray(detail.new_value) ? detail.new_value.join(", ") : String(detail.new_value)}</span></div>}
+                  </div>
+                </div>
+              ) : (
+                <div className="text-sm text-slate-400 italic">Bu işlem için alan değişikliği kaydedilmemiş.</div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

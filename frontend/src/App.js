@@ -24,6 +24,9 @@ import AdminTenants from "./pages/AdminTenants";
 import AdminTenantEdit from "./pages/AdminTenantEdit";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
 import PublicApproval from "./pages/PublicApproval";
+import Quotes from "./pages/Quotes";
+import QuoteEdit from "./pages/QuoteEdit";
+import QuotePublic from "./pages/QuotePublic";
 import "./App.css";
 
 function Protected({ children }) {
@@ -47,6 +50,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/onay/:token" element={<PublicApproval />} />
+          <Route path="/q/:token" element={<QuotePublic />} />
           <Route element={<Protected><Layout /></Protected>}>
             <Route index element={<IndexRoute />} />
             <Route path="/customers" element={<Customers />} />
@@ -57,6 +61,9 @@ export default function App() {
             <Route path="/service-orders/new" element={<ServiceOrderCreate />} />
             <Route path="/service-orders/:id" element={<ServiceOrderDetail />} />
             <Route path="/service-orders/:id/edit" element={<ServiceOrderEdit />} />
+            <Route path="/quotes" element={<Quotes />} />
+            <Route path="/quotes/new" element={<QuoteEdit />} />
+            <Route path="/quotes/:id" element={<QuoteEdit />} />
             <Route path="/products" element={<Settings />} />
             <Route path="/services" element={<Settings />} />
             <Route path="/current-accounts" element={<CurrentAccounts />} />

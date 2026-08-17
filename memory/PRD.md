@@ -38,14 +38,19 @@ Türkçe multi-tenant motosiklet servis yönetim SaaS. Süper Admin firmaları y
 - İmza tuvali (react-signature-canvas)
 - WhatsApp onay linki
 
-### v4 — UX iyileştirmeleri (bu iterasyon)
+### v4 — UX iyileştirmeleri ve genişletmeler
 - Servis emri oluştur: hızlı müşteri/motosiklet ekleme dialogları + duplicate kontrolü
-- **Parça/Hizmet dropdown seçim sonrası otomatik reset** (create + edit)
+- **Parça/Hizmet dropdown seçim sonrası otomatik reset** (create + edit + quote)
 - **Deployment fixes**: CORS güvenli origin, N+1 query optimizasyonları
 - **PDF Önizleme (Super Admin)**: PDF şablonu sekmesinde canlı iframe önizleme (Kabul + Teslim), örnek servis verisi ile
-- **Firma Klonlama**: parça/hizmet/tema/PDF şablonu/arıza bölgeleri kopyalanır, yeni admin oluşturulur, 30 günlük deneme abonelik verilir
-- **Denetim Kayıtları (Audit Log)**: /admin/audit-logs — firma/kullanıcı/işlem/tarih filtreleri, günlere göre gruplama; tenant.create/update/delete/clone/global_apply olayları kaydedilir; regex enjeksiyonu re.escape ile engellendi
-- **Firma Abonelik Yönetimi**: plan (trial/basic/pro/enterprise), trial_ends_at, subscription_ends_at, is_active, billing_notes. Login sırasında bitiş tarihi geçmiş firma otomatik pasifleştirilir (HTTP 403)
+- **Firma Klonlama**: parça/hizmet/tema/PDF şablonu/arıza bölgeleri kopyalanır, yeni admin oluşturulur, 30 günlük deneme aboneliği verilir
+- **Denetim Kayıtları (Audit Log)**: /admin/audit-logs — firma/kullanıcı/işlem/tarih filtreleri, günlere göre gruplama; **satıra tıklayınca old→new diff paneli** açılır (tenant.update, quote.update)
+- **Firma Abonelik Yönetimi**: plan (trial/basic/pro/enterprise), trial_ends_at, subscription_ends_at, is_active, billing_notes. Süresi geçen firma login'de HTTP 403.
+- **Müşteri Notları (Zaman Damgalı)**: Müşteri detay > Notlar sekmesi, ekle/düzenle/sil, yazar+admin+super_admin yetkisi
+- **Toplu Hatırlatma (Bulk Reminder)**: firma bazlı politika (km, ay, VE/VEYA), /reminders sayfası, CSV export, WhatsApp toplu link üretimi ({{name}}/{{plate}}/{{brand_model}}/{{km}} şablon değişkenleri)
+- **Fiyat Teklifi (Quote)**: /quotes CRUD + paylaşım linki + müşteri onay sayfası (/q/:token) + Ad-Soyad + Kabul/Reddet + iş emrine tek-tık dönüşüm
+- **Rebrand → "E-Moto Tamir"**: sidebar, login, tarayıcı sekmesi, PDF alt bilgi
+- **Bug fixes bu iterasyonda**: quote validation (empty items, negatif qty/fiyat), converted SO'da km=None PDF 500 hatası fix, audit regex re.escape
 
 ## Backlog
 ### P1
