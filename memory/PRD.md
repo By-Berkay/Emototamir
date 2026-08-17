@@ -44,14 +44,20 @@ Türkçe multi-tenant motosiklet servis yönetim SaaS. Süper Admin firmaları y
 - **Deployment fixes**: CORS güvenli origin, N+1 query optimizasyonları
 - **PDF Önizleme (Super Admin)**: PDF şablonu sekmesinde canlı iframe önizleme (Kabul + Teslim), örnek servis verisi ile
 - **Firma Klonlama**: parça/hizmet/tema/PDF şablonu/arıza bölgeleri kopyalanır, yeni admin oluşturulur, 30 günlük deneme aboneliği verilir
-- **Denetim Kayıtları (Audit Log)**: /admin/audit-logs — firma/kullanıcı/işlem/tarih filtreleri, günlere göre gruplama; **satıra tıklayınca old→new diff paneli** açılır (tenant.update, quote.update)
-- **Firma Abonelik Yönetimi**: plan (trial/basic/pro/enterprise), trial_ends_at, subscription_ends_at, is_active, billing_notes. Süresi geçen firma login'de HTTP 403.
-- **Müşteri Notları (Zaman Damgalı)**: Müşteri detay > Notlar sekmesi, ekle/düzenle/sil, yazar+admin+super_admin yetkisi
-- **Toplu Hatırlatma (Bulk Reminder)**: firma bazlı politika (km, ay, VE/VEYA), /reminders sayfası, CSV export, WhatsApp toplu link üretimi ({{name}}/{{plate}}/{{brand_model}}/{{km}} şablon değişkenleri)
-- **Fiyat Teklifi (Quote)**: /quotes CRUD + paylaşım linki + müşteri onay sayfası (/q/:token) + Ad-Soyad + Kabul/Reddet + iş emrine tek-tık dönüşüm
+- **Denetim Kayıtları (Audit Log)**: /admin/audit-logs — filtreler, gruplama, satıra tıklayınca old→new diff paneli
+- **Firma Abonelik Yönetimi**: plan/trial/subs_ends/is_active, süre dolunca login blocklaması
+- **Müşteri Notları (Zaman Damgalı)**: Notlar sekmesi, yazar+admin+super_admin yetkisi, düzenle/sil
+- **Toplu Hatırlatma**: firma bazlı politika (km, ay, VE/VEYA), /reminders sayfası, CSV export, WhatsApp toplu link üretimi
+- **Fiyat Teklifi (Quote)**: /quotes CRUD, paylaşım linki, /q/:token müşteri onayı (Ad-Soyad + Kabul/Reddet), iş emrine tek-tık dönüşüm
 - **Rebrand → "E-Moto Tamir"**: sidebar, login, tarayıcı sekmesi, PDF alt bilgi
-- **Bug fixes bu iterasyonda**: quote validation (empty items, negatif qty/fiyat), converted SO'da km=None PDF 500 hatası fix, audit regex re.escape
 
+### v5 — Otomasyon ve Etiketleme (bu iterasyon)
+- **Hatırlatma Otomasyonu (Cron)**: Her sabah 09:00 (İstanbul) `/api/cron/reminders-digest` (BackgroundTasks + WEBHOOK_CRON_SECRET) — tüm aktif firmalar için vadesi dolan müşterileri hesaplar, WhatsApp linkleriyle `reminder_digests` koleksiyonuna yazar
+- **Dashboard Widget**: "Bugünkü Bakım Hatırlatmaları" — WhatsApp linkleri, sayaç, "Yenile" ve "Tümünü Aç" butonları
+- **Manuel Regenerate**: Admin dashboarda anlık yenileyebilir (`POST /api/dashboard/reminders-today/regenerate`)
+- **Not Etiketleri**: VIP (amber), Borçlu (kırmızı), Sorunlu (mor) — CustomerDetail notlar sekmesinde etiket seçici + Customers listesinde rozet (top_tag)
+- **Konfigürasyon**: `/app/.emergent/crons.yml` cron tanımı, `/app/backend/.env` WEBHOOK_CRON_SECRET
+- **Bug fixes**: Not güncellemesinde geçersiz tag artık boş'a coerce edilir (create ile tutarlı)
 ## Backlog
 ### P1
 - Müşteri Notları ve Admin düzenleme yetenekleri (kısmen — genişletilecek)

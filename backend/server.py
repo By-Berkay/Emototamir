@@ -36,6 +36,7 @@ logger = logging.getLogger("app")
 
 JWT_ALG = "HS256"
 JWT_SECRET = os.environ["JWT_SECRET"]
+WEBHOOK_CRON_SECRET = os.environ.get("WEBHOOK_CRON_SECRET", "")
 
 # ---------- Helpers ----------
 def now_iso() -> str:
@@ -768,6 +769,13 @@ async def list_customers(q: str = "", user=Depends(get_current_user)):
     docs = await db.customers.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
     for d in docs:
         d.update(await customer_stats(d["id"], user["tenant_id"]))
+        # compute top_tag from most-recent tagged note
+        notes = d.get("note_entries") or []
+        top = ""
+        for n in sorted(notes, key=lambda x: x.get("at") or "", reverse=True):
+            if n.get("tag"):
+                top = n["tag"]; break
+        d["top_tag"] = top
     return docs
 
 @api.post("/customers")
@@ -816,6 +824,9 @@ async def search_dup_customers(phone: str = "", tc_no: str = "", user=Depends(ge
 # ---------- Customer Notes ----------
 class CustomerNoteIn(BaseModel):
     text: str
+    tag: Optional[str] = ""  # "", "vip", "borclu", "sorunlu"
+
+_VALID_TAGS = {"", "vip", "borclu", "sorunlu"}
 
 @api.post("/customers/{cid}/notes")
 async def add_customer_note(cid: str, inp: CustomerNoteIn, user=Depends(get_current_user)):
@@ -826,6 +837,7 @@ async def add_customer_note(cid: str, inp: CustomerNoteIn, user=Depends(get_curr
         raise HTTPException(404, "Müşteri bulunamadı")
     note = {
         "id": uid(), "text": inp.text.strip(),
+        "tag": inp.tag if inp.tag in _VALID_TAGS else "",
         "author": user["email"], "author_name": user.get("name") or user["email"],
         "at": now_iso(), "updated_at": None,
     }
@@ -854,6 +866,7 @@ async def update_customer_note(cid: str, nid: str, inp: CustomerNoteIn, user=Dep
         raise HTTPException(403, "Bu notu düzenleme yetkiniz yok")
     old_text = target.get("text")
     target["text"] = inp.text.strip()
+    target["tag"] = inp.tag if inp.tag in _VALID_TAGS else ""
     target["updated_at"] = now_iso()
     target["updated_by"] = user["email"]
     await db.customers.update_one({"id": cid, "tenant_id": user["tenant_id"]},
@@ -1777,6 +1790,112 @@ async def reminders_whatsapp_batch(inp: WhatsappBatchIn, user=Depends(get_curren
         "new_value": f"{len(out)} link hazırlandı", "at": now_iso(),
     })
     return {"links": out, "skipped_no_phone": skipped}
+
+# ---------- Cron: Daily Reminders Digest ----------
+import hmac
+from fastapi import BackgroundTasks
+
+async def _build_reminder_links_for_tenant(tenant_id: str) -> Dict[str, Any]:
+    """Compute due reminders for a tenant and return ready-to-send WhatsApp links."""
+    from urllib.parse import quote
+    fake_user = {"tenant_id": tenant_id, "role": "admin", "email": "cron@system"}
+    data = await _compute_reminders(fake_user)
+    due = data["due"]
+    tenant = await db.tenants.find_one({"id": tenant_id}, {"_id": 0, "name": 1}) or {}
+    tmpl = (
+        f"Merhaba {{name}}, {tenant.get('name') or 'servisimiz'} — "
+        "{brand_model} ({plate}) motosikletiniz için bakım zamanı gelmiş görünüyor. "
+        "Randevu için bize ulaşabilir misiniz?"
+    )
+    def _clean_phone(p):
+        p = "".join(ch for ch in (p or "") if ch.isdigit())
+        if p.startswith("0"): p = "90" + p[1:]
+        elif not p.startswith("90") and len(p) == 10: p = "90" + p
+        return p
+    links = []
+    skipped = 0
+    for r in due:
+        c = r.get("customer") or {}
+        phone = _clean_phone(c.get("phone"))
+        if not phone or len(phone) < 11:
+            skipped += 1; continue
+        name = f"{c.get('first_name','')} {c.get('last_name','')}".strip() or "Sayın Müşterimiz"
+        msg = (tmpl.replace("{name}", name)
+                   .replace("{plate}", r.get("plate","") or "")
+                   .replace("{brand_model}", f"{r.get('brand','')} {r.get('model','')}".strip()))
+        links.append({
+            "motorcycle_id": r["motorcycle_id"], "customer_id": r["customer_id"],
+            "name": name, "phone": phone,
+            "brand_model": f"{r.get('brand','')} {r.get('model','')}".strip(),
+            "plate": r.get("plate"), "days_left": r.get("days_left"),
+            "km_over": r.get("km_over"), "date_over": r.get("date_over"),
+            "url": f"https://wa.me/{phone}?text={quote(msg)}", "message": msg,
+        })
+    return {"links": links, "skipped_no_phone": skipped, "due_count": len(due)}
+
+async def _run_reminders_digest():
+    """Run digest for all active tenants and store one document per tenant per day."""
+    today = datetime.now(timezone.utc).date().isoformat()
+    tenants = await db.tenants.find({"is_active": {"$ne": False}}, {"_id": 0, "id": 1, "name": 1}).to_list(1000)
+    total_links = 0
+    for t in tenants:
+        result = await _build_reminder_links_for_tenant(t["id"])
+        doc = {
+            "id": uid(), "tenant_id": t["id"], "date": today,
+            "links": result["links"], "skipped_no_phone": result["skipped_no_phone"],
+            "due_count": result["due_count"], "generated_at": now_iso(),
+        }
+        # upsert one document per day per tenant
+        await db.reminder_digests.update_one(
+            {"tenant_id": t["id"], "date": today},
+            {"$set": doc}, upsert=True,
+        )
+        total_links += len(result["links"])
+    await db.audit_logs.insert_one({
+        "id": uid(), "user": "cron@system", "action": "cron.reminders_digest",
+        "new_value": f"{len(tenants)} firma, {total_links} link", "at": now_iso(),
+    })
+    logger.info(f"reminders digest: {len(tenants)} tenants, {total_links} links")
+
+@api.post("/cron/reminders-digest")
+async def cron_reminders_digest(background: BackgroundTasks, authorization: str = Header(default="")):
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    if not WEBHOOK_CRON_SECRET:
+        raise HTTPException(status_code=500, detail="WEBHOOK_CRON_SECRET yapılandırılmamış")
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    if not hmac.compare_digest(authorization.split(" ", 1)[1], WEBHOOK_CRON_SECRET):
+        raise HTTPException(status_code=401, detail="unauthorized")
+    background.add_task(_run_reminders_digest)
+    return {"accepted": True}
+
+@api.get("/dashboard/reminders-today")
+async def dashboard_reminders_today(user=Depends(get_current_user)):
+    today = datetime.now(timezone.utc).date().isoformat()
+    doc = await db.reminder_digests.find_one(
+        {"tenant_id": user["tenant_id"], "date": today}, {"_id": 0}
+    )
+    if not doc:
+        return {"date": today, "links": [], "due_count": 0, "skipped_no_phone": 0, "generated_at": None}
+    return doc
+
+@api.post("/dashboard/reminders-today/regenerate")
+async def regenerate_today_digest(user=Depends(get_current_user)):
+    """Allow tenant admin to manually rebuild today's digest without waiting for cron."""
+    if user["role"] not in ("admin", "super_admin"):
+        raise HTTPException(403, "Yetkiniz yok")
+    result = await _build_reminder_links_for_tenant(user["tenant_id"])
+    today = datetime.now(timezone.utc).date().isoformat()
+    doc = {
+        "id": uid(), "tenant_id": user["tenant_id"], "date": today,
+        "links": result["links"], "skipped_no_phone": result["skipped_no_phone"],
+        "due_count": result["due_count"], "generated_at": now_iso(),
+    }
+    await db.reminder_digests.update_one(
+        {"tenant_id": user["tenant_id"], "date": today},
+        {"$set": doc}, upsert=True,
+    )
+    return doc
 
 # ---------- Quotes (Price Quote / Fiyat Teklifi) ----------
 class QuoteItemIn(BaseModel):

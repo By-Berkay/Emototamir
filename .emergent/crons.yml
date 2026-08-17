@@ -1,0 +1,9 @@
+crons:
+  - name: reminders-daily
+    description: "Her sabah 09:00 (İstanbul) tüm firmalar için vadesi dolan bakım hatırlatmalarını hesapla ve dashboarda WhatsApp linkleriyle düşür"
+    cron: "0 9 * * *"
+    timezone: "Europe/Istanbul"
+    endpoint: "{{BASE_URL}}/api/cron/reminders-digest"
+    method: POST
+    # Cron endpoints must ack 2xx immediately; enqueue/background the actual work.
+    enabled: true

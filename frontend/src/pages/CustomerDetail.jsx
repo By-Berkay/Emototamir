@@ -16,13 +16,21 @@ function fmtDT(iso) {
   catch { return iso; }
 }
 
+export const TAG_META = {
+  vip:     { label: "VIP",     cls: "bg-amber-100 text-amber-800 border-amber-300",     dot: "bg-amber-500" },
+  borclu:  { label: "Borçlu",  cls: "bg-red-100 text-red-800 border-red-300",           dot: "bg-red-500" },
+  sorunlu: { label: "Sorunlu", cls: "bg-purple-100 text-purple-800 border-purple-300",  dot: "bg-purple-500" },
+};
+
 export default function CustomerDetail() {
   const { id } = useParams();
   const [c, setC] = useState(null);
   const { user } = useAuth();
   const [noteText, setNoteText] = useState("");
+  const [noteTag, setNoteTag] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [editTag, setEditTag] = useState("");
   const load = () => api.get(`/customers/${id}`).then((r) => setC(r.data));
   useEffect(() => { load(); }, [id]); // eslint-disable-line
   if (!c) return <div>Yükleniyor…</div>;
@@ -31,15 +39,15 @@ export default function CustomerDetail() {
   const addNote = async () => {
     if (!noteText.trim()) return;
     try {
-      await api.post(`/customers/${id}/notes`, { text: noteText });
-      toast.success("Not eklendi"); setNoteText(""); load();
+      await api.post(`/customers/${id}/notes`, { text: noteText, tag: noteTag });
+      toast.success("Not eklendi"); setNoteText(""); setNoteTag(""); load();
     } catch (e) { toast.error(e.response?.data?.detail || "Not eklenemedi"); }
   };
   const saveEdit = async (nid) => {
     if (!editText.trim()) return;
     try {
-      await api.put(`/customers/${id}/notes/${nid}`, { text: editText });
-      toast.success("Not güncellendi"); setEditingId(null); setEditText(""); load();
+      await api.put(`/customers/${id}/notes/${nid}`, { text: editText, tag: editTag });
+      toast.success("Not güncellendi"); setEditingId(null); setEditText(""); setEditTag(""); load();
     } catch (e) { toast.error(e.response?.data?.detail || "Güncellenemedi"); }
   };
   const removeNote = async (nid) => {
@@ -144,41 +152,60 @@ export default function CustomerDetail() {
           <Card className="border-slate-200">
             <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><StickyNote className="h-4 w-4 text-orange-500" />Zaman Damgalı Notlar</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex gap-2">
-                <Textarea rows={2} value={noteText} onChange={(e)=>setNoteText(e.target.value)} placeholder="Yeni not… (Örn: Müşteri VIP, indirim uygula. Bir sonraki servis öncesi ara.)" data-testid="note-input" />
-                <Button onClick={addNote} className="bg-orange-500 hover:bg-orange-600 h-auto" data-testid="note-add">Ekle</Button>
+              <div className="flex flex-col md:flex-row gap-2">
+                <Textarea rows={2} value={noteText} onChange={(e)=>setNoteText(e.target.value)} placeholder="Yeni not… (Örn: Bir sonraki servis öncesi ara.)" data-testid="note-input" className="flex-1" />
+                <div className="flex md:flex-col gap-2">
+                  <select value={noteTag} onChange={(e)=>setNoteTag(e.target.value)} className="border rounded-md px-2 py-1 text-sm" data-testid="note-tag">
+                    <option value="">— Etiket yok —</option>
+                    <option value="vip">⭐ VIP</option>
+                    <option value="borclu">💰 Borçlu</option>
+                    <option value="sorunlu">⚠ Sorunlu</option>
+                  </select>
+                  <Button onClick={addNote} className="bg-orange-500 hover:bg-orange-600" data-testid="note-add">Ekle</Button>
+                </div>
               </div>
               {notes.length === 0 && <div className="text-sm text-slate-500 text-center py-6">Henüz not eklenmemiş.</div>}
               <div className="space-y-3">
-                {notes.map((n)=>(
-                  <div key={n.id} className="border border-slate-200 rounded-md p-3" data-testid={`note-${n.id}`}>
+                {notes.map((n)=>{
+                  const meta = TAG_META[n.tag];
+                  return (
+                  <div key={n.id} className={`border rounded-md p-3 ${meta ? "border-l-4" : "border-slate-200"}`} style={meta ? { borderLeftColor: meta.dot.includes("amber") ? "#F59E0B" : meta.dot.includes("red") ? "#EF4444" : "#A855F7" } : {}} data-testid={`note-${n.id}`}>
                     <div className="flex items-center justify-between text-xs text-slate-500 mb-2">
-                      <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {meta && <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded border ${meta.cls}`}>{meta.label}</span>}
                         <span className="font-semibold text-slate-700">{n.author_name || n.author}</span>
-                        <span className="mx-2">·</span>
+                        <span>·</span>
                         <span>{fmtDT(n.at)}</span>
-                        {n.updated_at && <span className="ml-2 italic">(düzenlendi {fmtDT(n.updated_at)})</span>}
+                        {n.updated_at && <span className="italic">(düzenlendi {fmtDT(n.updated_at)})</span>}
                       </div>
                       {canEdit(n) && editingId !== n.id && (
                         <div className="flex gap-1">
-                          <button onClick={()=>{ setEditingId(n.id); setEditText(n.text); }} className="text-slate-500 hover:text-orange-600 p-1" data-testid={`note-edit-${n.id}`}><PencilLine className="h-3.5 w-3.5" /></button>
+                          <button onClick={()=>{ setEditingId(n.id); setEditText(n.text); setEditTag(n.tag || ""); }} className="text-slate-500 hover:text-orange-600 p-1" data-testid={`note-edit-${n.id}`}><PencilLine className="h-3.5 w-3.5" /></button>
                           <button onClick={()=>removeNote(n.id)} className="text-slate-500 hover:text-red-600 p-1" data-testid={`note-del-${n.id}`}><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
                       )}
                     </div>
                     {editingId === n.id ? (
-                      <div className="flex gap-2">
-                        <Textarea rows={2} value={editText} onChange={(e)=>setEditText(e.target.value)} data-testid={`note-edit-input-${n.id}`} />
-                        <div className="flex flex-col gap-1">
-                          <Button size="icon" variant="outline" onClick={()=>saveEdit(n.id)} data-testid={`note-save-${n.id}`}><Check className="h-3.5 w-3.5" /></Button>
-                          <Button size="icon" variant="outline" onClick={()=>{ setEditingId(null); setEditText(""); }}><X className="h-3.5 w-3.5" /></Button>
+                      <div className="flex flex-col md:flex-row gap-2">
+                        <Textarea rows={2} value={editText} onChange={(e)=>setEditText(e.target.value)} data-testid={`note-edit-input-${n.id}`} className="flex-1" />
+                        <div className="flex md:flex-col gap-2">
+                          <select value={editTag} onChange={(e)=>setEditTag(e.target.value)} className="border rounded-md px-2 py-1 text-sm" data-testid={`note-edit-tag-${n.id}`}>
+                            <option value="">— Etiket yok —</option>
+                            <option value="vip">⭐ VIP</option>
+                            <option value="borclu">💰 Borçlu</option>
+                            <option value="sorunlu">⚠ Sorunlu</option>
+                          </select>
+                          <div className="flex gap-1">
+                            <Button size="icon" variant="outline" onClick={()=>saveEdit(n.id)} data-testid={`note-save-${n.id}`}><Check className="h-3.5 w-3.5" /></Button>
+                            <Button size="icon" variant="outline" onClick={()=>{ setEditingId(null); setEditText(""); setEditTag(""); }}><X className="h-3.5 w-3.5" /></Button>
+                          </div>
                         </div>
                       </div>
                     ) : (
                       <div className="text-sm text-slate-800 whitespace-pre-wrap">{n.text}</div>
                     )}
                   </div>
-                ))}
+                );})}
               </div>
             </CardContent>
           </Card>

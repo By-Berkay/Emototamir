@@ -8,8 +8,10 @@ import {
 } from "recharts";
 import { Link } from "react-router-dom";
 import {
-  Wrench, ClipboardList, PackageCheck, Truck, Wallet, TrendingUp, HandCoins, AlertTriangle,
+  Wrench, ClipboardList, PackageCheck, Truck, Wallet, TrendingUp, HandCoins, AlertTriangle, MessageCircle, RefreshCw,
 } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "../components/ui/button";
 
 const KPI = ({ icon: Icon, label, value, accent = "text-slate-900", testid }) => (
   <Card className="border-slate-200" data-testid={testid}>
@@ -31,10 +33,21 @@ const COLORS = ["#2563EB", "#F97316", "#059669", "#DC2626", "#CA8A04", "#7C3AED"
 
 export default function Dashboard() {
   const [data, setData] = useState(null);
+  const [digest, setDigest] = useState(null);
+  const [regen, setRegen] = useState(false);
 
   useEffect(() => {
     api.get("/dashboard").then((r) => setData(r.data));
+    api.get("/dashboard/reminders-today").then(r => setDigest(r.data)).catch(()=>{});
   }, []);
+
+  const regenerate = async () => {
+    setRegen(true);
+    try { const r = await api.post("/dashboard/reminders-today/regenerate"); setDigest(r.data); toast.success(`${r.data.due_count} hatırlatma güncellendi`); }
+    catch { toast.error("Yenileme başarısız"); }
+    finally { setRegen(false); }
+  };
+  const openAll = () => { (digest?.links || []).forEach((l, i) => setTimeout(() => window.open(l.url, "_blank"), i * 300)); };
 
   if (!data) return <div className="text-slate-500">Yükleniyor…</div>;
   const { kpi, monthly_revenue, status_distribution, top_operations, recent_orders } = data;
@@ -63,6 +76,64 @@ export default function Dashboard() {
         <KPI icon={Wallet} label="Toplam Alacak" value={fmtMoney(kpi.total_receivables)} accent="text-red-600" testid="kpi-receivables" />
         <KPI icon={AlertTriangle} label="Borçlu Servis" value={kpi.unpaid_count} testid="kpi-unpaid" />
       </div>
+
+      {/* Daily reminders widget */}
+      <Card className="border-orange-200 bg-gradient-to-br from-orange-50 to-white" data-testid="reminders-widget">
+        <CardHeader className="pb-3 flex-row items-start justify-between">
+          <div>
+            <CardTitle className="font-heading text-lg flex items-center gap-2">
+              <MessageCircle className="h-5 w-5 text-emerald-600" />
+              Bugünkü Bakım Hatırlatmaları
+              {digest && <span className="text-sm font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 ml-1">{digest.due_count}</span>}
+            </CardTitle>
+            <p className="text-xs text-slate-500 mt-1">
+              {digest?.generated_at
+                ? `Her sabah 09:00'da otomatik oluşturulur · Son güncelleme: ${new Date(digest.generated_at).toLocaleString("tr-TR")}`
+                : "Henüz oluşturulmadı — 'Yenile' ile hemen hazırlayabilirsiniz."}
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={regenerate} disabled={regen} data-testid="reminders-widget-refresh"><RefreshCw className={`h-3.5 w-3.5 mr-1 ${regen?"animate-spin":""}`} />Yenile</Button>
+            {digest?.links?.length > 0 && (
+              <Button size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={openAll} data-testid="reminders-widget-open-all"><MessageCircle className="h-3.5 w-3.5 mr-1" />Tümünü Aç ({digest.links.length})</Button>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {(!digest || digest.links.length === 0) && (
+            <div className="text-sm text-slate-500 py-4 text-center">🎉 Bugün bakım hatırlatması gereken müşteri yok.</div>
+          )}
+          {digest?.skipped_no_phone > 0 && <div className="text-xs text-amber-600 mb-2">⚠ {digest.skipped_no_phone} müşteri telefon bilgisi eksik olduğu için atlandı.</div>}
+          {digest?.links?.length > 0 && (
+            <div className="max-h-72 overflow-y-auto border rounded bg-white">
+              <table className="min-w-full text-sm">
+                <tbody>
+                  {digest.links.map(l => (
+                    <tr key={l.motorcycle_id} className="border-b last:border-b-0 hover:bg-slate-50" data-testid={`widget-link-${l.motorcycle_id}`}>
+                      <td className="px-3 py-2 w-1/3">
+                        <div className="font-medium">{l.name}</div>
+                        <div className="text-xs text-slate-500 font-mono">{l.phone}</div>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-slate-600">
+                        <div>{l.brand_model} · <span className="font-mono">{l.plate}</span></div>
+                        <div className="flex gap-1 mt-1">
+                          {l.km_over && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-red-100 text-red-700">KM+</span>}
+                          {l.date_over && <span className="text-[10px] uppercase font-semibold px-1.5 py-0.5 rounded bg-red-100 text-red-700">Tarih</span>}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-right">
+                        <a href={l.url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-700 font-semibold text-xs">
+                          <MessageCircle className="h-3 w-3" />WhatsApp
+                        </a>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-slate-200">

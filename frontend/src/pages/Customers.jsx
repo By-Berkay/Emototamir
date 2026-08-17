@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Textarea } from "../components/ui/textarea";
 import { Plus, Users, Search, Phone } from "lucide-react";
 import { toast } from "sonner";
+import { TAG_META } from "./CustomerDetail";
 
 const empty = { first_name: "", last_name: "", phone: "", alt_phone: "", email: "", tc_no: "", address: "", city: "", district: "", notes: "" };
 
@@ -95,7 +96,10 @@ export default function Customers() {
                     <td className="px-4 py-3">
                       <Link to={`/customers/${c.id}`} className="font-medium text-slate-900 hover:underline flex items-center gap-2" data-testid={`customer-row-${c.id}`}>
                         <div className="h-8 w-8 bg-slate-900 text-white rounded-full flex items-center justify-center text-xs font-bold">{c.first_name?.[0]}{c.last_name?.[0]}</div>
-                        {c.first_name} {c.last_name}
+                        <span>{c.first_name} {c.last_name}</span>
+                        {c.top_tag && TAG_META[c.top_tag] && (
+                          <span className={`text-[10px] uppercase font-semibold px-2 py-0.5 rounded border ${TAG_META[c.top_tag].cls}`} data-testid={`customer-tag-${c.id}`}>{TAG_META[c.top_tag].label}</span>
+                        )}
                       </Link>
                     </td>
                     <td className="px-4 py-3 text-slate-700 font-mono"><span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" />{c.phone}</span></td>
