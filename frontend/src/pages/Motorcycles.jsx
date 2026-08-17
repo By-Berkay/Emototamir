@@ -11,6 +11,7 @@ import { Plus, Search, Bike, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import MotorcycleIllustration from "../components/MotorcycleIllustration";
 import { useAuth } from "../context/AuthContext";
+import { Textarea } from "../components/ui/textarea";
 
 const empty = { customer_id: "", brand: "", model: "", year: "", type: "Naked", engine_cc: "", plate: "", vin: "", engine_no: "", km: 0, color: "", fuel_type: "Benzin", transmission: "Manuel", owner_name: "", notes: "" };
 
@@ -20,6 +21,7 @@ export default function Motorcycles() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
+  const [delDialog, setDelDialog] = useState({ open: false, moto: null, reason: "" });
   const { user } = useAuth();
   const canDelete = user?.role === "admin" || user?.role === "super_admin";
 
@@ -40,15 +42,19 @@ export default function Motorcycles() {
     } catch { toast.error("Kayıt başarısız"); }
   };
 
-  const del = async (m, e) => {
+  const del = (m, e) => {
     e.preventDefault(); e.stopPropagation();
-    if (!window.confirm(`${m.brand} ${m.model} (${m.plate}) motosikleti ve TÜM servis kayıtları/teklifleri KALICI olarak silinecek. Emin misiniz?`)) return;
+    setDelDialog({ open: true, moto: m, reason: "" });
+  };
+
+  const confirmDelete = async () => {
+    const { moto, reason } = delDialog;
+    if (!reason.trim()) return toast.error("Silme sebebi zorunlu");
     try {
-      const { data } = await api.delete(`/motorcycles/${m.id}?force=true`);
-      const extras = [];
-      if (data.service_orders_deleted) extras.push(`${data.service_orders_deleted} servis`);
-      if (data.quotes_deleted) extras.push(`${data.quotes_deleted} teklif`);
-      toast.success(`${m.plate} silindi` + (extras.length ? ` · ${extras.join(", ")}` : ""));
+      const { data } = await api.delete(`/motorcycles/${moto.id}`, { data: { reason, force: true } });
+      const extras = Object.entries(data.counts || {}).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`);
+      toast.success(`${moto.plate} çöp kutusuna alındı${extras.length ? ` · ${extras.join(", ")}` : ""}`);
+      setDelDialog({ open: false, moto: null, reason: "" });
       load();
     } catch (err) {
       toast.error(err.response?.data?.detail || "Silme başarısız");
@@ -145,6 +151,25 @@ export default function Motorcycles() {
         ))}
         {items.length === 0 && <div className="text-slate-500 col-span-full text-center py-12"><Bike className="h-10 w-10 mx-auto opacity-40 mb-2" /> Motosiklet bulunamadı</div>}
       </div>
+
+      <Dialog open={delDialog.open} onOpenChange={(o)=>{ if(!o) setDelDialog({ open:false, moto:null, reason:"" }); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Motosikleti Sil {delDialog.moto ? `— ${delDialog.moto.plate}` : ""}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <p className="text-sm text-slate-600">Silinen motosiklet <b>çöp kutusuna</b> alınır ve <b>30 gün</b> içinde geri yüklenebilir.</p>
+            <div>
+              <Label>Silme Sebebi * <span className="text-xs text-slate-400 font-normal">(denetim kaydına yazılır)</span></Label>
+              <Textarea rows={3} value={delDialog.reason} onChange={(e)=>setDelDialog({...delDialog, reason:e.target.value})} placeholder="Örn: Motosiklet satıldı · Hatalı kayıt" data-testid="moto-delete-reason" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=>setDelDialog({ open:false, moto:null, reason:"" })}>İptal</Button>
+            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={confirmDelete} disabled={!delDialog.reason.trim()} data-testid="moto-delete-confirm">
+              <Trash2 className="h-4 w-4 mr-1" />Sil ve Çöp Kutusuna Al
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

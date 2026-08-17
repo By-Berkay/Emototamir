@@ -27,6 +27,7 @@ import PublicApproval from "./pages/PublicApproval";
 import Quotes from "./pages/Quotes";
 import QuoteEdit from "./pages/QuoteEdit";
 import QuotePublic from "./pages/QuotePublic";
+import Trash from "./pages/Trash";
 import "./App.css";
 
 function Protected({ children }) {
@@ -64,6 +65,7 @@ export default function App() {
             <Route path="/quotes" element={<Quotes />} />
             <Route path="/quotes/new" element={<QuoteEdit />} />
             <Route path="/quotes/:id" element={<QuoteEdit />} />
+            <Route path="/trash" element={<Trash />} />
             <Route path="/products" element={<Settings />} />
             <Route path="/services" element={<Settings />} />
             <Route path="/current-accounts" element={<CurrentAccounts />} />

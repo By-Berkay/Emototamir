@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList,
-  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText,
+  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText, Trash2,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -19,6 +19,7 @@ const NAV_TENANT = [
   { to: "/payments", label: "Tahsilatlar", icon: Receipt },
   { to: "/reminders", label: "Bakım Hatırlatma", icon: BellRing },
   { to: "/reports", label: "Raporlar", icon: BarChart3 },
+  { to: "/trash", label: "Çöp Kutusu", icon: Trash2, adminOnly: true },
   { to: "/settings", label: "Ayarlar", icon: Settings },
 ];
 
@@ -61,7 +62,7 @@ export default function Layout() {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto py-4">
-          {NAV.map((n) => (
+          {NAV.filter(n => !n.adminOnly || user?.role === "admin" || user?.role === "super_admin").map((n) => (
             <NavLink
               key={n.to}
               to={n.to}

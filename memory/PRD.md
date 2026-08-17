@@ -51,13 +51,16 @@ Türkçe multi-tenant motosiklet servis yönetim SaaS. Süper Admin firmaları y
 - **Fiyat Teklifi (Quote)**: /quotes CRUD, paylaşım linki, /q/:token müşteri onayı (Ad-Soyad + Kabul/Reddet), iş emrine tek-tık dönüşüm
 - **Rebrand → "E-Moto Tamir"**: sidebar, login, tarayıcı sekmesi, PDF alt bilgi
 
-### v5 — Otomasyon ve Etiketleme (bu iterasyon)
-- **Hatırlatma Otomasyonu (Cron)**: Her sabah 09:00 (İstanbul) `/api/cron/reminders-digest` (BackgroundTasks + WEBHOOK_CRON_SECRET) — tüm aktif firmalar için vadesi dolan müşterileri hesaplar, WhatsApp linkleriyle `reminder_digests` koleksiyonuna yazar
-- **Dashboard Widget**: "Bugünkü Bakım Hatırlatmaları" — WhatsApp linkleri, sayaç, "Yenile" ve "Tümünü Aç" butonları
-- **Manuel Regenerate**: Admin dashboarda anlık yenileyebilir (`POST /api/dashboard/reminders-today/regenerate`)
-- **Not Etiketleri**: VIP (amber), Borçlu (kırmızı), Sorunlu (mor) — CustomerDetail notlar sekmesinde etiket seçici + Customers listesinde rozet (top_tag)
-- **Konfigürasyon**: `/app/.emergent/crons.yml` cron tanımı, `/app/backend/.env` WEBHOOK_CRON_SECRET
-- **Bug fixes**: Not güncellemesinde geçersiz tag artık boş'a coerce edilir (create ile tutarlı)
+### v5 — Otomasyon ve Etiketleme
+- **Hatırlatma Otomasyonu (Cron)**: Her sabah 09:00 (İstanbul) `/api/cron/reminders-digest` — WhatsApp linkleri `reminder_digests`'e yazılır
+- **Dashboard Widget**: "Bugünkü Bakım Hatırlatmaları" + Yenile + "Tümünü Aç"
+- **Not Etiketleri**: VIP / Borçlu / Sorunlu — CustomerDetail'de etiket, Customers listesinde rozet
+
+### v6 — Silme Ekosistemi (bu iterasyon)
+- **Toplu Silme**: Müşteriler tablosuna checkbox + "Seçileni Sil (N)" bar
+- **Yumuşak Silme (Trash)**: Silinen müşteri/motosiklet cascade snapshot'ı ile `deleted_records` koleksiyonuna 30 gün alınır; `/trash` sayfası — filtre, geri yükle, kalıcı sil
+- **Silme Sebebi (Zorunlu)**: Delete dialog textarea; audit_logs'ta hem `new_value` hem `changes: [{field:"reason"}]`
+- **Cron Purge**: Günlük 09:00 cron'una `_run_trash_purge` eklendi — 30 gün geçen snapshot'lar otomatik silinir
 ## Backlog
 ### P1
 - Müşteri Notları ve Admin düzenleme yetenekleri (kısmen — genişletilecek)

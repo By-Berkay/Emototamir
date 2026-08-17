@@ -806,32 +806,115 @@ async def update_customer(cid: str, inp: CustomerIn, user=Depends(get_current_us
         raise HTTPException(404, "Müşteri bulunamadı")
     return await get_customer(cid, user)
 
+class DeleteIn(BaseModel):
+    reason: str
+    force: bool = False
+
+async def _archive_customer(tid: str, cid: str, reason: str, user_email: str) -> Dict[str, Any]:
+    """Hard delete customer + all cascaded data, snapshotting them to `deleted_records` for restore."""
+    cust = await db.customers.find_one({"tenant_id": tid, "id": cid}, {"_id": 0})
+    if not cust: raise HTTPException(404, "Müşteri bulunamadı")
+    motorcycles = await db.motorcycles.find({"tenant_id": tid, "customer_id": cid}, {"_id":0}).to_list(5000)
+    service_orders = await db.service_orders.find({"tenant_id": tid, "customer_id": cid}, {"_id":0}).to_list(5000)
+    payments = await db.payments.find({"tenant_id": tid, "customer_id": cid}, {"_id":0}).to_list(5000)
+    transactions = await db.transactions.find({"tenant_id": tid, "customer_id": cid}, {"_id":0}).to_list(5000)
+    quotes = await db.quotes.find({"tenant_id": tid, "customer_id": cid}, {"_id":0}).to_list(5000)
+    snapshot = {
+        "id": uid(), "type": "customer", "tenant_id": tid,
+        "entity_id": cid,
+        "label": f"{cust.get('first_name','')} {cust.get('last_name','')}".strip(),
+        "reason": reason, "deleted_by": user_email, "deleted_at": now_iso(),
+        "purge_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+        "payload": {
+            "customer": cust, "motorcycles": motorcycles, "service_orders": service_orders,
+            "payments": payments, "transactions": transactions, "quotes": quotes,
+        },
+        "counts": {
+            "motorcycles": len(motorcycles), "service_orders": len(service_orders),
+            "payments": len(payments), "transactions": len(transactions), "quotes": len(quotes),
+        },
+    }
+    await db.deleted_records.insert_one(snapshot)
+    # Hard delete source records
+    await db.motorcycles.delete_many({"tenant_id": tid, "customer_id": cid})
+    await db.service_orders.delete_many({"tenant_id": tid, "customer_id": cid})
+    await db.payments.delete_many({"tenant_id": tid, "customer_id": cid})
+    await db.transactions.delete_many({"tenant_id": tid, "customer_id": cid})
+    await db.quotes.delete_many({"tenant_id": tid, "customer_id": cid})
+    await db.customers.delete_one({"tenant_id": tid, "id": cid})
+    snapshot.pop("_id", None); snapshot["payload"] = None  # slim
+    return snapshot
+
+async def _archive_motorcycle(tid: str, mid: str, reason: str, user_email: str) -> Dict[str, Any]:
+    moto = await db.motorcycles.find_one({"tenant_id": tid, "id": mid}, {"_id": 0})
+    if not moto: raise HTTPException(404, "Motosiklet bulunamadı")
+    service_orders = await db.service_orders.find({"tenant_id": tid, "motorcycle_id": mid}, {"_id":0}).to_list(5000)
+    quotes = await db.quotes.find({"tenant_id": tid, "motorcycle_id": mid}, {"_id":0}).to_list(5000)
+    snapshot = {
+        "id": uid(), "type": "motorcycle", "tenant_id": tid,
+        "entity_id": mid,
+        "label": f"{moto.get('brand','')} {moto.get('model','')} · {moto.get('plate','')}".strip(),
+        "reason": reason, "deleted_by": user_email, "deleted_at": now_iso(),
+        "purge_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+        "payload": {"motorcycle": moto, "service_orders": service_orders, "quotes": quotes},
+        "counts": {"service_orders": len(service_orders), "quotes": len(quotes)},
+    }
+    await db.deleted_records.insert_one(snapshot)
+    await db.service_orders.delete_many({"tenant_id": tid, "motorcycle_id": mid})
+    await db.quotes.delete_many({"tenant_id": tid, "motorcycle_id": mid})
+    await db.motorcycles.delete_one({"tenant_id": tid, "id": mid})
+    snapshot.pop("_id", None); snapshot["payload"] = None
+    return snapshot
+
 @api.delete("/customers/{cid}")
-async def delete_customer(cid: str, force: bool = False, user=Depends(require_role("admin"))):
-    cust = await db.customers.find_one(tf(user, {"id": cid}), {"_id": 0, "id":1, "first_name":1, "last_name":1})
-    if not cust:
-        raise HTTPException(404, "Müşteri bulunamadı")
+async def delete_customer(cid: str, inp: DeleteIn, user=Depends(require_role("admin"))):
+    if not (inp.reason or "").strip():
+        raise HTTPException(400, "Silme sebebi zorunludur")
     tid = user["tenant_id"]
     open_orders = await db.service_orders.count_documents({"tenant_id": tid, "customer_id": cid, "status": {"$nin": ["delivered", "cancelled"]}})
-    if open_orders > 0 and not force:
+    if open_orders > 0 and not inp.force:
         raise HTTPException(400, f"Bu müşterinin {open_orders} açık servis kaydı var. Önce kapatın veya 'force=true' parametresiyle silin.")
-    # Cascade: motorcycles, service orders, payments, transactions of this customer
-    moto_ids = [m["id"] for m in await db.motorcycles.find({"tenant_id": tid, "customer_id": cid}, {"_id":0, "id":1}).to_list(5000)]
-    counts = {"motorcycles": 0, "service_orders": 0, "payments": 0, "transactions": 0, "quotes": 0}
-    counts["motorcycles"] = (await db.motorcycles.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
-    counts["service_orders"] = (await db.service_orders.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
-    counts["payments"] = (await db.payments.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
-    counts["transactions"] = (await db.transactions.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
-    counts["quotes"] = (await db.quotes.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
-    await db.customers.delete_one({"tenant_id": tid, "id": cid})
+    snap = await _archive_customer(tid, cid, inp.reason.strip(), user["email"])
     await db.audit_logs.insert_one({
         "id": uid(), "tenant_id": tid, "user": user["email"],
         "action": "customer.delete", "entity_id": cid,
-        "old_value": f"{cust.get('first_name','')} {cust.get('last_name','')}",
-        "new_value": ", ".join(f"{k}:{v}" for k,v in counts.items() if v),
+        "old_value": snap["label"], "new_value": inp.reason.strip(),
+        "changes": [{"field": "reason", "old": "", "new": inp.reason.strip()}],
         "at": now_iso(),
     })
-    return {"ok": True, "deleted": counts, "motorcycle_ids": moto_ids}
+    return {"ok": True, "trash_id": snap["id"], "counts": snap["counts"], "purge_at": snap["purge_at"]}
+
+class BulkDeleteIn(BaseModel):
+    ids: List[str]
+    reason: str
+    force: bool = False
+
+@api.post("/customers/bulk-delete")
+async def bulk_delete_customers(inp: BulkDeleteIn, user=Depends(require_role("admin"))):
+    if not (inp.reason or "").strip():
+        raise HTTPException(400, "Silme sebebi zorunludur")
+    if not inp.ids:
+        raise HTTPException(400, "En az bir müşteri seçin")
+    tid = user["tenant_id"]
+    results = []
+    for cid in inp.ids:
+        try:
+            open_orders = await db.service_orders.count_documents({"tenant_id": tid, "customer_id": cid, "status": {"$nin": ["delivered", "cancelled"]}})
+            if open_orders > 0 and not inp.force:
+                results.append({"id": cid, "ok": False, "error": f"{open_orders} açık servis"})
+                continue
+            snap = await _archive_customer(tid, cid, inp.reason.strip(), user["email"])
+            await db.audit_logs.insert_one({
+                "id": uid(), "tenant_id": tid, "user": user["email"],
+                "action": "customer.delete", "entity_id": cid,
+                "old_value": snap["label"], "new_value": inp.reason.strip(),
+                "changes": [{"field": "reason", "old": "", "new": inp.reason.strip()}, {"field": "batch", "old": "", "new": "bulk"}],
+                "at": now_iso(),
+            })
+            results.append({"id": cid, "ok": True, "trash_id": snap["id"], "counts": snap["counts"]})
+        except HTTPException as e:
+            results.append({"id": cid, "ok": False, "error": e.detail})
+    return {"total": len(inp.ids), "deleted": sum(1 for r in results if r["ok"]), "results": results}
 
 @api.get("/customers/duplicates/search")
 async def search_dup_customers(phone: str = "", tc_no: str = "", user=Depends(get_current_user)):
@@ -996,26 +1079,111 @@ async def update_motorcycle(mid: str, inp: MotorcycleIn, user=Depends(get_curren
     return await get_motorcycle(mid, user)
 
 @api.delete("/motorcycles/{mid}")
-async def delete_motorcycle(mid: str, force: bool = False, user=Depends(require_role("admin"))):
-    moto = await db.motorcycles.find_one(tf(user, {"id": mid}), {"_id":0, "brand":1, "model":1, "plate":1})
-    if not moto:
-        raise HTTPException(404, "Motosiklet bulunamadı")
+async def delete_motorcycle(mid: str, inp: DeleteIn, user=Depends(require_role("admin"))):
+    if not (inp.reason or "").strip():
+        raise HTTPException(400, "Silme sebebi zorunludur")
     tid = user["tenant_id"]
     open_orders = await db.service_orders.count_documents({"tenant_id": tid, "motorcycle_id": mid, "status": {"$nin": ["delivered", "cancelled"]}})
-    if open_orders > 0 and not force:
+    if open_orders > 0 and not inp.force:
         raise HTTPException(400, f"Bu motosiklete ait {open_orders} açık servis kaydı var. Önce kapatın veya 'force=true' parametresiyle silin.")
-    # Cascade: service orders + quotes for this motorcycle
-    so_count = (await db.service_orders.delete_many({"tenant_id": tid, "motorcycle_id": mid})).deleted_count
-    q_count = (await db.quotes.delete_many({"tenant_id": tid, "motorcycle_id": mid})).deleted_count
-    await db.motorcycles.delete_one({"tenant_id": tid, "id": mid})
+    snap = await _archive_motorcycle(tid, mid, inp.reason.strip(), user["email"])
     await db.audit_logs.insert_one({
         "id": uid(), "tenant_id": tid, "user": user["email"],
         "action": "motorcycle.delete", "entity_id": mid,
-        "old_value": f"{moto.get('brand','')} {moto.get('model','')} · {moto.get('plate','')}",
-        "new_value": f"service_orders:{so_count}, quotes:{q_count}" if (so_count or q_count) else "",
+        "old_value": snap["label"], "new_value": inp.reason.strip(),
+        "changes": [{"field": "reason", "old": "", "new": inp.reason.strip()}],
         "at": now_iso(),
     })
-    return {"ok": True, "service_orders_deleted": so_count, "quotes_deleted": q_count}
+    return {"ok": True, "trash_id": snap["id"], "counts": snap["counts"], "purge_at": snap["purge_at"]}
+
+# ---------- Trash / Çöp Kutusu ----------
+@api.get("/trash")
+async def list_trash(type: str = "", user=Depends(require_role("admin"))):
+    q: Dict[str, Any] = tf(user)
+    if type in ("customer", "motorcycle"):
+        q["type"] = type
+    docs = await db.deleted_records.find(q, {"_id": 0, "payload": 0}).sort("deleted_at", -1).to_list(500)
+    return docs
+
+@api.get("/trash/{tid}")
+async def get_trash_item(tid: str, user=Depends(require_role("admin"))):
+    doc = await db.deleted_records.find_one(tf(user, {"id": tid}), {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Kayıt bulunamadı")
+    return doc
+
+@api.post("/trash/{tid}/restore")
+async def restore_trash(tid: str, user=Depends(require_role("admin"))):
+    doc = await db.deleted_records.find_one(tf(user, {"id": tid}), {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Kayıt bulunamadı")
+    tenant_id = doc["tenant_id"]
+    payload = doc.get("payload") or {}
+    counts_restored = {}
+    if doc["type"] == "customer":
+        c = payload.get("customer")
+        if c:
+            existing = await db.customers.find_one({"id": c["id"]}, {"_id":0, "id":1})
+            if existing:
+                raise HTTPException(400, "Müşteri kaydı zaten mevcut — çakışma")
+            await db.customers.insert_one(c)
+            counts_restored["customer"] = 1
+        for col_key, col_name in [("motorcycles","motorcycles"), ("service_orders","service_orders"),
+                                   ("payments","payments"), ("transactions","transactions"), ("quotes","quotes")]:
+            items = payload.get(col_key) or []
+            if items:
+                await db[col_name].insert_many(items)
+                counts_restored[col_key] = len(items)
+    elif doc["type"] == "motorcycle":
+        m = payload.get("motorcycle")
+        if m:
+            existing = await db.motorcycles.find_one({"id": m["id"]}, {"_id":0, "id":1})
+            if existing:
+                raise HTTPException(400, "Motosiklet kaydı zaten mevcut — çakışma")
+            # Ensure parent customer still exists
+            if not await db.customers.find_one({"id": m.get("customer_id"), "tenant_id": tenant_id}, {"_id":0, "id":1}):
+                raise HTTPException(400, "Sahibi müşteri artık mevcut değil. Önce müşteriyi çöp kutusundan geri yükleyin.")
+            await db.motorcycles.insert_one(m)
+            counts_restored["motorcycle"] = 1
+        for col_key, col_name in [("service_orders","service_orders"), ("quotes","quotes")]:
+            items = payload.get(col_key) or []
+            if items:
+                await db[col_name].insert_many(items)
+                counts_restored[col_key] = len(items)
+    # Remove trash entry
+    await db.deleted_records.delete_one({"id": tid})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tenant_id, "user": user["email"],
+        "action": f"{doc['type']}.restore", "entity_id": doc["entity_id"],
+        "old_value": doc.get("label"), "new_value": ", ".join(f"{k}:{v}" for k,v in counts_restored.items()),
+        "at": now_iso(),
+    })
+    return {"ok": True, "restored": counts_restored}
+
+@api.delete("/trash/{tid}")
+async def purge_trash(tid: str, user=Depends(require_role("admin"))):
+    doc = await db.deleted_records.find_one(tf(user, {"id": tid}), {"_id": 0, "type":1, "entity_id":1, "label":1, "tenant_id":1})
+    if not doc:
+        raise HTTPException(404, "Kayıt bulunamadı")
+    await db.deleted_records.delete_one({"id": tid})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": doc["tenant_id"], "user": user["email"],
+        "action": f"{doc['type']}.purge", "entity_id": doc["entity_id"],
+        "old_value": doc.get("label"), "at": now_iso(),
+    })
+    return {"ok": True}
+
+async def _run_trash_purge():
+    """Delete deleted_records older than purge_at."""
+    now_i = now_iso()
+    r = await db.deleted_records.delete_many({"purge_at": {"$lte": now_i}})
+    if r.deleted_count:
+        await db.audit_logs.insert_one({
+            "id": uid(), "user": "cron@system", "action": "cron.trash_purge",
+            "new_value": f"{r.deleted_count} kayıt kalıcı silindi", "at": now_i,
+        })
+        logger.info(f"trash purge: {r.deleted_count} records permanently deleted")
+    return r.deleted_count
 
 # ---------- Products (Parts) ----------
 @api.get("/products")
@@ -1895,6 +2063,11 @@ async def _run_reminders_digest():
         "new_value": f"{len(tenants)} firma, {total_links} link", "at": now_iso(),
     })
     logger.info(f"reminders digest: {len(tenants)} tenants, {total_links} links")
+    # Also purge expired trash on the same daily run
+    try:
+        await _run_trash_purge()
+    except Exception as e:
+        logger.warning(f"trash purge failed: {e}")
 
 @api.post("/cron/reminders-digest")
 async def cron_reminders_digest(background: BackgroundTasks, authorization: str = Header(default="")):
