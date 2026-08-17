@@ -113,3 +113,49 @@ code {
         border-bottom-color: inherit;
     }
 }
+
+
+/* ============================================================
+   Dynamic Brand Theme Override
+   Firma teması `--brand-primary` üzerinden Tailwind'in orange
+   utility'lerini ezer. Ayarlar > Tema'dan seçilen renk anında
+   tüm butonlara/badge'lere/link'lere yansır.
+   ============================================================ */
+:root {
+    --brand-primary: #f97316;
+    --brand-primary-hover: #ea580c;
+    --brand-primary-soft: #ffedd5;
+    --brand-primary-strong: #c2410c;
+    --brand-secondary: #0f172a;
+}
+
+/* Backgrounds */
+.bg-orange-500 { background-color: var(--brand-primary) !important; }
+.bg-orange-600 { background-color: var(--brand-primary-hover) !important; }
+.bg-orange-50 { background-color: var(--brand-primary-soft) !important; }
+.bg-orange-100 { background-color: var(--brand-primary-soft) !important; }
+.hover\:bg-orange-500:hover { background-color: var(--brand-primary) !important; }
+.hover\:bg-orange-600:hover { background-color: var(--brand-primary-hover) !important; }
+.hover\:bg-orange-50:hover { background-color: var(--brand-primary-soft) !important; }
+.hover\:bg-orange-100:hover { background-color: var(--brand-primary-soft) !important; }
+
+/* Text */
+.text-orange-500 { color: var(--brand-primary) !important; }
+.text-orange-600 { color: var(--brand-primary-hover) !important; }
+.text-orange-700 { color: var(--brand-primary-strong) !important; }
+.text-orange-800 { color: var(--brand-primary-strong) !important; }
+.hover\:text-orange-500:hover { color: var(--brand-primary) !important; }
+.hover\:text-orange-600:hover { color: var(--brand-primary-hover) !important; }
+
+/* Borders */
+.border-orange-200 { border-color: var(--brand-primary-soft) !important; }
+.border-orange-300 { border-color: var(--brand-primary) !important; }
+.border-orange-400 { border-color: var(--brand-primary) !important; }
+.border-orange-500 { border-color: var(--brand-primary) !important; }
+.hover\:border-orange-400:hover { border-color: var(--brand-primary) !important; }
+
+/* Gradient (from/via/to-orange-*) */
+.from-orange-50 { --tw-gradient-from: var(--brand-primary-soft) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important; }
+.to-orange-50 { --tw-gradient-to: var(--brand-primary-soft) !important; }
+.from-orange-500 { --tw-gradient-from: var(--brand-primary) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, transparent) !important; }
+.to-orange-500 { --tw-gradient-to: var(--brand-primary) !important; }

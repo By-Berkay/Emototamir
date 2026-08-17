@@ -44,16 +44,32 @@ export function AuthProvider({ children }) {
   );
 }
 
-function applyTheme(tenant) {
+function shade(hex, pct) {
+  // pct positive → lighter, negative → darker
+  const h = (hex || "").replace("#", "");
+  if (h.length !== 6) return hex;
+  const num = parseInt(h, 16);
+  let r = (num >> 16) & 0xff, g = (num >> 8) & 0xff, b = num & 0xff;
+  const t = pct < 0 ? 0 : 255;
+  const p = Math.abs(pct);
+  r = Math.round((t - r) * p) + r;
+  g = Math.round((t - g) * p) + g;
+  b = Math.round((t - b) * p) + b;
+  return "#" + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join("");
+}
+
+export function applyTheme(tenant) {
   const root = document.documentElement;
   const primary = tenant?.primary_color || "#F97316";
   const secondary = tenant?.secondary_color || "#0F172A";
   const font = tenant?.font_family || "IBM Plex Sans";
   root.style.setProperty("--brand-primary", primary);
+  root.style.setProperty("--brand-primary-hover", shade(primary, -0.12));
+  root.style.setProperty("--brand-primary-strong", shade(primary, -0.28));
+  root.style.setProperty("--brand-primary-soft", shade(primary, 0.85));
   root.style.setProperty("--brand-secondary", secondary);
   root.style.setProperty("--brand-font", `'${font}', ui-sans-serif, system-ui, sans-serif`);
   document.body.style.fontFamily = `'${font}', ui-sans-serif, system-ui, sans-serif`;
-  // Dynamically load Google Font if not IBM Plex Sans
   if (font && font !== "IBM Plex Sans") {
     const id = `font-${font.replace(/\s+/g, "-")}`;
     if (!document.getElementById(id)) {
