@@ -807,9 +807,31 @@ async def update_customer(cid: str, inp: CustomerIn, user=Depends(get_current_us
     return await get_customer(cid, user)
 
 @api.delete("/customers/{cid}")
-async def delete_customer(cid: str, user=Depends(require_role("admin"))):
-    await db.customers.delete_one(tf(user, {"id": cid}))
-    return {"ok": True}
+async def delete_customer(cid: str, force: bool = False, user=Depends(require_role("admin"))):
+    cust = await db.customers.find_one(tf(user, {"id": cid}), {"_id": 0, "id":1, "first_name":1, "last_name":1})
+    if not cust:
+        raise HTTPException(404, "Müşteri bulunamadı")
+    tid = user["tenant_id"]
+    open_orders = await db.service_orders.count_documents({"tenant_id": tid, "customer_id": cid, "status": {"$nin": ["delivered", "cancelled"]}})
+    if open_orders > 0 and not force:
+        raise HTTPException(400, f"Bu müşterinin {open_orders} açık servis kaydı var. Önce kapatın veya 'force=true' parametresiyle silin.")
+    # Cascade: motorcycles, service orders, payments, transactions of this customer
+    moto_ids = [m["id"] for m in await db.motorcycles.find({"tenant_id": tid, "customer_id": cid}, {"_id":0, "id":1}).to_list(5000)]
+    counts = {"motorcycles": 0, "service_orders": 0, "payments": 0, "transactions": 0, "quotes": 0}
+    counts["motorcycles"] = (await db.motorcycles.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
+    counts["service_orders"] = (await db.service_orders.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
+    counts["payments"] = (await db.payments.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
+    counts["transactions"] = (await db.transactions.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
+    counts["quotes"] = (await db.quotes.delete_many({"tenant_id": tid, "customer_id": cid})).deleted_count
+    await db.customers.delete_one({"tenant_id": tid, "id": cid})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tid, "user": user["email"],
+        "action": "customer.delete", "entity_id": cid,
+        "old_value": f"{cust.get('first_name','')} {cust.get('last_name','')}",
+        "new_value": ", ".join(f"{k}:{v}" for k,v in counts.items() if v),
+        "at": now_iso(),
+    })
+    return {"ok": True, "deleted": counts, "motorcycle_ids": moto_ids}
 
 @api.get("/customers/duplicates/search")
 async def search_dup_customers(phone: str = "", tc_no: str = "", user=Depends(get_current_user)):
@@ -974,9 +996,26 @@ async def update_motorcycle(mid: str, inp: MotorcycleIn, user=Depends(get_curren
     return await get_motorcycle(mid, user)
 
 @api.delete("/motorcycles/{mid}")
-async def delete_motorcycle(mid: str, user=Depends(require_role("admin"))):
-    await db.motorcycles.delete_one(tf(user, {"id": mid}))
-    return {"ok": True}
+async def delete_motorcycle(mid: str, force: bool = False, user=Depends(require_role("admin"))):
+    moto = await db.motorcycles.find_one(tf(user, {"id": mid}), {"_id":0, "brand":1, "model":1, "plate":1})
+    if not moto:
+        raise HTTPException(404, "Motosiklet bulunamadı")
+    tid = user["tenant_id"]
+    open_orders = await db.service_orders.count_documents({"tenant_id": tid, "motorcycle_id": mid, "status": {"$nin": ["delivered", "cancelled"]}})
+    if open_orders > 0 and not force:
+        raise HTTPException(400, f"Bu motosiklete ait {open_orders} açık servis kaydı var. Önce kapatın veya 'force=true' parametresiyle silin.")
+    # Cascade: service orders + quotes for this motorcycle
+    so_count = (await db.service_orders.delete_many({"tenant_id": tid, "motorcycle_id": mid})).deleted_count
+    q_count = (await db.quotes.delete_many({"tenant_id": tid, "motorcycle_id": mid})).deleted_count
+    await db.motorcycles.delete_one({"tenant_id": tid, "id": mid})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tid, "user": user["email"],
+        "action": "motorcycle.delete", "entity_id": mid,
+        "old_value": f"{moto.get('brand','')} {moto.get('model','')} · {moto.get('plate','')}",
+        "new_value": f"service_orders:{so_count}, quotes:{q_count}" if (so_count or q_count) else "",
+        "at": now_iso(),
+    })
+    return {"ok": True, "service_orders_deleted": so_count, "quotes_deleted": q_count}
 
 # ---------- Products (Parts) ----------
 @api.get("/products")

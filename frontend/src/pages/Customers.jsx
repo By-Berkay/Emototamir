@@ -7,9 +7,10 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
 import { Textarea } from "../components/ui/textarea";
-import { Plus, Users, Search, Phone } from "lucide-react";
+import { Plus, Users, Search, Phone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { TAG_META } from "./CustomerDetail";
+import { useAuth } from "../context/AuthContext";
 
 const empty = { first_name: "", last_name: "", phone: "", alt_phone: "", email: "", tc_no: "", address: "", city: "", district: "", notes: "" };
 
@@ -18,6 +19,8 @@ export default function Customers() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
+  const { user } = useAuth();
+  const canDelete = user?.role === "admin" || user?.role === "super_admin";
 
   const load = async () => {
     const { data } = await api.get(`/customers${q ? `?q=${encodeURIComponent(q)}` : ""}`);
@@ -33,6 +36,18 @@ export default function Customers() {
       setOpen(false); setForm(empty); load();
     } catch (e) {
       toast.error("Kayıt başarısız");
+    }
+  };
+
+  const del = async (c) => {
+    if (!window.confirm(`${c.first_name} ${c.last_name} müşterisi ve TÜM motosikletleri, servis kayıtları, tahsilatları ve teklifleri KALICI olarak silinecek. Emin misiniz?`)) return;
+    try {
+      const { data } = await api.delete(`/customers/${c.id}?force=true`);
+      const parts = Object.entries(data.deleted || {}).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`);
+      toast.success(`${c.first_name} silindi` + (parts.length ? ` · ${parts.join(", ")}` : ""));
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Silme başarısız");
     }
   };
 
@@ -88,6 +103,7 @@ export default function Customers() {
                   <th className="text-right px-4 py-3">Servis</th>
                   <th className="text-right px-4 py-3">Toplam Harcama</th>
                   <th className="text-right px-4 py-3">Bakiye</th>
+                  {canDelete && <th className="text-right px-4 py-3 w-16">İşlem</th>}
                 </tr>
               </thead>
               <tbody>
@@ -107,10 +123,17 @@ export default function Customers() {
                     <td className="px-4 py-3 text-right">{c.total_services}</td>
                     <td className="px-4 py-3 text-right">{fmtMoney(c.total_spent)}</td>
                     <td className={`px-4 py-3 text-right font-semibold ${c.balance > 0.01 ? "text-red-600" : "text-emerald-600"}`}>{fmtMoney(c.balance)}</td>
+                    {canDelete && (
+                      <td className="px-4 py-3 text-right">
+                        <button onClick={()=>del(c)} className="text-slate-400 hover:text-red-600 p-1" title="Müşteriyi ve tüm kayıtlarını sil" data-testid={`del-customer-${c.id}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {items.length === 0 && (
-                  <tr><td colSpan={6} className="px-4 py-12 text-center text-slate-500"><Users className="h-8 w-8 mx-auto mb-2 opacity-40" />Müşteri bulunamadı</td></tr>
+                  <tr><td colSpan={canDelete?7:6} className="px-4 py-12 text-center text-slate-500"><Users className="h-8 w-8 mx-auto mb-2 opacity-40" />Müşteri bulunamadı</td></tr>
                 )}
               </tbody>
             </table>

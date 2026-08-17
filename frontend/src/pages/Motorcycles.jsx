@@ -7,9 +7,10 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
-import { Plus, Search, Bike } from "lucide-react";
+import { Plus, Search, Bike, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import MotorcycleIllustration from "../components/MotorcycleIllustration";
+import { useAuth } from "../context/AuthContext";
 
 const empty = { customer_id: "", brand: "", model: "", year: "", type: "Naked", engine_cc: "", plate: "", vin: "", engine_no: "", km: 0, color: "", fuel_type: "Benzin", transmission: "Manuel", owner_name: "", notes: "" };
 
@@ -19,6 +20,8 @@ export default function Motorcycles() {
   const [q, setQ] = useState("");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
+  const { user } = useAuth();
+  const canDelete = user?.role === "admin" || user?.role === "super_admin";
 
   const load = async () => {
     const { data } = await api.get(`/motorcycles${q ? `?q=${encodeURIComponent(q)}` : ""}`);
@@ -35,6 +38,21 @@ export default function Motorcycles() {
       toast.success("Motosiklet eklendi");
       setOpen(false); setForm(empty); load();
     } catch { toast.error("Kayıt başarısız"); }
+  };
+
+  const del = async (m, e) => {
+    e.preventDefault(); e.stopPropagation();
+    if (!window.confirm(`${m.brand} ${m.model} (${m.plate}) motosikleti ve TÜM servis kayıtları/teklifleri KALICI olarak silinecek. Emin misiniz?`)) return;
+    try {
+      const { data } = await api.delete(`/motorcycles/${m.id}?force=true`);
+      const extras = [];
+      if (data.service_orders_deleted) extras.push(`${data.service_orders_deleted} servis`);
+      if (data.quotes_deleted) extras.push(`${data.quotes_deleted} teklif`);
+      toast.success(`${m.plate} silindi` + (extras.length ? ` · ${extras.join(", ")}` : ""));
+      load();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Silme başarısız");
+    }
   };
 
   return (
@@ -94,24 +112,36 @@ export default function Motorcycles() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map((m) => (
-          <Link key={m.id} to={`/motorcycles/${m.id}`}>
-            <Card className="border-slate-200 hover:border-orange-400 hover:shadow-md transition-all duration-150">
-              <CardContent className="p-5">
-                <MotorcycleIllustration type={m.type} className="w-full h-32 mb-4" />
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="font-heading text-lg font-semibold text-slate-900">{m.brand} {m.model}</div>
-                    <div className="text-xs text-slate-500 mt-0.5">{m.type} · {m.year || "-"} · {m.engine_cc ? `${m.engine_cc}cc` : ""}</div>
+          <div key={m.id} className="relative group">
+            <Link to={`/motorcycles/${m.id}`}>
+              <Card className="border-slate-200 hover:border-orange-400 hover:shadow-md transition-all duration-150">
+                <CardContent className="p-5">
+                  <MotorcycleIllustration type={m.type} className="w-full h-32 mb-4" />
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <div className="font-heading text-lg font-semibold text-slate-900">{m.brand} {m.model}</div>
+                      <div className="text-xs text-slate-500 mt-0.5">{m.type} · {m.year || "-"} · {m.engine_cc ? `${m.engine_cc}cc` : ""}</div>
+                    </div>
+                    <span className="font-mono text-xs bg-slate-900 text-white px-2 py-1 rounded">{m.plate}</span>
                   </div>
-                  <span className="font-mono text-xs bg-slate-900 text-white px-2 py-1 rounded">{m.plate}</span>
-                </div>
-                <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-                  <span>{m.customer?.first_name} {m.customer?.last_name}</span>
-                  <span className="font-medium">{fmtMoney(m.total_spent)}</span>
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+                    <span>{m.customer?.first_name} {m.customer?.last_name}</span>
+                    <span className="font-medium">{fmtMoney(m.total_spent)}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            {canDelete && (
+              <button
+                onClick={(e)=>del(m, e)}
+                className="absolute top-2 right-2 bg-white/90 border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-300 p-1.5 rounded-md opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                title="Motosikleti sil"
+                data-testid={`del-moto-${m.id}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         ))}
         {items.length === 0 && <div className="text-slate-500 col-span-full text-center py-12"><Bike className="h-10 w-10 mx-auto opacity-40 mb-2" /> Motosiklet bulunamadı</div>}
       </div>
