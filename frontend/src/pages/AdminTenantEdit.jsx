@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
 import { Checkbox } from "../components/ui/checkbox";
-import { Upload, ArrowLeft, Save, KeyRound, Trash2, Plus, Building2, Palette, MapPin, Users2, Type } from "lucide-react";
+import { Upload, ArrowLeft, Save, KeyRound, Trash2, Plus, Building2, Palette, MapPin, Users2, Type, Eye, CreditCard } from "lucide-react";
 import { toast } from "sonner";
 
 const THEMES = [
@@ -35,10 +35,18 @@ export default function AdminTenantEdit() {
   const [pwNew, setPwNew] = useState("");
   const [newUser, setNewUser] = useState({ name:"", email:"", password:"", role:"admin" });
   const [newUserOpen, setNewUserOpen] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewKind, setPreviewKind] = useState("kabul");
+  const [previewUrl, setPreviewUrl] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const logoRef = useRef(null);
 
   const load = () => api.get(`/admin/tenants/${id}`).then(r => setT(r.data));
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [id]);
+  // release object URL when preview modal closes
+  useEffect(() => {
+    if (!previewOpen && previewUrl) { URL.revokeObjectURL(previewUrl); setPreviewUrl(null); }
+  }, [previewOpen]); // eslint-disable-line
 
   if (!t) return <div>Yükleniyor…</div>;
 
@@ -112,6 +120,19 @@ export default function AdminTenantEdit() {
     } catch (e) { toast.error(e.response?.data?.detail || "Başarısız"); }
   };
 
+  const openPdfPreview = async (kind) => {
+    setPreviewKind(kind); setPreviewOpen(true); setPreviewLoading(true);
+    setPreviewUrl(null);
+    try {
+      const payload = { ...t };
+      delete payload.users; delete payload.stats;
+      const res = await api.post("/admin/pdf-preview", { tenant: payload, kind }, { responseType: "blob" });
+      const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      setPreviewUrl(url);
+    } catch { toast.error("Önizleme oluşturulamadı"); }
+    finally { setPreviewLoading(false); }
+  };
+
   const token = localStorage.getItem("token");
 
   return (
@@ -144,6 +165,7 @@ export default function AdminTenantEdit() {
           <TabsTrigger value="pdf"><Type className="h-4 w-4 mr-1" />PDF Şablonu</TabsTrigger>
           <TabsTrigger value="tema"><Palette className="h-4 w-4 mr-1" />Tema & Görsel</TabsTrigger>
           <TabsTrigger value="ariza"><MapPin className="h-4 w-4 mr-1" />Arıza Bölgeleri</TabsTrigger>
+          <TabsTrigger value="abonelik"><CreditCard className="h-4 w-4 mr-1" />Abonelik</TabsTrigger>
           <TabsTrigger value="users"><Users2 className="h-4 w-4 mr-1" />Kullanıcılar & Şifre</TabsTrigger>
         </TabsList>
 
@@ -171,19 +193,68 @@ export default function AdminTenantEdit() {
 
         <TabsContent value="pdf">
           <Card><CardContent className="p-6 space-y-4">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <Label className="text-base font-semibold">PDF Şablonu</Label>
+              <div className="flex gap-2">
+                <Button variant="outline" size="sm" onClick={()=>openPdfPreview("kabul")} data-testid="pdf-preview-kabul"><Eye className="h-3.5 w-3.5 mr-1" />Kabul Önizle</Button>
+                <Button variant="outline" size="sm" onClick={()=>openPdfPreview("teslim")} data-testid="pdf-preview-teslim"><Eye className="h-3.5 w-3.5 mr-1" />Teslim Önizle</Button>
+              </div>
+            </div>
             <div>
               <Label>PDF Başlık Metni (Kabul/Teslim)</Label>
               <div className="grid grid-cols-2 gap-3 mt-1">
-                <Input placeholder="Kabul başlığı — örn. SERVİS KABUL FORMU" value={t.pdf_template?.kabul_title||""} onChange={(e)=>upd({pdf_template:{...(t.pdf_template||{}), kabul_title:e.target.value}})} />
-                <Input placeholder="Teslim başlığı" value={t.pdf_template?.teslim_title||""} onChange={(e)=>upd({pdf_template:{...(t.pdf_template||{}), teslim_title:e.target.value}})} />
+                <Input placeholder="Kabul başlığı — örn. SERVİS KABUL FORMU" value={t.pdf_template?.kabul_title||""} onChange={(e)=>upd({pdf_template:{...(t.pdf_template||{}), kabul_title:e.target.value}})} data-testid="pdf-kabul-title" />
+                <Input placeholder="Teslim başlığı" value={t.pdf_template?.teslim_title||""} onChange={(e)=>upd({pdf_template:{...(t.pdf_template||{}), teslim_title:e.target.value}})} data-testid="pdf-teslim-title" />
               </div>
             </div>
             <div>
               <Label>PDF Alt Not (Footer)</Label>
-              <Textarea rows={2} value={t.pdf_template?.footer_note||""} onChange={(e)=>upd({pdf_template:{...(t.pdf_template||{}), footer_note:e.target.value}})} placeholder="Örn: 15 gün garanti — bu form karşılıklı imzalanmıştır" />
+              <Textarea rows={2} value={t.pdf_template?.footer_note||""} onChange={(e)=>upd({pdf_template:{...(t.pdf_template||{}), footer_note:e.target.value}})} placeholder="Örn: 15 gün garanti — bu form karşılıklı imzalanmıştır" data-testid="pdf-footer" />
             </div>
             <div className="text-sm text-slate-500 border-t pt-3">
-              <p><b>Not:</b> PDF'te kullanılan firma adı, adres, telefon, banka ve IBAN bilgileri <b>Firma</b> sekmesinden yönetilir. Logo aynı ekranda yüklenir. Renk teması PDF'e de otomatik yansır.</p>
+              <p><b>İpucu:</b> Değişiklikleri kaydetmeden <b>Önizle</b> ile canlı PDF görebilirsiniz. Firma adı, adres, telefon, banka ve IBAN <b>Firma</b> sekmesinden; renk teması <b>Tema</b> sekmesinden yönetilir — tümü PDF'e otomatik yansır.</p>
+            </div>
+          </CardContent></Card>
+        </TabsContent>
+
+        <TabsContent value="abonelik">
+          <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label>Plan</Label>
+              <Select value={t.plan || "trial"} onValueChange={(v)=>upd({plan:v})}>
+                <SelectTrigger data-testid="sub-plan"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="trial">Deneme</SelectItem>
+                  <SelectItem value="basic">Temel</SelectItem>
+                  <SelectItem value="pro">Pro</SelectItem>
+                  <SelectItem value="enterprise">Kurumsal</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Durum</Label>
+              <Select value={(t.is_active===false)?"passive":"active"} onValueChange={(v)=>upd({is_active: v==="active"})}>
+                <SelectTrigger data-testid="sub-active"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Aktif</SelectItem>
+                  <SelectItem value="passive">Pasif</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Deneme Bitiş</Label>
+              <Input type="date" value={(t.trial_ends_at||"").slice(0,10)} onChange={(e)=>upd({trial_ends_at: e.target.value ? new Date(e.target.value+"T23:59:59Z").toISOString() : null})} data-testid="sub-trial-ends" />
+            </div>
+            <div>
+              <Label>Abonelik Bitiş</Label>
+              <Input type="date" value={(t.subscription_ends_at||"").slice(0,10)} onChange={(e)=>upd({subscription_ends_at: e.target.value ? new Date(e.target.value+"T23:59:59Z").toISOString() : null})} data-testid="sub-ends" />
+            </div>
+            <div className="md:col-span-2">
+              <Label>Ödeme / Sözleşme Notu</Label>
+              <Textarea rows={3} value={t.billing_notes||""} onChange={(e)=>upd({billing_notes:e.target.value})} placeholder="Örn: Aylık 2.500 ₺ — havale ile ödeme, 15 Şubat" data-testid="sub-notes" />
+            </div>
+            <div className="md:col-span-2 text-sm text-slate-500 border-t pt-3">
+              <p><b>Not:</b> Bitiş tarihi geçen firma otomatik <b>Pasif</b> hale gelir ve kullanıcıları giriş yapamaz. Yeni abonelik girildiğinde <b>Aktif</b> yaparak tekrar açabilirsiniz.</p>
             </div>
           </CardContent></Card>
         </TabsContent>
@@ -294,6 +365,26 @@ export default function AdminTenantEdit() {
           </Dialog>
         </TabsContent>
       </Tabs>
+
+      {/* PDF Preview Modal */}
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-5xl h-[85vh] p-0 gap-0 flex flex-col">
+          <DialogHeader className="p-4 border-b">
+            <DialogTitle>PDF Önizleme — {previewKind === "kabul" ? "Servis Kabul Formu" : "Servis Teslim Formu"}</DialogTitle>
+            <p className="text-xs text-slate-500">Örnek servis verisi ile canlı önizleme — kaydetmeden önce kontrol edin.</p>
+          </DialogHeader>
+          <div className="flex-1 bg-slate-100 overflow-hidden" data-testid="pdf-preview-frame">
+            {previewLoading && <div className="h-full flex items-center justify-center text-slate-500">PDF hazırlanıyor…</div>}
+            {!previewLoading && previewUrl && (
+              <iframe title="preview" src={previewUrl} className="w-full h-full border-0" />
+            )}
+          </div>
+          <DialogFooter className="p-3 border-t">
+            <Button variant="outline" onClick={()=>openPdfPreview(previewKind)}>Yenile</Button>
+            <Button variant="outline" onClick={()=>setPreviewOpen(false)}>Kapat</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

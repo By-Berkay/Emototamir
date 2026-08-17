@@ -1,0 +1,73 @@
+{
+  "summary": "Iteration 3 full-stack validation completed. All requested core workflows passed end-to-end: super-admin/tenant login, tenant card metadata, clone and purge, PDF live preview for kabul/teslim, subscription expiry rejection and restoration, audit filtering/grouping/refresh, create/edit item-select reset, tenant/order CRUD, and real-order PDF. Backend edge/security regression found 2 failures; mobile audit layout is clipped.",
+  "backend_issues": {
+    "critical": [
+      {
+        "endpoint": "GET /api/admin/audit-logs?action=[",
+        "issue": "Invalid user-supplied regex reaches MongoDB and returns HTTP 500 (OperationFailure: missing terminating ]). Filter input is not escaped or validated.",
+        "priority": "HIGH"
+      },
+      {
+        "endpoint": "Public OPTIONS /api/*",
+        "issue": "Credentialed CORS preflight still returns Access-Control-Allow-Origin: * instead of the explicit public frontend origin; untrusted origins are therefore not rejected as required.",
+        "priority": "HIGH"
+      }
+    ],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "AdminAuditLogs records table",
+        "issue": "At 390px viewport the records table is ~832px wide, extends beyond the viewport, and has no horizontal-scroll ancestor; user/action/entity columns are clipped by Layout's overflow-x-hidden.",
+        "selector": "AdminAuditLogs table",
+        "priority": "MEDIUM"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Audit Log and Subscription filters",
+        "issues": [
+          "Date fields use native browser <input type='date'> pickers rather than the app's shadcn calendar/date-picker component.",
+          "Clone and PDF preview dialogs emit Radix accessibility warnings because DialogContent has no DialogDescription/aria-describedby."
+        ]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iteration3_features.py",
+    "/app/test_reports/pytest/pytest_iteration3.xml"
+  ],
+  "action_items": [
+    "Escape audit text filters with re.escape (literal substring matching) or validate regex syntax and return a controlled 400; never let malformed filters reach MongoDB as raw regex.",
+    "Configure explicit trusted CORS origins at both FastAPI and ingress; remove wildcard CORS when credentials are enabled.",
+    "Wrap the audit records table in overflow-x-auto or provide a responsive mobile card/column-priority layout.",
+    "Reset trial_ends_at and subscription_ends_at when cloning, or explicitly require new values, so cloning an expired tenant does not create an immediately blocked tenant.",
+    "Add DialogDescription to clone/PDF dialogs and use the shared shadcn date picker.",
+    "Retest the two backend failures and mobile audit layout after fixes."
+  ],
+  "critical_code_review_comments": [
+    "clone_tenant claims to reset subscription/active state but only overrides is_active and plan; it inherits trial_ends_at and subscription_ends_at from the source.",
+    "Tenant cloning performs tenant insert, catalog loops, user insert, and audit insert without a MongoDB transaction; mid-flow failure can leave a partial tenant/catalog without an admin.",
+    "Audit filters pass raw user strings into Mongo $regex. Besides malformed-regex 500s, this exposes avoidable regex performance/ReDoS risk; use escaped literal matching.",
+    "Subscription validity is checked only during login. Existing cookie/bearer sessions continue to authorize after expiry until the token expires; malformed date strings are silently ignored.",
+    "Admin routes are only authentication-protected in App.js, not role-protected; a tenant user can navigate directly to them and receive indefinite loading/empty states after backend 403s because loaders do not render errors.",
+    "Several new interactive/critical controls lack data-testid attributes, including PDF Yenile/Kapat, audit Temizle, admin tabs, and tenant plan/end-date badges.",
+    "server.py is now about 1,880 lines and combines auth, tenant administration, cloning, audit, business CRUD, PDF, storage, and seeding; split it into focused routers/services."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iteration3_features.py",
+    "/app/test_reports/iteration_3.json"
+  ],
+  "success_rate": {
+    "backend": "81.8% (9/11 tests passed; every requested core functional API flow passed, with invalid audit regex and CORS security checks failing)",
+    "frontend": "95% (all requested desktop E2E flows passed; one additional mobile audit responsiveness check failed)"
+  },
+  "seed_data_creation": "Created isolated TEST_I3 API/UI tenant clones and TEST_I3 customer/motorcycle/service order data. Clones were purged and API fixture/cleanup removed test business data. Demo tenant was intentionally left active on Pro with trial_ends_at and subscription_ends_at set to 2030-01-01, and tenant login was reverified.",
+  "should_call_test_agent_after_fix": true,
+  "should_main_agent_self_test": false,
+  "test_credentials": "Used both credential sections from /app/memory/test_credentials.md successfully. /app/auth_testing.md is absent. bcrypt $2b$, HttpOnly/Secure/SameSite=None cookies, five-failure lockout, and seed password reconciliation passed.",
+  "context_for_next_testing_agent": "Final iteration-3 pytest is stable at 9 passed/2 failed. Core requested UI workflows all pass. UI clone TEST_I3 UI Clone 1786964000 was deleted. Demo subscription is restored and tenant admin login works. Recheck malformed audit filters, public preflight headers, and AdminAuditLogs at 390x844 after fixes.",
+  "rca_of_the_issue": "Audit action/user filters are inserted directly into MongoDB $regex; '[' triggers pymongo OperationFailure code 51091 and FastAPI returns 500. CORS wildcard persists because backend CORS_ORIGINS is '*' and/or ingress overrides preflight. AdminAuditLogs renders a multi-column table without an overflow wrapper while Layout hides horizontal overflow."
+}

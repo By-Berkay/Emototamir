@@ -17,6 +17,7 @@ from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, Field, EmailStr, ConfigDict
 import io
+import re
 import secrets
 
 from storage_utils import put_object, get_object, init_storage, APP_NAME
@@ -150,6 +151,21 @@ class TenantIn(BaseModel):
     custom_moto_images: Dict[str, str] = {}
     custom_labels: Dict[str, str] = {}  # override any UI label
     pdf_template: Optional[Dict[str, Any]] = {}  # custom pdf template overrides
+    # Subscription / plan
+    plan: Optional[str] = "trial"  # trial | basic | pro | enterprise
+    trial_ends_at: Optional[str] = None  # ISO date
+    subscription_ends_at: Optional[str] = None  # ISO date
+    is_active: Optional[bool] = True
+    billing_notes: Optional[str] = ""
+
+class TenantCloneIn(BaseModel):
+    new_name: str
+    new_slug: Optional[str] = ""
+    admin_email: EmailStr
+    admin_password: str
+    admin_name: str
+    include_products: bool = True
+    include_services: bool = True
 
 class TenantCreateWithAdmin(TenantIn):
     admin_email: EmailStr
@@ -279,6 +295,24 @@ async def login(inp: LoginInput, request: Request, response: Response):
         )
         raise HTTPException(status_code=401, detail="E-posta veya şifre hatalı")
     await db.login_attempts.delete_one({"identifier": identifier})
+    # subscription/active check for tenant users (super_admin is exempt)
+    if user.get("role") != "super_admin" and user.get("tenant_id"):
+        tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
+        if tenant:
+            if tenant.get("is_active") is False:
+                raise HTTPException(status_code=403, detail="Firma hesabınız pasif. Süper Admin ile iletişime geçin.")
+            ends = tenant.get("subscription_ends_at") or tenant.get("trial_ends_at")
+            if ends:
+                try:
+                    ends_dt = datetime.fromisoformat(ends.replace("Z", "+00:00"))
+                    if ends_dt < datetime.now(timezone.utc):
+                        # auto-deactivate on expiry
+                        await db.tenants.update_one({"id": user["tenant_id"]}, {"$set": {"is_active": False}})
+                        raise HTTPException(status_code=403, detail="Firma aboneliği sona erdi. Süper Admin ile iletişime geçin.")
+                except HTTPException:
+                    raise
+                except Exception:
+                    pass
     token = create_access_token(user["id"], user["email"], user["role"], user.get("tenant_id"))
     response.set_cookie("access_token", token, httponly=True, secure=True,
                         samesite="none", max_age=12*3600, path="/")
@@ -353,6 +387,11 @@ async def create_tenant(inp: TenantCreateWithAdmin, user=Depends(require_super_a
         "password_hash": hash_password(admin_data["admin_password"]),
         "created_at": now_iso(),
     })
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tenant_data["id"], "user": user["email"],
+        "action": "tenant.create", "entity_id": tenant_data["id"],
+        "new_value": tenant_data["name"], "at": now_iso(),
+    })
     tenant_data.pop("_id", None)
     return tenant_data
 
@@ -361,14 +400,26 @@ async def update_tenant_admin(tid: str, inp: TenantIn, user=Depends(require_supe
     r = await db.tenants.update_one({"id": tid}, {"$set": inp.model_dump()})
     if r.matched_count == 0:
         raise HTTPException(404, "Firma bulunamadı")
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tid, "user": user["email"],
+        "action": "tenant.update", "entity_id": tid,
+        "new_value": inp.name, "at": now_iso(),
+    })
     return await db.tenants.find_one({"id": tid}, {"_id": 0})
 
 @api.delete("/admin/tenants/{tid}")
 async def delete_tenant(tid: str, purge: bool = False, user=Depends(require_super_admin)):
+    src = await db.tenants.find_one({"id": tid}, {"_id": 0, "name": 1})
     if purge:
         for col in ["customers","motorcycles","service_orders","payments","transactions","products","service_catalog","audit_logs","counters","file_refs","users"]:
             await db[col].delete_many({"tenant_id": tid})
     await db.tenants.delete_one({"id": tid})
+    await db.audit_logs.insert_one({
+        "id": uid(), "user": user["email"],
+        "action": "tenant.delete", "entity_id": tid,
+        "old_value": (src or {}).get("name"), "new_value": ("purge" if purge else "soft"),
+        "at": now_iso(),
+    })
     return {"ok": True}
 
 # ---------- Super Admin: full tenant management ----------
@@ -472,6 +523,141 @@ async def apply_global_settings(inp: GlobalApplyIn, user=Depends(require_super_a
     })
     return {"modified": r.modified_count}
 
+# ---------- Super Admin: PDF Preview ----------
+class PdfPreviewIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    tenant: Dict[str, Any]
+    kind: str = "kabul"  # kabul | teslim
+
+@api.post("/admin/pdf-preview")
+async def admin_pdf_preview(inp: PdfPreviewIn, user=Depends(require_super_admin)):
+    if inp.kind not in {"kabul", "teslim"}:
+        raise HTTPException(400, "Geçersiz form türü")
+    tenant = inp.tenant or {}
+    # Fetch logo bytes if provided
+    logo_bytes = None
+    logo_path = tenant.get("logo_path")
+    if logo_path:
+        try:
+            logo_bytes, _ = get_object(logo_path)
+        except Exception:
+            logo_bytes = None
+    # Sample order data for preview
+    sample_order = {
+        "service_no": "SRV-2026-00042",
+        "created_at": now_iso(),
+        "customer_name": "Ahmet Yılmaz",
+        "customer_phone": "0532 000 00 00",
+        "plate": "34 ABC 123",
+        "brand": "Yamaha",
+        "model": "MT-07",
+        "km": 12450,
+        "fuel_level": "1/2",
+        "diagnosis": "Zincir aşınmış, ön fren balatası bitmiş.",
+        "operations": "Zincir seti ve ön fren balatası değişimi. Yağ bakımı.",
+        "notes": "Servis kabul formu önizlemesi — örnek veri.",
+        "items": [
+            {"kind": "part", "name": "Motor Yağı 10W-40 (1L)", "qty": 3, "unit_price": 450, "vat": 20},
+            {"kind": "part", "name": "Yağ Filtresi", "qty": 1, "unit_price": 250, "vat": 20},
+            {"kind": "part", "name": "Ön Fren Balatası", "qty": 1, "unit_price": 650, "vat": 20},
+            {"kind": "service", "name": "Genel Bakım İşçiliği", "qty": 1, "unit_price": 850, "vat": 20},
+        ],
+        "labor_total": 250,
+        "discount": 100,
+        "grand_total": 3000,
+        "paid_total": 1000,
+    }
+    pdf_bytes = build_service_pdf(sample_order, kind=inp.kind, tenant=tenant, logo_bytes=logo_bytes)
+    return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf",
+                             headers={"Content-Disposition": 'inline; filename="preview.pdf"'})
+
+# ---------- Super Admin: Tenant Clone ----------
+@api.post("/admin/tenants/{tid}/clone")
+async def clone_tenant(tid: str, inp: TenantCloneIn, user=Depends(require_super_admin)):
+    src = await db.tenants.find_one({"id": tid}, {"_id": 0})
+    if not src:
+        raise HTTPException(404, "Kaynak firma bulunamadı")
+    admin_email = inp.admin_email.lower().strip()
+    if await db.users.find_one({"email": admin_email}):
+        raise HTTPException(400, "Yönetici e-postası zaten kullanımda")
+    new_tid = uid()
+    clone = {k: v for k, v in src.items() if k not in {"id", "created_at", "slug"}}
+    clone.update({
+        "id": new_tid,
+        "name": inp.new_name,
+        "slug": (inp.new_slug or inp.new_name.lower().replace(" ", "-")),
+        "created_at": now_iso(),
+        # reset subscription/active for cloned — fresh 30-day trial
+        "is_active": True,
+        "plan": "trial",
+        "trial_ends_at": (datetime.now(timezone.utc) + timedelta(days=30)).isoformat(),
+        "subscription_ends_at": None,
+        "billing_notes": "",
+    })
+    # Do NOT carry customer/business data — only theme/pdf/labels are cloned via base copy
+    await db.tenants.insert_one(clone)
+    # Copy parts catalog
+    parts_copied = 0
+    if inp.include_products:
+        parts = await db.products.find({"tenant_id": tid}, {"_id": 0}).to_list(5000)
+        for p in parts:
+            p["id"] = uid(); p["tenant_id"] = new_tid; p["created_at"] = now_iso()
+            p.pop("stock", None); p["stock"] = 0
+            await db.products.insert_one(p)
+            parts_copied += 1
+    services_copied = 0
+    if inp.include_services:
+        services = await db.service_catalog.find({"tenant_id": tid}, {"_id": 0}).to_list(5000)
+        for s in services:
+            s["id"] = uid(); s["tenant_id"] = new_tid; s["created_at"] = now_iso()
+            await db.service_catalog.insert_one(s)
+            services_copied += 1
+    # Admin user
+    await db.users.insert_one({
+        "id": uid(), "email": admin_email, "name": inp.admin_name, "role": "admin",
+        "tenant_id": new_tid,
+        "password_hash": hash_password(inp.admin_password),
+        "created_at": now_iso(),
+    })
+    await db.audit_logs.insert_one({
+        "id": uid(), "user": user["email"], "action": "tenant.clone",
+        "entity_id": new_tid, "old_value": tid, "new_value": inp.new_name, "at": now_iso(),
+    })
+    clone.pop("_id", None)
+    return {"tenant": clone, "parts_copied": parts_copied, "services_copied": services_copied}
+
+# ---------- Super Admin: Audit Logs ----------
+@api.get("/admin/audit-logs")
+async def list_audit_logs(
+    tenant_id: str = "",
+    user_email: str = "",
+    action: str = "",
+    since: str = "",
+    limit: int = 200,
+    current_user=Depends(require_super_admin),
+):
+    q: Dict[str, Any] = {}
+    if tenant_id:
+        q["tenant_id"] = tenant_id
+    if user_email:
+        q["user"] = {"$regex": re.escape(user_email), "$options": "i"}
+    if action:
+        q["action"] = {"$regex": re.escape(action), "$options": "i"}
+    if since:
+        q["at"] = {"$gte": since}
+    limit = max(1, min(int(limit or 200), 1000))
+    docs = await db.audit_logs.find(q, {"_id": 0}).sort("at", -1).to_list(limit)
+    # Enrich with tenant name
+    tids = list({d.get("tenant_id") for d in docs if d.get("tenant_id")})
+    tenants_map = {}
+    if tids:
+        for t in await db.tenants.find({"id": {"$in": tids}}, {"_id": 0, "id": 1, "name": 1}).to_list(500):
+            tenants_map[t["id"]] = t.get("name")
+    for d in docs:
+        d["tenant_name"] = tenants_map.get(d.get("tenant_id"))
+    return docs
+
+
 # ---------- Tenant Profile (self) ----------
 @api.get("/tenant/me")
 async def tenant_me(user=Depends(get_current_user)):
@@ -528,7 +714,10 @@ async def upload_moto_image(type_key: str, file: UploadFile = File(...), user=De
 
 # ---------- Customers ----------
 async def customer_stats(customer_id: str, tenant_id: str) -> Dict[str, Any]:
-    orders = await db.service_orders.find({"customer_id": customer_id, "tenant_id": tenant_id}).to_list(10000)
+    orders = await db.service_orders.find(
+        {"customer_id": customer_id, "tenant_id": tenant_id},
+        {"grand_total": 1, "paid_total": 1, "_id": 0}
+    ).to_list(500)
     total_spent = sum(o.get("grand_total", 0) for o in orders)
     total_paid = sum(o.get("paid_total", 0) for o in orders)
     return {
@@ -585,9 +774,32 @@ async def delete_customer(cid: str, user=Depends(require_role("admin"))):
     await db.customers.delete_one(tf(user, {"id": cid}))
     return {"ok": True}
 
+@api.get("/customers/duplicates/search")
+async def search_dup_customers(phone: str = "", tc_no: str = "", user=Depends(get_current_user)):
+    q: Dict[str, Any] = tf(user)
+    ors = []
+    if phone: ors.append({"phone": phone})
+    if tc_no: ors.append({"tc_no": tc_no})
+    if not ors: return []
+    q["$or"] = ors
+    return await db.customers.find(q, {"_id": 0}).to_list(20)
+
+@api.get("/motorcycles/duplicates/search")
+async def search_dup_motos(plate: str = "", vin: str = "", user=Depends(get_current_user)):
+    q: Dict[str, Any] = tf(user)
+    ors = []
+    if plate: ors.append({"plate": plate.upper().replace(" ", "")})
+    if vin: ors.append({"vin": vin})
+    if not ors: return []
+    q["$or"] = ors
+    return await db.motorcycles.find(q, {"_id": 0}).to_list(20)
+
 # ---------- Motorcycles ----------
 async def motorcycle_stats(mid: str, tenant_id: str):
-    orders = await db.service_orders.find({"motorcycle_id": mid, "tenant_id": tenant_id}).to_list(1000)
+    orders = await db.service_orders.find(
+        {"motorcycle_id": mid, "tenant_id": tenant_id},
+        {"grand_total": 1, "created_at": 1, "km": 1, "_id": 0}
+    ).to_list(500)
     total_spent = sum(o.get("grand_total", 0) for o in orders)
     last = orders[-1] if orders else None
     return {
@@ -975,12 +1187,25 @@ async def delete_payment(pid: str, user=Depends(require_role("admin"))):
 # ---------- Current Accounts ----------
 @api.get("/current-accounts")
 async def current_accounts(user=Depends(get_current_user)):
-    customers = await db.customers.find(tf(user), {"_id": 0}).to_list(5000)
+    tid = user["tenant_id"]
+    # Aggregate all customers' order stats in one query
+    pipe = [
+        {"$match": {"tenant_id": tid}},
+        {"$group": {"_id": "$customer_id",
+                    "total_spent": {"$sum": "$grand_total"},
+                    "total_paid": {"$sum": "$paid_total"},
+                    "total_services": {"$sum": 1}}}
+    ]
+    agg = await db.service_orders.aggregate(pipe).to_list(5000)
+    stats_map = {a["_id"]: a for a in agg}
+    customers = await db.customers.find(tf(user), {"_id": 0}).to_list(2000)
     rows = []
     for c in customers:
-        stats = await customer_stats(c["id"], user["tenant_id"])
-        if stats["balance"] > 0.01 or stats["total_services"] > 0:
-            rows.append({**c, **stats})
+        s = stats_map.get(c["id"], {"total_spent": 0, "total_paid": 0, "total_services": 0})
+        balance = s["total_spent"] - s["total_paid"]
+        if balance > 0.01 or s["total_services"] > 0:
+            rows.append({**c, "total_spent": s["total_spent"], "total_paid": s["total_paid"],
+                        "total_services": s["total_services"], "balance": balance})
     rows.sort(key=lambda x: -x["balance"])
     return rows
 
@@ -997,8 +1222,8 @@ async def get_transactions(cid: str, user=Depends(get_current_user)):
 @api.get("/dashboard")
 async def dashboard(user=Depends(get_current_user)):
     tid = user["tenant_id"]
-    orders = await db.service_orders.find({"tenant_id": tid}, {"_id": 0}).to_list(20000)
-    payments = await db.payments.find({"tenant_id": tid}, {"_id": 0}).to_list(20000)
+    orders = await db.service_orders.find({"tenant_id": tid}, {"grand_total": 1, "paid_total": 1, "status": 1, "created_at": 1, "customer_id": 1, "customer_name": 1, "plate": 1, "service_no": 1, "items": 1, "_id": 0}).sort("created_at", -1).to_list(2000)
+    payments = await db.payments.find({"tenant_id": tid}, {"amount": 1, "created_at": 1, "_id": 0}).to_list(2000)
     today = datetime.now(timezone.utc).date().isoformat()
     month_prefix = datetime.now(timezone.utc).strftime("%Y-%m")
 
@@ -1064,9 +1289,9 @@ async def dashboard(user=Depends(get_current_user)):
 @api.get("/reports/summary")
 async def report_summary(user=Depends(get_current_user)):
     tid = user["tenant_id"]
-    orders = await db.service_orders.find({"tenant_id": tid}, {"_id": 0}).to_list(20000)
-    payments = await db.payments.find({"tenant_id": tid}, {"_id": 0}).to_list(20000)
-    products = await db.products.find({"tenant_id": tid}, {"_id": 0}).to_list(5000)
+    orders = await db.service_orders.find({"tenant_id": tid}, {"grand_total": 1, "paid_total": 1, "customer_id": 1, "customer_name": 1, "items": 1, "labor_total": 1, "discount": 1, "_id": 0}).to_list(2000)
+    payments = await db.payments.find({"tenant_id": tid}, {"amount": 1, "_id": 0}).to_list(2000)
+    products = await db.products.find({"tenant_id": tid}, {"id": 1, "code": 1, "name": 1, "stock": 1, "min_stock": 1, "cost_price": 1, "sale_price": 1, "_id": 0}).to_list(2000)
 
     # Top customers by spend
     by_customer: Dict[str, Dict[str, Any]] = {}
@@ -1642,10 +1867,23 @@ async def shutdown_db_client():
 # Include routes
 app.include_router(api)
 
+# CORS: when credentials are enabled, wildcard origins are unsafe/invalid.
+# Use explicit env-provided origins + FRONTEND_URL + Emergent hostname regex.
+_cors_origins = os.environ.get("CORS_ORIGINS", "")
+_origins_list = [o.strip() for o in _cors_origins.split(",") if o.strip() and o.strip() != "*"]
+_frontend_url = os.environ.get("FRONTEND_URL")
+if _frontend_url and _frontend_url not in _origins_list:
+    _origins_list.append(_frontend_url)
+# Always allow localhost dev
+for _dev in ("http://localhost:3000", "http://127.0.0.1:3000"):
+    if _dev not in _origins_list:
+        _origins_list.append(_dev)
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=[os.environ.get("FRONTEND_URL", "http://localhost:3000")],
+    allow_origins=_origins_list,
+    allow_origin_regex=r"https://.*\.emergent(agent|)\.(com|host)$",
     allow_methods=["*"],
     allow_headers=["*"],
 )

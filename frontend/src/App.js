@@ -22,6 +22,7 @@ import Reminders from "./pages/Reminders";
 import Settings from "./pages/Settings";
 import AdminTenants from "./pages/AdminTenants";
 import AdminTenantEdit from "./pages/AdminTenantEdit";
+import AdminAuditLogs from "./pages/AdminAuditLogs";
 import PublicApproval from "./pages/PublicApproval";
 import "./App.css";
 
@@ -65,6 +66,7 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/admin/tenants" element={<AdminTenants />} />
             <Route path="/admin/tenants/:id" element={<AdminTenantEdit />} />
+            <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

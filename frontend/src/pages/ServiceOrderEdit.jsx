@@ -20,6 +20,8 @@ export default function ServiceOrderEdit() {
   const [order, setOrder] = useState(null);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
+  const [partKey, setPartKey] = useState(0);
+  const [svcKey, setSvcKey] = useState(0);
 
   useEffect(() => {
     api.get(`/service-orders/${id}`).then(r => setOrder(r.data));
@@ -120,11 +122,11 @@ export default function ServiceOrderEdit() {
         <CardHeader className="flex-row justify-between items-center">
           <CardTitle className="text-base">Parçalar & Yapılan İşler</CardTitle>
           <div className="flex gap-2">
-            <Select onValueChange={(v)=>{const p=products.find(x=>x.id===v); if(p) addPart(p);}}>
+            <Select key={`ep-${partKey}`} value="" onValueChange={(v)=>{const p=products.find(x=>x.id===v); if(p){ addPart(p); setPartKey(k=>k+1); }}}>
               <SelectTrigger className="w-48" data-testid="edit-add-part"><SelectValue placeholder="Parça ekle" /></SelectTrigger>
               <SelectContent>{products.map(p=><SelectItem key={p.id} value={p.id}>{p.name} · {fmtMoney(p.sale_price)}</SelectItem>)}</SelectContent>
             </Select>
-            <Select onValueChange={(v)=>{const s=services.find(x=>x.id===v); if(s) addService(s);}}>
+            <Select key={`es-${svcKey}`} value="" onValueChange={(v)=>{const s=services.find(x=>x.id===v); if(s){ addService(s); setSvcKey(k=>k+1); }}}>
               <SelectTrigger className="w-48" data-testid="edit-add-service"><SelectValue placeholder="Hizmet ekle" /></SelectTrigger>
               <SelectContent>{services.map(s=><SelectItem key={s.id} value={s.id}>{s.name} · {fmtMoney(s.price)}</SelectItem>)}</SelectContent>
             </Select>

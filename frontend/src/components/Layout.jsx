@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList,
-  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2,
+  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -23,6 +23,7 @@ const NAV_TENANT = [
 
 const NAV_SUPER = [
   { to: "/admin/tenants", label: "Firma Yönetimi", icon: Building2, end: true },
+  { to: "/admin/audit-logs", label: "Denetim Kayıtları", icon: History },
 ];
 
 export default function Layout() {

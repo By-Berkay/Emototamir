@@ -6,7 +6,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
-import { Plus, Building2, Trash2, Settings2 } from "lucide-react";
+import { Plus, Building2, Trash2, Settings2, Copy, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 
@@ -22,6 +22,8 @@ export default function AdminTenants() {
   const [tenants, setTenants] = useState([]);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState(empty);
+  const [cloneSrc, setCloneSrc] = useState(null);
+  const [cloneForm, setCloneForm] = useState({ new_name:"", new_slug:"", admin_email:"", admin_password:"", admin_name:"", include_products:true, include_services:true });
 
   const load = () => api.get("/admin/tenants").then(r=>setTenants(r.data));
   useEffect(() => { load(); }, []);
@@ -41,6 +43,20 @@ export default function AdminTenants() {
       await api.delete(`/admin/tenants/${t.id}?purge=true`);
       toast.success("Firma silindi"); load();
     } catch { toast.error("Silme başarısız"); }
+  };
+
+  const openClone = (t) => {
+    setCloneSrc(t);
+    setCloneForm({ new_name: `${t.name} (Kopya)`, new_slug:"", admin_email:"", admin_password:"", admin_name:"", include_products:true, include_services:true });
+  };
+  const doClone = async () => {
+    if (!cloneForm.new_name || !cloneForm.admin_email || !cloneForm.admin_password || !cloneForm.admin_name)
+      return toast.error("Firma adı ve admin bilgileri zorunlu");
+    try {
+      const { data } = await api.post(`/admin/tenants/${cloneSrc.id}/clone`, cloneForm);
+      toast.success(`Klon oluşturuldu · ${data.parts_copied} parça, ${data.services_copied} hizmet kopyalandı`);
+      setCloneSrc(null); load();
+    } catch (e) { toast.error(e.response?.data?.detail || "Klonlama başarısız"); }
   };
 
   return (
@@ -80,30 +96,69 @@ export default function AdminTenants() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {tenants.map(t => (
-          <Card key={t.id} className="border-slate-200 hover:border-orange-400 hover:shadow-md transition-all cursor-pointer">
-            <Link to={`/admin/tenants/${t.id}`} className="block" data-testid={`tenant-card-${t.id}`}>
-              <CardContent className="p-5">
+        {tenants.map(t => {
+          const ends = t.subscription_ends_at || t.trial_ends_at;
+          const expired = ends && new Date(ends) < new Date();
+          const inactive = t.is_active === false;
+          return (
+          <Card key={t.id} className={`border-slate-200 hover:shadow-md transition-all ${inactive || expired ? "opacity-70" : "hover:border-orange-400"}`}>
+            <CardContent className="p-5">
+              <Link to={`/admin/tenants/${t.id}`} className="block" data-testid={`tenant-card-${t.id}`}>
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center"><Building2 className="h-5 w-5" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="font-heading font-semibold truncate">{t.name}</div>
                     <div className="text-xs text-slate-500">{t.city}{t.district?` / ${t.district}`:""}</div>
                   </div>
-                  <button onClick={(e)=>{e.preventDefault(); e.stopPropagation(); del(t);}} className="text-red-500 hover:text-red-700" data-testid={`del-tenant-${t.id}`}><Trash2 className="h-4 w-4" /></button>
                 </div>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                  <div className="bg-slate-50 rounded p-2"><div className="text-xs text-slate-500">Kullanıcı</div><div className="font-semibold">{t.users_count}</div></div>
-                  <div className="bg-slate-50 rounded p-2"><div className="text-xs text-slate-500">Servis</div><div className="font-semibold">{t.orders_count}</div></div>
+              </Link>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">{t.plan || "trial"}</span>
+                {inactive && <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700 flex items-center gap-1"><ShieldAlert className="h-3 w-3" />Pasif</span>}
+                {!inactive && expired && <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700">Süresi Doldu</span>}
+                {!inactive && !expired && ends && <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">Bitiş: {new Date(ends).toLocaleDateString("tr-TR")}</span>}
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
+                <div className="bg-slate-50 rounded p-2"><div className="text-xs text-slate-500">Kullanıcı</div><div className="font-semibold">{t.users_count}</div></div>
+                <div className="bg-slate-50 rounded p-2"><div className="text-xs text-slate-500">Servis</div><div className="font-semibold">{t.orders_count}</div></div>
+              </div>
+              {t.phone && <div className="text-xs text-slate-500 mt-2 font-mono">{t.phone}</div>}
+              <div className="mt-3 pt-3 border-t flex items-center justify-between">
+                <Link to={`/admin/tenants/${t.id}`} className="text-xs text-orange-600 font-semibold flex items-center gap-1"><Settings2 className="h-3 w-3" />Firmayı yönet →</Link>
+                <div className="flex items-center gap-1">
+                  <button onClick={()=>openClone(t)} className="text-slate-500 hover:text-orange-600 p-1" title="Firmayı klonla" data-testid={`clone-tenant-${t.id}`}><Copy className="h-3.5 w-3.5" /></button>
+                  <button onClick={()=>del(t)} className="text-red-500 hover:text-red-700 p-1" title="Firmayı sil" data-testid={`del-tenant-${t.id}`}><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
-                {t.phone && <div className="text-xs text-slate-500 mt-2 font-mono">{t.phone}</div>}
-                <div className="mt-3 pt-3 border-t text-xs text-orange-600 font-semibold flex items-center gap-1"><Settings2 className="h-3 w-3" />Firmayı yönet →</div>
-              </CardContent>
-            </Link>
+              </div>
+            </CardContent>
           </Card>
-        ))}
+        );})}
         {tenants.length === 0 && <div className="col-span-full text-center py-12 text-slate-500"><Building2 className="h-10 w-10 mx-auto opacity-40 mb-2" />Henüz firma yok. Yeni firma oluşturun.</div>}
       </div>
+
+      {/* Clone dialog */}
+      <Dialog open={!!cloneSrc} onOpenChange={(o)=>{ if(!o) setCloneSrc(null); }}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader><DialogTitle>Firmayı Klonla — {cloneSrc?.name}</DialogTitle></DialogHeader>
+          <p className="text-sm text-slate-500 -mt-2">Tema, PDF şablonu, arıza bölgeleri, banka/adres bilgileri kopyalanır. Müşteri, motosiklet ve servis kayıtları <b>kopyalanmaz</b>.</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="col-span-2"><Label>Yeni Firma Adı *</Label><Input value={cloneForm.new_name} onChange={(e)=>setCloneForm({...cloneForm, new_name:e.target.value})} data-testid="clone-name" /></div>
+            <div className="col-span-2"><Label>Yönetici Ad *</Label><Input value={cloneForm.admin_name} onChange={(e)=>setCloneForm({...cloneForm, admin_name:e.target.value})} data-testid="clone-admin-name" /></div>
+            <div><Label>Yönetici E-posta *</Label><Input value={cloneForm.admin_email} onChange={(e)=>setCloneForm({...cloneForm, admin_email:e.target.value})} data-testid="clone-admin-email" /></div>
+            <div><Label>Yönetici Şifre *</Label><Input type="password" value={cloneForm.admin_password} onChange={(e)=>setCloneForm({...cloneForm, admin_password:e.target.value})} data-testid="clone-admin-password" /></div>
+            <label className="col-span-2 flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={cloneForm.include_products} onChange={(e)=>setCloneForm({...cloneForm, include_products:e.target.checked})} /> Parça kataloğunu kopyala (stoklar sıfırlanır)
+            </label>
+            <label className="col-span-2 flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={cloneForm.include_services} onChange={(e)=>setCloneForm({...cloneForm, include_services:e.target.checked})} /> Hizmet kataloğunu kopyala
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={()=>setCloneSrc(null)}>Vazgeç</Button>
+            <Button className="bg-orange-500 hover:bg-orange-600" onClick={doClone} data-testid="clone-save"><Copy className="h-4 w-4 mr-1" />Klonla</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
