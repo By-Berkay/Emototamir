@@ -58,6 +58,14 @@ export default function Login() {
           </p>
         </div>
         <div className="text-xs text-slate-500 relative">© E-Moto Tamir · v1.0</div>
+        <a
+  href="https://wa.me/447378552959?text=Merhaba%20E-Moto%20Tamir%20uygulaması%20için%20bilgi%20istiyorum."
+  target="_blank"
+  rel="noopener noreferrer"
+  className="text-xs text-slate-500 relative cursor-pointer hover:text-green-600 transition-colors"
+>
+  Whatsapp İletişim
+</a>
       </div>
 
       <div className="flex-1 flex items-center justify-center p-6">
@@ -91,7 +99,7 @@ export default function Login() {
             </Button>
           </form>
           <div className="mt-8 text-xs text-slate-500 border-t pt-4">
-            Demo hesap ile giriş yapmayı unutmayın.
+            Demo hesap ile giriş yapmayk için bizimle irtibata geçin.
           </div>
         </div>
       </div>
