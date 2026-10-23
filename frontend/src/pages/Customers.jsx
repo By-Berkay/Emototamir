@@ -28,7 +28,15 @@ export default function Customers() {
     const { data } = await api.get(`/customers${q ? `?q=${encodeURIComponent(q)}` : ""}`);
     setItems(data);
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [q]);
+  // Arama değişince seçimi temizle (görünmeyen kayıtlar toplu silmeye girmesin); eski yanıt yeni listeyi ezmesin
+  useEffect(() => {
+    let active = true;
+    setSelected({});
+    api.get(`/customers${q ? `?q=${encodeURIComponent(q)}` : ""}`)
+      .then(({ data }) => { if (active) setItems(data); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [q]);
 
   const save = async () => {
     if (!form.first_name || !form.last_name || !form.phone) return toast.error("Ad, soyad ve telefon zorunlu");
@@ -50,12 +58,27 @@ export default function Customers() {
     if (!reason.trim()) return toast.error("Silme sebebi zorunlu");
     try {
       if (ids.length === 1) {
-        const { data } = await api.delete(`/customers/${ids[0]}`, { data: { reason, force: true } });
-        const parts = Object.entries(data.counts || {}).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`);
+        // Açık servis kaydı varsa backend silmeyi engeller; kullanıcı onaylarsa force ile tekrar denenir
+        let res;
+        try {
+          res = await api.delete(`/customers/${ids[0]}`, { data: { reason, force: false } });
+        } catch (err) {
+          const detail = err.response?.data?.detail || "";
+          if (err.response?.status !== 400 || !detail.includes("açık servis")) throw err;
+          if (!window.confirm(`${detail}\n\nYine de silinsin mi? Açık servis kayıtları da çöp kutusuna alınır.`)) return;
+          res = await api.delete(`/customers/${ids[0]}`, { data: { reason, force: true } });
+        }
+        const parts = Object.entries(res.data.counts || {}).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`);
         toast.success(`Silindi · Çöp kutusuna alındı${parts.length ? ` · ${parts.join(", ")}` : ""}`);
       } else {
-        const { data } = await api.post("/customers/bulk-delete", { ids, reason, force: true });
-        toast.success(`${data.deleted}/${data.total} müşteri çöp kutusuna alındı`);
+        const { data } = await api.post("/customers/bulk-delete", { ids, reason, force: false });
+        let deleted = data.deleted;
+        const blocked = data.results.filter((r) => !r.ok).map((r) => r.id);
+        if (blocked.length && window.confirm(`${blocked.length} müşterinin açık servis kaydı var.\n\nBu müşteriler servis kayıtlarıyla birlikte çöp kutusuna alınsın mı?`)) {
+          const { data: forced } = await api.post("/customers/bulk-delete", { ids: blocked, reason, force: true });
+          deleted += forced.deleted;
+        }
+        toast.success(`${deleted}/${data.total} müşteri çöp kutusuna alındı`);
       }
       setDelDialog({ open: false, ids: [], reason: "" });
       setSelected({});
@@ -81,7 +104,7 @@ export default function Customers() {
           <h1 className="font-heading text-3xl font-bold text-slate-900">Müşteriler</h1>
           <p className="text-sm text-slate-500 mt-1">{items.length} müşteri</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
           <DialogTrigger asChild>
             <Button className="bg-orange-500 hover:bg-orange-600" data-testid="btn-new-customer">
               <Plus className="h-4 w-4 mr-2" /> Yeni Müşteri

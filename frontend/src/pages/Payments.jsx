@@ -25,14 +25,19 @@ export default function Payments() {
   const [orders, setOrders] = useState([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ customer_id: "", service_order_id: "none", amount: "", method: "cash", note: "" });
 
   const load = () => api.get("/payments").then(r => setItems(r.data));
   useEffect(() => { load(); api.get("/customers").then(r=>setCustomers(r.data)); }, []);
 
   useEffect(() => {
-    if (!form.customer_id) return setOrders([]);
-    api.get(`/service-orders?customer_id=${form.customer_id}`).then(r => setOrders(r.data));
+    if (!form.customer_id) { setOrders([]); return; }
+    let active = true;
+    // İptal edilmiş servislere tahsilat kaydedilmez; eski müşteri yanıtı yeni listeyi ezmez
+    api.get(`/service-orders?customer_id=${form.customer_id}`)
+      .then(r => { if (active) setOrders(r.data.filter(o => o.status !== "cancelled")); });
+    return () => { active = false; };
   }, [form.customer_id]);
 
   const total = items.reduce((s,p)=>s+p.amount, 0);
@@ -53,6 +58,8 @@ export default function Payments() {
     if (!form.customer_id) return toast.error("Müşteri seçin");
     const amt = Number(form.amount);
     if (!amt || amt <= 0) return toast.error("Geçerli bir tutar girin");
+    if (saving) return;
+    setSaving(true);
     try {
       if (editing) {
         await api.put(`/payments/${editing.id}`, { amount: amt, method: form.method, note: form.note });
@@ -68,7 +75,7 @@ export default function Payments() {
       setOpen(false); load();
     } catch (e) {
       toast.error(e.response?.data?.detail || "İşlem başarısız");
-    }
+    } finally { setSaving(false); }
   };
 
   const del = async (p) => {
@@ -122,7 +129,7 @@ export default function Payments() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={()=>setOpen(false)}>İptal</Button>
-              <Button className="bg-orange-500 hover:bg-orange-600" onClick={save} data-testid="pay-save">{editing ? "Güncelle" : "Kaydet"}</Button>
+              <Button className="bg-orange-500 hover:bg-orange-600" onClick={save} disabled={saving} data-testid="pay-save">{editing ? "Güncelle" : "Kaydet"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

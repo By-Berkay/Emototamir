@@ -9,14 +9,16 @@ function AuthImage({ path, caption }) {
   const [url, setUrl] = useState("");
   useEffect(() => {
     let revoked = false;
+    let objectUrl = "";
     (async () => {
       try {
         const token = localStorage.getItem("token");
         const res = await api.get(`/files/${path}`, { responseType: "blob", headers: { Authorization: `Bearer ${token}` } });
-        if (!revoked) setUrl(URL.createObjectURL(res.data));
+        if (!revoked) { objectUrl = URL.createObjectURL(res.data); setUrl(objectUrl); }
       } catch {}
     })();
-    return () => { revoked = true; if (url) URL.revokeObjectURL(url); };
+    // Cleanup, state'teki eski değil bu effect'in kendi oluşturduğu URL'i serbest bırakır
+    return () => { revoked = true; if (objectUrl) URL.revokeObjectURL(objectUrl); };
     // eslint-disable-next-line
   }, [path]);
   return (
@@ -83,7 +85,7 @@ export default function PhotoUploader({ serviceOrderId, photos = [], onChange })
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {photos.map((p) => (
-            <div key={p.id} className="relative">
+            <div key={p.id} className="relative group">
               <AuthImage path={p.path} caption={p.caption} />
               <button onClick={()=>remove(p.id)}
                 className="absolute top-1 right-1 bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"

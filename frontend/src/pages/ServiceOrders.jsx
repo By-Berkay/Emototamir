@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import StatusBadge from "../components/StatusBadge";
 import { Plus, Search } from "lucide-react";
+import { toast } from "sonner";
 
 export default function ServiceOrders() {
   const loc = useLocation();
@@ -16,15 +17,21 @@ export default function ServiceOrders() {
   const [paymentStatus, setPaymentStatus] = useState("all");
   const [items, setItems] = useState([]);
 
-  const load = async () => {
+  // Üst çubuktaki genel aramadan gelen ?q= değişince (sayfa zaten açıkken de) listeyi güncelle
+  useEffect(() => { setQ(new URLSearchParams(loc.search).get("q") || ""); }, [loc.search]);
+
+  useEffect(() => {
+    let active = true;
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     if (status !== "all") params.set("status", status);
     if (paymentStatus !== "all") params.set("payment_status", paymentStatus);
-    const { data } = await api.get(`/service-orders?${params.toString()}`);
-    setItems(data);
-  };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [q, status, paymentStatus]);
+    api.get(`/service-orders?${params.toString()}`)
+      .then(({ data }) => { if (active) setItems(data); })
+      .catch(() => { if (active) toast.error("Servis kayıtları yüklenemedi"); });
+    // Hızlı yazımda eski istek yanıtının yeni listeyi ezmesini engelle
+    return () => { active = false; };
+  }, [q, status, paymentStatus]);
 
   return (
     <div className="space-y-6">

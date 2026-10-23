@@ -33,6 +33,7 @@ export default function QuoteEdit() {
   const [quote, setQuote] = useState(null);
   const [partKey, setPartKey] = useState(0);
   const [svcKey, setSvcKey] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get("/customers").then(r=>setCustomers(r.data));
@@ -43,7 +44,7 @@ export default function QuoteEdit() {
       setCustomerId(q.customer_id); setMotoId(q.motorcycle_id);
       setItems(q.items || []); setLabor(q.labor_total || 0); setDiscount(q.discount || 0);
       setNotes(q.notes || ""); setValidUntil((q.valid_until || "").slice(0,10));
-    });
+    }).catch(() => toast.error("Teklif yüklenemedi"));
   }, [id]);
 
   useEffect(() => {
@@ -54,26 +55,34 @@ export default function QuoteEdit() {
     });
   }, [customerId, isNew]);
 
-  const addPart = (p) => setItems([...items, { id: crypto.randomUUID(), kind:"part", ref_id: p.id, name: p.name, qty:1, unit_price: p.sale_price, vat: 20 }]);
-  const addService = (s) => setItems([...items, { id: crypto.randomUUID(), kind:"service", ref_id: s.id, name: s.name, qty:1, unit_price: s.price, vat: 20 }]);
+  const addPart = (p) => setItems([...items, { id: crypto.randomUUID(), kind:"part", ref_id: p.id, name: p.name, qty:1, unit_price: p.sale_price, vat: p.vat ?? 20 }]);
+  const addService = (s) => setItems([...items, { id: crypto.randomUUID(), kind:"service", ref_id: s.id, name: s.name, qty:1, unit_price: s.price, vat: s.vat ?? 20 }]);
   const updateItem = (i, patch) => setItems(items.map((it, idx) => idx === i ? { ...it, ...patch } : it));
   const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
 
+  // Birim fiyatlar KDV dahildir: genel toplam = ara toplam + işçilik - iskonto (KDV ayrıca eklenmez).
+  // KDV satırı yalnızca bilgilendirme amaçlıdır ve brüt tutarın içinden ayrıştırılır.
   const totals = useMemo(() => {
     const subtotal = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unit_price) || 0), 0);
-    const vat = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unit_price) || 0) * ((Number(it.vat) || 0)/100), 0);
-    const grand = subtotal + vat + Number(labor||0) - Number(discount||0);
+    const vat = items.reduce((s, it) => {
+      const gross = (Number(it.qty) || 0) * (Number(it.unit_price) || 0);
+      const rate = Number(it.vat) || 0;
+      return s + gross * rate / (100 + rate);
+    }, 0);
+    const grand = subtotal + Number(labor||0) - Number(discount||0);
     return { subtotal, vat, grand };
   }, [items, labor, discount]);
 
   const save = async () => {
     if (!customerId || !motoId) return toast.error("Müşteri ve motosiklet seçin");
     if (items.length === 0) return toast.error("En az bir parça veya hizmet ekleyin");
+    if (saving) return;
     const payload = {
       customer_id: customerId, motorcycle_id: motoId, items,
       labor_total: Number(labor||0), discount: Number(discount||0),
-      notes, valid_until: validUntil ? new Date(validUntil + "T23:59:59Z").toISOString() : null,
+      notes, valid_until: validUntil ? new Date(validUntil + "T23:59:59+03:00").toISOString() : null,
     };
+    setSaving(true);
     try {
       const r = isNew
         ? await api.post("/quotes", payload)
@@ -82,6 +91,7 @@ export default function QuoteEdit() {
       nav(`/quotes/${r.data.id}`);
       if (!isNew) setQuote(r.data);
     } catch (e) { toast.error(e.response?.data?.detail || "Kaydedilemedi"); }
+    finally { setSaving(false); }
   };
 
   const shareUrl = quote ? `${window.location.origin}/q/${quote.share_token}` : "";
@@ -169,10 +179,10 @@ export default function QuoteEdit() {
                 <tr key={it.id} className="border-t">
                   <td className="px-3 py-2 text-xs">{it.kind === "part" ? "Parça" : "Hizmet"}</td>
                   <td className="px-3 py-2">{it.name}</td>
-                  <td className="px-3 py-2"><Input type="number" value={it.qty} min={1} onChange={(e)=>updateItem(i,{qty:Number(e.target.value)})} disabled={!editable} className="text-right" /></td>
+                  <td className="px-3 py-2"><Input type="number" step="any" value={it.qty} min={0} onChange={(e)=>updateItem(i,{qty:Number(e.target.value)})} disabled={!editable} className="text-right" /></td>
                   <td className="px-3 py-2"><Input type="number" step="0.01" value={it.unit_price} onChange={(e)=>updateItem(i,{unit_price:Number(e.target.value)})} disabled={!editable} className="text-right" /></td>
                   <td className="px-3 py-2"><Input type="number" value={it.vat} onChange={(e)=>updateItem(i,{vat:Number(e.target.value)})} disabled={!editable} className="text-right" /></td>
-                  <td className="px-3 py-2 text-right font-medium">{fmtMoney((Number(it.qty)||0) * (Number(it.unit_price)||0) * (1 + (Number(it.vat)||0)/100))}</td>
+                  <td className="px-3 py-2 text-right font-medium">{fmtMoney((Number(it.qty)||0) * (Number(it.unit_price)||0))}</td>
                   <td className="px-3 py-2 text-right">{editable && <button onClick={()=>removeItem(i)} className="text-red-500"><Trash2 className="h-4 w-4" /></button>}</td>
                 </tr>
               ))}
@@ -203,7 +213,7 @@ export default function QuoteEdit() {
             {quote.approval.note && <div className="italic">"{quote.approval.note}"</div>}
           </div>
         )}
-        <Button onClick={save} className="bg-orange-500 hover:bg-orange-600" disabled={!editable} data-testid="q-save"><Save className="h-4 w-4 mr-1" />{isNew ? "Oluştur" : "Kaydet"}</Button>
+        <Button onClick={save} className="bg-orange-500 hover:bg-orange-600" disabled={!editable || saving} data-testid="q-save"><Save className="h-4 w-4 mr-1" />{isNew ? "Oluştur" : "Kaydet"}</Button>
       </div>
     </div>
   );

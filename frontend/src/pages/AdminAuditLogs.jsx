@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/ui/dialog";
 import { History, RefreshCw, Filter, ArrowRight, X } from "lucide-react";
 import { fmtDate } from "../lib/api";
+import { toast } from "sonner";
 
 const ACTION_COLORS = {
   create: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -23,6 +24,14 @@ const badgeCls = (action = "") => {
   return ACTION_COLORS[key] || "bg-slate-50 text-slate-700 border-slate-200";
 };
 
+// Satırlardaki saatle aynı (yerel) güne göre YYYY-MM-DD anahtarı üretir
+const localDay = (iso) => {
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const p = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
 export default function AdminAuditLogs() {
   const [tenants, setTenants] = useState([]);
   const [logs, setLogs] = useState([]);
@@ -34,25 +43,28 @@ export default function AdminAuditLogs() {
     api.get("/admin/tenants").then(r => setTenants(r.data));
   }, []);
 
-  const fetchLogs = async () => {
+  // filters parametresi verilmezse mevcut form değerleri kullanılır (Temizle gibi state'i henüz güncellenmemiş çağrılar için)
+  const fetchLogs = async (filters = f) => {
     setLoading(true);
     try {
       const q = new URLSearchParams();
-      if (f.tenant_id && f.tenant_id !== "all") q.set("tenant_id", f.tenant_id);
-      if (f.user_email) q.set("user_email", f.user_email);
-      if (f.action) q.set("action", f.action);
-      if (f.since) q.set("since", new Date(f.since + "T00:00:00Z").toISOString());
+      if (filters.tenant_id && filters.tenant_id !== "all") q.set("tenant_id", filters.tenant_id);
+      if (filters.user_email) q.set("user_email", filters.user_email);
+      if (filters.action) q.set("action", filters.action);
+      // Tarih seçimi Türkiye saatine (yerel gün başlangıcı) göre yorumlanır
+      if (filters.since) q.set("since", new Date(filters.since + "T00:00:00").toISOString());
       q.set("limit", "500");
       const { data } = await api.get(`/admin/audit-logs?${q}`);
       setLogs(data);
-    } finally { setLoading(false); }
+    } catch { toast.error("Denetim kayıtları yüklenemedi"); }
+    finally { setLoading(false); }
   };
   useEffect(() => { fetchLogs(); /* eslint-disable-next-line */ }, []);
 
   const grouped = useMemo(() => {
     const g = {};
     logs.forEach(l => {
-      const d = (l.at || "").slice(0, 10);
+      const d = localDay(l.at);
       g[d] = g[d] || []; g[d].push(l);
     });
     return g;
@@ -65,7 +77,7 @@ export default function AdminAuditLogs() {
           <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><History className="h-7 w-7 text-orange-500" />Denetim Kayıtları</h1>
           <p className="text-sm text-slate-500 mt-1">{logs.length} kayıt · Her işlem kim yaptı, ne zaman yaptı — filtreleyerek inceleyin.</p>
         </div>
-        <Button onClick={fetchLogs} className="bg-orange-500 hover:bg-orange-600" data-testid="audit-refresh">
+        <Button onClick={() => fetchLogs()} className="bg-orange-500 hover:bg-orange-600" data-testid="audit-refresh">
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />Yenile
         </Button>
       </div>
@@ -96,8 +108,8 @@ export default function AdminAuditLogs() {
             <Input type="date" value={f.since} onChange={(e)=>setF({...f, since:e.target.value})} data-testid="audit-since" />
           </div>
           <div className="md:col-span-4 flex justify-end gap-2">
-            <Button variant="outline" onClick={()=>{ setF({ tenant_id:"", user_email:"", action:"", since:"" }); setTimeout(fetchLogs, 0); }}>Temizle</Button>
-            <Button onClick={fetchLogs} className="bg-slate-900 hover:bg-slate-800 text-white" data-testid="audit-apply">Uygula</Button>
+            <Button variant="outline" onClick={()=>{ const cleared = { tenant_id:"", user_email:"", action:"", since:"" }; setF(cleared); fetchLogs(cleared); }}>Temizle</Button>
+            <Button onClick={() => fetchLogs()} className="bg-slate-900 hover:bg-slate-800 text-white" data-testid="audit-apply">Uygula</Button>
           </div>
         </CardContent>
       </Card>
@@ -107,7 +119,7 @@ export default function AdminAuditLogs() {
           {logs.length === 0 && !loading && <div className="p-10 text-center text-slate-500">Bu filtrelere uyan kayıt yok.</div>}
           {Object.entries(grouped).map(([date, items]) => (
             <div key={date}>
-              <div className="px-4 py-2 bg-slate-50 border-y text-xs font-semibold text-slate-600 uppercase">{new Date(date).toLocaleDateString("tr-TR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
+              <div className="px-4 py-2 bg-slate-50 border-y text-xs font-semibold text-slate-600 uppercase">{new Date(date + "T00:00:00").toLocaleDateString("tr-TR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
               <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <tbody>

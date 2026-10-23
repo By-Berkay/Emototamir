@@ -29,7 +29,14 @@ export default function Motorcycles() {
     const { data } = await api.get(`/motorcycles${q ? `?q=${encodeURIComponent(q)}` : ""}`);
     setItems(data);
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [q]);
+  // Eski arama yanıtı yeni listeyi ezmesin
+  useEffect(() => {
+    let active = true;
+    api.get(`/motorcycles${q ? `?q=${encodeURIComponent(q)}` : ""}`)
+      .then(({ data }) => { if (active) setItems(data); })
+      .catch(() => {});
+    return () => { active = false; };
+  }, [q]);
   useEffect(() => { api.get("/customers").then((r) => setCustomers(r.data)); }, []);
 
   const save = async () => {
@@ -51,8 +58,17 @@ export default function Motorcycles() {
     const { moto, reason } = delDialog;
     if (!reason.trim()) return toast.error("Silme sebebi zorunlu");
     try {
-      const { data } = await api.delete(`/motorcycles/${moto.id}`, { data: { reason, force: true } });
-      const extras = Object.entries(data.counts || {}).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`);
+      // Açık servis kaydı varsa backend silmeyi engeller; kullanıcı onaylarsa force ile tekrar denenir
+      let res;
+      try {
+        res = await api.delete(`/motorcycles/${moto.id}`, { data: { reason, force: false } });
+      } catch (err) {
+        const detail = err.response?.data?.detail || "";
+        if (err.response?.status !== 400 || !detail.includes("açık servis")) throw err;
+        if (!window.confirm(`${detail}\n\nYine de silinsin mi? Açık servis kayıtları da çöp kutusuna alınır.`)) return;
+        res = await api.delete(`/motorcycles/${moto.id}`, { data: { reason, force: true } });
+      }
+      const extras = Object.entries(res.data.counts || {}).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`);
       toast.success(`${moto.plate} çöp kutusuna alındı${extras.length ? ` · ${extras.join(", ")}` : ""}`);
       setDelDialog({ open: false, moto: null, reason: "" });
       load();
@@ -68,7 +84,7 @@ export default function Motorcycles() {
           <h1 className="font-heading text-3xl font-bold text-slate-900">Motosikletler</h1>
           <p className="text-sm text-slate-500 mt-1">{items.length} motosiklet</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
           <DialogTrigger asChild><Button className="bg-orange-500 hover:bg-orange-600" data-testid="btn-new-motorcycle"><Plus className="h-4 w-4 mr-2" /> Yeni Motosiklet</Button></DialogTrigger>
           <DialogContent className="max-w-3xl">
             <DialogHeader><DialogTitle>Yeni Motosiklet</DialogTitle></DialogHeader>

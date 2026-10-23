@@ -31,7 +31,8 @@ export default function CustomerDetail() {
   const [editingId, setEditingId] = useState(null);
   const [editText, setEditText] = useState("");
   const [editTag, setEditTag] = useState("");
-  const load = () => api.get(`/customers/${id}`).then((r) => setC(r.data));
+  const load = () => api.get(`/customers/${id}`).then((r) => setC(r.data))
+    .catch(() => toast.error("Müşteri bilgileri yüklenemedi"));
   useEffect(() => { load(); }, [id]); // eslint-disable-line
   if (!c) return <div>Yükleniyor…</div>;
 
@@ -139,7 +140,7 @@ export default function CustomerDetail() {
                 {c.transactions.map((t) => (
                   <tr key={t.id} className="border-t">
                     <td className="px-4 py-2">{fmtDateShort(t.created_at)}</td>
-                    <td className="px-4 py-2">{t.type === "charge" ? "Borç" : t.type === "payment" ? "Tahsilat" : "Düzeltme"}</td>
+                    <td className="px-4 py-2">{({ charge: "Borç", payment: "Tahsilat", cancel: "İptal", adjust: "Düzeltme" })[t.type] || "Düzeltme"}</td>
                     <td className="px-4 py-2">{t.description}</td>
                     <td className={`px-4 py-2 text-right font-medium ${t.amount>0?"text-red-600":"text-emerald-600"}`}>{fmtMoney(t.amount)}</td>
                   </tr>

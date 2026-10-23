@@ -21,7 +21,7 @@ const download = (name, csv) => {
 
 export default function Reports() {
   const [r, setR] = useState(null);
-  useEffect(() => { api.get("/reports/summary").then(x=>setR(x.data)); }, []);
+  useEffect(() => { api.get("/reports/summary").then(x=>setR(x.data)).catch(() => toast.error("Rapor verileri yüklenemedi")); }, []);
   if (!r) return <div>Yükleniyor…</div>;
 
   return (

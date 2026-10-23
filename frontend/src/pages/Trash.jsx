@@ -30,7 +30,8 @@ export default function Trash() {
       const t = type === "all" ? "" : type;
       const { data } = await api.get(`/trash${t ? "?type=" + t : ""}`);
       setRows(data);
-    } finally { setLoading(false); }
+    } catch { toast.error("Çöp kutusu yüklenemedi"); }
+    finally { setLoading(false); }
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [type]);
 

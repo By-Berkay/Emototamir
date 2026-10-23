@@ -107,8 +107,10 @@ export default function AdminTenantEdit() {
 
   const delUser = async (u) => {
     if (!window.confirm(`${u.email} kullanıcısı silinsin mi?`)) return;
-    await api.delete(`/admin/users/${u.id}`);
-    toast.success("Kullanıcı silindi"); load();
+    try {
+      await api.delete(`/admin/users/${u.id}`);
+      toast.success("Kullanıcı silindi"); load();
+    } catch (e) { toast.error(e.response?.data?.detail || "Kullanıcı silinemedi"); }
   };
 
   const createUser = async () => {
@@ -243,11 +245,11 @@ export default function AdminTenantEdit() {
             </div>
             <div>
               <Label>Deneme Bitiş</Label>
-              <Input type="date" value={(t.trial_ends_at||"").slice(0,10)} onChange={(e)=>upd({trial_ends_at: e.target.value ? new Date(e.target.value+"T23:59:59Z").toISOString() : null})} data-testid="sub-trial-ends" />
+              <Input type="date" value={(t.trial_ends_at||"").slice(0,10)} onChange={(e)=>upd({trial_ends_at: e.target.value ? new Date(e.target.value+"T23:59:59+03:00").toISOString() : null})} data-testid="sub-trial-ends" />
             </div>
             <div>
               <Label>Abonelik Bitiş</Label>
-              <Input type="date" value={(t.subscription_ends_at||"").slice(0,10)} onChange={(e)=>upd({subscription_ends_at: e.target.value ? new Date(e.target.value+"T23:59:59Z").toISOString() : null})} data-testid="sub-ends" />
+              <Input type="date" value={(t.subscription_ends_at||"").slice(0,10)} onChange={(e)=>upd({subscription_ends_at: e.target.value ? new Date(e.target.value+"T23:59:59+03:00").toISOString() : null})} data-testid="sub-ends" />
             </div>
             <div className="md:col-span-2">
               <Label>Ödeme / Sözleşme Notu</Label>

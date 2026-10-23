@@ -111,7 +111,7 @@ export default function Quotes() {
                     <div className="flex justify-end gap-1">
                       <button title="Paylaşım linkini kopyala" onClick={()=>copyLink(r.share_token)} className="p-1.5 hover:bg-slate-100 rounded" data-testid={`quote-copy-${r.id}`}><Copy className="h-3.5 w-3.5" /></button>
                       <a title="Müşteri linkini aç" href={`/q/${r.share_token}`} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-slate-100 rounded" data-testid={`quote-open-${r.id}`}><ExternalLink className="h-3.5 w-3.5" /></a>
-                      {r.status === "draft" && <button title="Gönderildi olarak işaretle" onClick={()=>send(r.id)} className="p-1.5 hover:bg-blue-100 rounded text-blue-600" data-testid={`quote-send-${r.id}`}><Send className="h-3.5 w-3.5" /></button>}
+                      {(r.status === "draft" || r.status === "rejected") && <button title="Gönderildi olarak işaretle" onClick={()=>send(r.id)} className="p-1.5 hover:bg-blue-100 rounded text-blue-600" data-testid={`quote-send-${r.id}`}><Send className="h-3.5 w-3.5" /></button>}
                       {(r.status === "approved" || r.status === "sent" || r.status === "draft") && <button title="İş Emrine Dönüştür" onClick={()=>convert(r.id)} className="text-xs px-2 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700" data-testid={`quote-convert-${r.id}`}>Dönüştür</button>}
                       {r.status !== "converted" && <button title="Sil" onClick={()=>del(r.id)} className="p-1.5 hover:bg-red-100 rounded text-red-600">×</button>}
                     </div>

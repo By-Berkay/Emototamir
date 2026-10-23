@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { NavLink, Outlet, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList,
@@ -33,12 +33,18 @@ export default function Layout() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const NAV = user?.role === "super_admin" ? NAV_SUPER : NAV_TENANT;
 
   const onSearch = (e) => {
     e.preventDefault();
     if (q.trim()) navigate(`/service-orders?q=${encodeURIComponent(q.trim())}`);
   };
+
+  // Süper Admin firma verisine erişemez (backend 403 döner); firma sayfalarına girerse firma yönetimine yönlendir
+  if (user?.role === "super_admin" && !pathname.startsWith("/admin") && pathname !== "/settings") {
+    return <Navigate to="/admin/tenants" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 flex">

@@ -23,7 +23,9 @@ export default function PublicApproval() {
     setSubmitting(true);
     try {
       const { data: r } = await axios.post(`${API}/public/approval/${token}`, { approve, note });
-      toast.success(approve ? "Teklif onaylandı" : "Teklif reddedildi");
+      // Sunucu daha önce verilmiş bir kararı döndürebilir; mesaj her zaman sunucu durumuna göre olsun
+      if (r.already) toast.info("Bu form daha önce yanıtlanmış");
+      else toast.success(r.approval_status === "approved" ? "Teklif onaylandı" : "Teklif reddedildi");
       setData({ ...data, approval_status: r.approval_status });
     } catch (e) { toast.error("İşlem başarısız"); } finally { setSubmitting(false); }
   };

@@ -23,6 +23,7 @@ export default function Reminders() {
   const load = async () => {
     setLoading(true);
     try { const r = await api.get("/reminders"); setData(r.data); }
+    catch { toast.error("Hatırlatmalar yüklenemedi"); }
     finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []);
@@ -39,12 +40,15 @@ export default function Reminders() {
 
   const downloadCsv = async () => {
     const token = localStorage.getItem("token");
-    const res = await fetch(`${API}/api/reminders/export.csv?scope=${tab}`, { headers: { Authorization: `Bearer ${token}` } });
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = `hatirlatmalar_${tab}.csv`; a.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV indirildi");
+    try {
+      const res = await fetch(`${API}/api/reminders/export.csv?scope=${tab}`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("csv");
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = `hatirlatmalar_${tab}.csv`; a.click();
+      URL.revokeObjectURL(url);
+      toast.success("CSV indirildi");
+    } catch { toast.error("CSV indirilemedi"); }
   };
 
   const openWhatsApp = () => {

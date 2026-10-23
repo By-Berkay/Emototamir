@@ -49,13 +49,16 @@ export default function Settings() {
 
   const load = async () => {
     if (user?.role === "super_admin") return;
+    // /users yalnızca admin rolüne açık; diğer roller için istek atılmaz (aksi halde sayfa yüklenemez)
     const [t, u, p, s] = await Promise.all([
-      api.get("/tenant/me"), api.get("/users"), api.get("/products"), api.get("/service-catalog"),
+      api.get("/tenant/me"),
+      isAdmin ? api.get("/users") : Promise.resolve({ data: [] }),
+      api.get("/products"), api.get("/service-catalog"),
     ]);
     setTenant(t.data); setUsers(u.data); setProducts(p.data); setServices(s.data);
     setFaultZones(t.data.custom_fault_zones || []);
   };
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [user]);
+  useEffect(() => { load().catch(() => toast.error("Ayarlar yüklenemedi")); /* eslint-disable-next-line */ }, [user]);
 
   if (user?.role === "super_admin") {
     return <div className="max-w-lg"><Card><CardContent className="p-6"><p>Süper Admin panelini kullanın: <Link to="/admin/tenants" className="text-orange-600 underline">Firma Yönetimi</Link></p></CardContent></Card></div>;
@@ -64,7 +67,10 @@ export default function Settings() {
 
   const saveTenant = async () => {
     try {
-      await api.put("/tenant/me", { ...tenant, custom_fault_zones: faultZones });
+      // Abonelik/plan alanları yalnızca Süper Admin tarafından değiştirilir; firma kendi kaydında göndermez
+      const payload = { ...tenant, custom_fault_zones: faultZones };
+      ["plan", "is_active", "subscription_ends_at", "trial_ends_at", "billing_notes"].forEach((k) => delete payload[k]);
+      await api.put("/tenant/me", payload);
       toast.success("Firma bilgileri kaydedildi");
       await refresh?.();
     } catch { toast.error("Kayıt başarısız"); }
@@ -115,8 +121,10 @@ export default function Settings() {
   };
   const delPr = async (p) => {
     if (!window.confirm(`${p.name} silinsin mi?`)) return;
-    await api.delete(`/products/${p.id}`); toast.success("Silindi");
-    const { data } = await api.get("/products"); setProducts(data);
+    try {
+      await api.delete(`/products/${p.id}`); toast.success("Silindi");
+      const { data } = await api.get("/products"); setProducts(data);
+    } catch { toast.error("Silme başarısız"); }
   };
   const saveSv = async () => {
     try {
@@ -129,8 +137,10 @@ export default function Settings() {
   };
   const delSv = async (s) => {
     if (!window.confirm(`${s.name} silinsin mi?`)) return;
-    await api.delete(`/service-catalog/${s.id}`); toast.success("Silindi");
-    const { data } = await api.get("/service-catalog"); setServices(data);
+    try {
+      await api.delete(`/service-catalog/${s.id}`); toast.success("Silindi");
+      const { data } = await api.get("/service-catalog"); setServices(data);
+    } catch { toast.error("Silme başarısız"); }
   };
 
   return (

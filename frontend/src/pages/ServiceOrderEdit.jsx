@@ -22,9 +22,13 @@ export default function ServiceOrderEdit() {
   const [services, setServices] = useState([]);
   const [partKey, setPartKey] = useState(0);
   const [svcKey, setSvcKey] = useState(0);
+  const [initialStatus, setInitialStatus] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    api.get(`/service-orders/${id}`).then(r => setOrder(r.data));
+    api.get(`/service-orders/${id}`)
+      .then(r => { setOrder(r.data); setInitialStatus(r.data.status); })
+      .catch(() => toast.error("Servis kaydı yüklenemedi"));
     api.get("/products").then(r => setProducts(r.data));
     api.get("/service-catalog").then(r => setServices(r.data));
   }, [id]);
@@ -48,7 +52,10 @@ export default function ServiceOrderEdit() {
   const toggleFault = (k) => update({ fault_zones: order.fault_zones.includes(k) ? order.fault_zones.filter(x=>x!==k) : [...order.fault_zones, k] });
 
   const save = async () => {
+    if (saving) return;
+    setSaving(true);
     try {
+      // Durum değişimi PUT ile yapılmaz; yalnızca /status endpoint'i ile kaydedilir.
       await api.put(`/service-orders/${id}`, {
         customer_id: order.customer_id, motorcycle_id: order.motorcycle_id,
         km: Number(order.km) || 0, fuel_level: order.fuel_level,
@@ -56,11 +63,14 @@ export default function ServiceOrderEdit() {
         complaint: order.complaint, diagnosis: order.diagnosis, operations: order.operations,
         notes: order.notes, items: order.items,
         labor_total: Number(order.labor_total) || 0, discount: Number(order.discount) || 0,
-        status: order.status,
       });
+      if (order.status !== initialStatus) {
+        await api.post(`/service-orders/${id}/status`, { status: order.status });
+      }
       toast.success("Değişiklikler kaydedildi");
       nav(`/service-orders/${id}`);
-    } catch (e) { toast.error("Kayıt başarısız"); }
+    } catch (e) { toast.error(e.response?.data?.detail || "Kayıt başarısız"); }
+    finally { setSaving(false); }
   };
 
   if (!order) return <div>Yükleniyor…</div>;
@@ -74,7 +84,7 @@ export default function ServiceOrderEdit() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => nav(`/service-orders/${id}`)}>Vazgeç</Button>
-          <Button className="bg-orange-500 hover:bg-orange-600" onClick={save} data-testid="edit-save"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
+          <Button className="bg-orange-500 hover:bg-orange-600" onClick={save} disabled={saving} data-testid="edit-save"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
         </div>
       </div>
 
@@ -167,7 +177,7 @@ export default function ServiceOrderEdit() {
             <div className="flex justify-between"><span className="text-slate-500">İskonto</span><span className="text-red-600">-{fmtMoney(order.discount)}</span></div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t"><span>Genel Toplam</span><span>{fmtMoney(totals.grand)}</span></div>
           </div>
-          <Button onClick={save} className="w-full mt-4 h-11 bg-orange-500 hover:bg-orange-600 font-semibold"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
+          <Button onClick={save} disabled={saving} className="w-full mt-4 h-11 bg-orange-500 hover:bg-orange-600 font-semibold"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
         </CardContent></Card>
       </div>
     </div>

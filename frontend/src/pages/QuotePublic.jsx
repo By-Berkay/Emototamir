@@ -34,7 +34,11 @@ export default function QuotePublic() {
     try {
       const r = await axios.post(`${API}/api/public/quotes/${token}/approve`, { action, customer_name: name.trim(), note });
       setDone({ action, status: r.data.status });
-    } catch (e) { toast.error(e.response?.data?.detail || "İşlem başarısız"); }
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "İşlem başarısız");
+      // Teklif bu arada süresi dolmuş/yanıtlanmış olabilir; güncel durumu yeniden al
+      axios.get(`${API}/api/public/quotes/${token}`).then(r => setQ(r.data)).catch(() => {});
+    }
     finally { setSubmitting(false); }
   };
 
@@ -50,7 +54,9 @@ export default function QuotePublic() {
   if (!q) return <div className="p-10 text-center text-slate-500">Yükleniyor…</div>;
 
   const t = q.tenant || {};
-  const readonly = ["approved", "rejected", "converted", "expired"].includes(q.status) || done;
+  const decided = ["approved", "rejected", "converted", "expired"].includes(q.status);
+  const expiredByDate = !!q.valid_until && new Date(q.valid_until) < new Date() && !decided;
+  const readonly = decided || expiredByDate || done;
   const brandColor = t.primary_color || "#F97316";
 
   return (
@@ -117,7 +123,7 @@ export default function QuotePublic() {
                       <td className="px-4 py-2 text-right">{it.qty}</td>
                       <td className="px-4 py-2 text-right">{fmt(it.unit_price)}</td>
                       <td className="px-4 py-2 text-right">{it.vat}%</td>
-                      <td className="px-4 py-2 text-right font-medium">{fmt(it.qty * it.unit_price * (1 + it.vat/100))}</td>
+                      <td className="px-4 py-2 text-right font-medium">{fmt(it.qty * it.unit_price)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -155,7 +161,9 @@ export default function QuotePublic() {
           </Card>
         ) : readonly ? (
           <Card><CardContent className="p-6 text-center text-slate-500">
-            Bu teklif <b>{q.status}</b> durumunda — üzerinde işlem yapılamaz.
+            {expiredByDate && !decided
+              ? <>Bu teklifin geçerlilik süresi dolmuş — üzerinde işlem yapılamaz.</>
+              : <>Bu teklif <b>{q.status}</b> durumunda — üzerinde işlem yapılamaz.</>}
           </CardContent></Card>
         ) : (
           <Card>

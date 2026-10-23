@@ -37,7 +37,8 @@ export default function Dashboard() {
   const [regen, setRegen] = useState(false);
 
   useEffect(() => {
-    api.get("/dashboard").then((r) => setData(r.data));
+    api.get("/dashboard").then((r) => setData(r.data))
+      .catch(() => toast.error("Dashboard verileri yüklenemedi"));
     api.get("/dashboard/reminders-today").then(r => setDigest(r.data)).catch(()=>{});
   }, []);
 

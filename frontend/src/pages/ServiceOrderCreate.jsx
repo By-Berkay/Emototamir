@@ -40,6 +40,7 @@ export default function ServiceOrderCreate() {
   const [status, setStatus] = useState("new");
   const [partKey, setPartKey] = useState(0);
   const [svcKey, setSvcKey] = useState(0);
+  const [saving, setSaving] = useState(false);
 
   // Quick add dialogs
   const [custOpen, setCustOpen] = useState(false);
@@ -54,12 +55,14 @@ export default function ServiceOrderCreate() {
     api.get(`/motorcycles?customer_id=${customerId}`).then(r=>{ setMotos(r.data); setMotoId(""); });
   }, [customerId]);
   useEffect(() => {
+    // Yalnızca motosiklet seçimi değişince km doldur; liste yenilenince kullanıcının girdiği km ezilmesin.
     const m = motos.find(x => x.id === motoId);
     if (m) setKm(String(m.km || ""));
-  }, [motoId, motos]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [motoId]);
 
-  const addPart = (p) => setItems([...items, { id: crypto.randomUUID(), kind: "part", ref_id: p.id, name: p.name, qty: 1, unit_price: p.sale_price, vat: p.vat || 20 }]);
-  const addService = (s) => setItems([...items, { id: crypto.randomUUID(), kind: "service", ref_id: s.id, name: s.name, qty: 1, unit_price: s.price, vat: s.vat || 20 }]);
+  const addPart = (p) => setItems([...items, { id: crypto.randomUUID(), kind: "part", ref_id: p.id, name: p.name, qty: 1, unit_price: p.sale_price, vat: p.vat ?? 20 }]);
+  const addService = (s) => setItems([...items, { id: crypto.randomUUID(), kind: "service", ref_id: s.id, name: s.name, qty: 1, unit_price: s.price, vat: s.vat ?? 20 }]);
   const updItem = (id, patch) => setItems(items.map(i => i.id === id ? { ...i, ...patch } : i));
   const rmItem = (id) => setItems(items.filter(i => i.id !== id));
 
@@ -118,6 +121,8 @@ export default function ServiceOrderCreate() {
 
   const save = async () => {
     if (!customerId || !motoId) return toast.error("Müşteri ve motosiklet seçin");
+    if (saving) return;
+    setSaving(true);
     try {
       const { data } = await api.post("/service-orders", {
         customer_id: customerId, motorcycle_id: motoId, km: Number(km) || 0, fuel_level: fuel,
@@ -126,7 +131,8 @@ export default function ServiceOrderCreate() {
       });
       toast.success(`Servis oluşturuldu: ${data.service_no}`);
       nav(`/service-orders/${data.id}`);
-    } catch (e) { toast.error("Kayıt başarısız"); }
+    } catch (e) { toast.error(e.response?.data?.detail || "Kayıt başarısız"); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -236,7 +242,7 @@ export default function ServiceOrderCreate() {
             <div className="flex justify-between"><span className="text-slate-500">İskonto</span><span className="text-red-600">-{fmtMoney(discount)}</span></div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t"><span>Genel Toplam</span><span>{fmtMoney(totals.grand)}</span></div>
           </div>
-          <Button onClick={save} className="w-full mt-4 h-11 bg-orange-500 hover:bg-orange-600 font-semibold" data-testid="so-save">
+          <Button onClick={save} disabled={saving} className="w-full mt-4 h-11 bg-orange-500 hover:bg-orange-600 font-semibold" data-testid="so-save">
             <Plus className="h-4 w-4 mr-2" /> Servisi Oluştur
           </Button>
         </CardContent></Card>

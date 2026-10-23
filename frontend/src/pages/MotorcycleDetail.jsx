@@ -4,11 +4,15 @@ import api, { fmtMoney, fmtDateShort } from "../lib/api";
 import { Card, CardContent } from "../components/ui/card";
 import StatusBadge from "../components/StatusBadge";
 import MotorcycleIllustration from "../components/MotorcycleIllustration";
+import { toast } from "sonner";
 
 export default function MotorcycleDetail() {
   const { id } = useParams();
   const [m, setM] = useState(null);
-  useEffect(() => { api.get(`/motorcycles/${id}`).then((r) => setM(r.data)); }, [id]);
+  useEffect(() => {
+    api.get(`/motorcycles/${id}`).then((r) => setM(r.data))
+      .catch(() => toast.error("Motosiklet bilgileri yüklenemedi"));
+  }, [id]);
   if (!m) return <div>Yükleniyor…</div>;
 
   return (

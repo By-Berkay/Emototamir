@@ -26,8 +26,10 @@ export default function ServiceOrderDetail() {
   const [payOpen, setPayOpen] = useState(false);
   const [waOpen, setWaOpen] = useState(false);
   const [waData, setWaData] = useState(null);
+  const [paying, setPaying] = useState(false);
 
-  const load = () => api.get(`/service-orders/${id}`).then(r => setO(r.data));
+  const load = () => api.get(`/service-orders/${id}`).then(r => setO(r.data))
+    .catch(() => toast.error("Servis kaydı yüklenemedi"));
   useEffect(() => { load(); }, [id]);
 
   if (!o) return <div>Yükleniyor…</div>;
@@ -36,29 +38,40 @@ export default function ServiceOrderDetail() {
   const pdfUrl = (kind) => `${API}/service-orders/${id}/pdf/${kind}?auth=${token}`;
 
   const changeStatus = async (s) => {
-    await api.post(`/service-orders/${id}/status`, { status: s });
-    toast.success("Durum güncellendi");
-    load();
+    try {
+      await api.post(`/service-orders/${id}/status`, { status: s });
+      toast.success("Durum güncellendi");
+      load();
+    } catch (e) { toast.error(e.response?.data?.detail || "Durum güncellenemedi"); }
   };
 
   const doPayment = async () => {
+    if (paying) return;
     const amt = Number(payAmount);
     if (!amt || amt <= 0) return toast.error("Tutar giriniz");
-    await api.post("/payments", { customer_id: o.customer_id, service_order_id: o.id, amount: amt, method: payMethod });
-    toast.success("Tahsilat kaydedildi");
-    setPayOpen(false); setPayAmount(""); load();
+    setPaying(true);
+    try {
+      await api.post("/payments", { customer_id: o.customer_id, service_order_id: o.id, amount: amt, method: payMethod });
+      toast.success("Tahsilat kaydedildi");
+      setPayOpen(false); setPayAmount(""); load();
+    } catch (e) { toast.error(e.response?.data?.detail || "Tahsilat kaydedilemedi"); }
+    finally { setPaying(false); }
   };
 
   const saveSignature = async (dataUrl) => {
-    await api.post(`/service-orders/${id}/signature`, { signature: dataUrl });
-    toast.success("İmza kaydedildi");
-    setO({ ...o, customer_signature: dataUrl });
+    try {
+      await api.post(`/service-orders/${id}/signature`, { signature: dataUrl });
+      toast.success(dataUrl ? "İmza kaydedildi" : "İmza temizlendi");
+      load();
+    } catch (e) { toast.error(e.response?.data?.detail || "İmza kaydedilemedi"); }
   };
 
   const openWhatsApp = async () => {
-    const { data } = await api.post(`/service-orders/${id}/approval-link`);
-    setWaData(data);
-    setWaOpen(true);
+    try {
+      const { data } = await api.post(`/service-orders/${id}/approval-link`);
+      setWaData(data);
+      setWaOpen(true);
+    } catch (e) { toast.error(e.response?.data?.detail || "Onay bağlantısı oluşturulamadı"); }
   };
 
   const copyLink = () => {
@@ -126,7 +139,7 @@ export default function ServiceOrderDetail() {
               </div>
               <DialogFooter>
                 <Button variant="outline" onClick={()=>setPayOpen(false)}>İptal</Button>
-                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={doPayment} data-testid="pay-submit">Kaydet</Button>
+                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={doPayment} disabled={paying} data-testid="pay-submit">Kaydet</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
@@ -252,7 +265,7 @@ export default function ServiceOrderDetail() {
         <TabsContent value="signature">
           <Card className="border-slate-200"><CardContent className="p-5">
             <SignaturePad initial={o.customer_signature || ""} onSave={saveSignature} />
-            {o.signed_at && <div className="text-xs text-slate-500 mt-3">İmzalandı: {fmtDate(o.signed_at)}</div>}
+            {o.signed_at && o.customer_signature && <div className="text-xs text-slate-500 mt-3">İmzalandı: {fmtDate(o.signed_at)}</div>}
           </CardContent></Card>
         </TabsContent>
 
