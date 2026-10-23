@@ -259,14 +259,15 @@ def test_08_quotes_crud_send_and_audit_diff(state):
     state["created"].setdefault("quote_ids", []).append(quote["id"])
     state["quote"] = quote
     assert quote["status"] == "draft" and quote["quote_no"].startswith("TKF-") and len(quote["share_token"]) == 32
-    assert quote["subtotal"] == 250 and quote["vat_total"] == 45 and quote["labor_total"] == 30
-    assert quote["discount"] == 5 and quote["grand_total"] == 320
+    # Birim fiyatlar KDV dahil: genel toplam = kalemler + işçilik - iskonto; KDV brüt tutardan ayrıştırılır
+    assert quote["subtotal"] == 250 and abs(quote["vat_total"] - 37.88) < 0.01 and quote["labor_total"] == 30
+    assert quote["discount"] == 5 and quote["grand_total"] == 275
     fetched = state["tenant"].get(f"{BASE_URL}/api/quotes/{quote['id']}", timeout=30)
     assert fetched.status_code == 200 and fetched.json()["notes"] == payload["notes"]
     payload.update({"notes": "TEST_I4 quote updated", "labor_total": 40})
     updated = state["tenant"].put(f"{BASE_URL}/api/quotes/{quote['id']}", json=payload, timeout=30)
     assert updated.status_code == 200, updated.text
-    assert updated.json()["notes"] == "TEST_I4 quote updated" and updated.json()["grand_total"] == 330
+    assert updated.json()["notes"] == "TEST_I4 quote updated" and updated.json()["grand_total"] == 285
     sent = state["tenant"].post(f"{BASE_URL}/api/quotes/{quote['id']}/send", timeout=30)
     assert sent.status_code == 200 and sent.json()["status"] == "sent" and sent.json()["sent_at"]
 

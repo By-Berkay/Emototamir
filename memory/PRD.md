@@ -73,8 +73,9 @@ Türkçe multi-tenant motosiklet servis yönetim SaaS. Süper Admin firmaları y
 - SMS/Email provider (Twilio/SendGrid/Resend)
 
 ## Credentials
-- **Süper Admin**: berkayozturk27@gmail.com / 123
-- **Demo Firma Admin**: admin@motocarizma.com / demo123
+- Kimlik bilgileri bu dosyada tutulmaz. Süper Admin: `ADMIN_EMAIL` / `ADMIN_PASSWORD` ortam değişkenleri (hesap yoksa ilk açılışta oluşturulur, mevcut şifre sıfırlanmaz).
+- Demo firma verisi: `SEED_DEMO_DATA=true` ile yüklenir; demo yönetici için `DEMO_ADMIN_PASSWORD` tanımlanmalıdır.
+- Test kimlikleri: `memory/test_credentials.md` (git'e eklenmez, `.gitignore`'da).
 
 ## Notes / Known limits
 - CORS reverse-proxy ingress `*` döndürüyor olabilir (Emergent kontrolünde); FastAPI seviyesinde reflection düzeltildi.
