@@ -1,0 +1,32 @@
+# Günlük bakım hatırlatma özeti + çöp kutusu temizliği.
+# Emergent cron'unun yerini alır. 09:00 Europe/Istanbul = 06:00 UTC (Türkiye'de DST yok).
+# Gerekli ayarlar (GitHub > Settings > Secrets and variables > Actions):
+#   Variable: API_URL          -> https://api.emototamir.com
+#   Secret:   WEBHOOK_CRON_SECRET -> backend'deki WEBHOOK_CRON_SECRET ile aynı değer
+name: reminders-digest
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Hatırlatma özetini tetikle
+        env:
+          API_URL: ${{ vars.API_URL }}
+          CRON_SECRET: ${{ secrets.WEBHOOK_CRON_SECRET }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "API_URL variable ve WEBHOOK_CRON_SECRET secret tanımlı olmalı"
+            exit 1
+          fi
+          curl --fail --silent --show-error \
+            --max-time 120 --retry 3 --retry-delay 15 \
+            -X POST "$API_URL/api/cron/reminders-digest" \
+            -H "Authorization: Bearer $CRON_SECRET"
