@@ -18,7 +18,7 @@ services:
       - key: MONGO_URL
         sync: false
       - key: DB_NAME
-        value: emototamir
+        value: EmotoTamir
       - key: ADMIN_EMAIL
         sync: false
       - key: ADMIN_PASSWORD
