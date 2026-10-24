@@ -27,5 +27,3 @@ services:
         value: https://emototamir.com
       - key: CORS_ORIGINS
         value: https://emototamir.com,https://www.emototamir.com
-      - key: EMERGENT_LLM_KEY
-        sync: false

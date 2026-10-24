@@ -1,59 +1,54 @@
-"""Emergent Object Storage helpers."""
-import os
-import requests
+"""Dosya depolama: MongoDB GridFS.
+
+Fotoğraf ve logolar uygulamanın kendi MongoDB veritabanında tutulur; harici bir
+depolama servisi gerekmez. Atlas M0 ücretsiz planında toplam depolama 512 MB'tır.
+"""
 import logging
+
+from gridfs.errors import NoFile
+from motor.motor_asyncio import AsyncIOMotorGridFSBucket
 
 logger = logging.getLogger("storage")
 
-STORAGE_BASE = (os.environ.get("INTEGRATION_PROXY_URL") or "").strip() or "https://integrations.emergentagent.com"
-STORAGE_URL = STORAGE_BASE.rstrip("/") + "/objstore/api/v1/storage"
-EMERGENT_KEY = os.environ.get("EMERGENT_LLM_KEY")
 APP_NAME = "moto-servis"
-
-_storage_key = None
-
-
-def init_storage(force: bool = False) -> str:
-    global _storage_key
-    if _storage_key and not force:
-        return _storage_key
-    resp = requests.post(f"{STORAGE_URL}/init", json={"emergent_key": EMERGENT_KEY}, timeout=30)
-    resp.raise_for_status()
-    _storage_key = resp.json()["storage_key"]
-    return _storage_key
+_bucket: AsyncIOMotorGridFSBucket | None = None
 
 
-def put_object(path: str, data: bytes, content_type: str) -> dict:
-    key = init_storage()
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data,
-        timeout=120,
+def init_storage(db) -> None:
+    """Uygulama açılışında bir kez çağrılır."""
+    global _bucket
+    _bucket = AsyncIOMotorGridFSBucket(db, bucket_name="app_files")
+    logger.info("GridFS dosya deposu hazır")
+
+
+def _get_bucket() -> AsyncIOMotorGridFSBucket:
+    if _bucket is None:
+        raise RuntimeError("Dosya deposu başlatılmadı")
+    return _bucket
+
+
+async def put_object(path: str, data: bytes, content_type: str) -> dict:
+    bucket = _get_bucket()
+    # GridFS'te dosya kimliği tekildir; aynı yola yazılırsa önce eski sürüm silinir.
+    try:
+        await bucket.delete(path)
+    except NoFile:
+        pass
+    await bucket.upload_from_stream_with_id(
+        path,
+        path.rsplit("/", 1)[-1],
+        data,
+        metadata={"content_type": content_type},
     )
-    if resp.status_code == 404:
-        key = init_storage(force=True)
-        resp = requests.put(
-            f"{STORAGE_URL}/objects/{path}",
-            headers={"X-Storage-Key": key, "Content-Type": content_type},
-            data=data, timeout=120,
-        )
-    resp.raise_for_status()
-    return resp.json()
+    return {"path": path, "size": len(data), "content_type": content_type}
 
 
-def get_object(path: str):
-    key = init_storage()
-    resp = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key},
-        timeout=60,
-    )
-    if resp.status_code == 404:
-        key = init_storage(force=True)
-        resp = requests.get(
-            f"{STORAGE_URL}/objects/{path}",
-            headers={"X-Storage-Key": key}, timeout=60,
-        )
-    resp.raise_for_status()
-    return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
+async def get_object(path: str) -> tuple[bytes, str]:
+    bucket = _get_bucket()
+    try:
+        stream = await bucket.open_download_stream(path)
+    except NoFile as exc:
+        raise FileNotFoundError(path) from exc
+    data = await stream.read()
+    content_type = (stream.metadata or {}).get("content_type", "application/octet-stream")
+    return data, content_type

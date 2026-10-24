@@ -531,7 +531,7 @@ async def admin_upload_logo(tid: str, file: UploadFile = File(...), user=Depends
         raise HTTPException(400, "Sadece görsel dosyası yüklenebilir")
     path = f"{APP_NAME}/tenants/{tid}/logo.{ext}"
     data = await file.read()
-    result = put_object(path, data, file.content_type or "image/png")
+    result = await put_object(path, data, file.content_type or "image/png")
     await db.tenants.update_one({"id": tid}, {"$set": {"logo_path": result["path"]}})
     await db.file_refs.insert_one({
         "id": uid(), "path": result["path"], "tenant_id": tid,
@@ -548,7 +548,7 @@ async def admin_upload_moto_img(tid: str, type_key: str, file: UploadFile = File
     safe_key = type_key.replace("/", "_").replace(" ", "_")
     path = f"{APP_NAME}/tenants/{tid}/moto-{safe_key}.{ext}"
     data = await file.read()
-    result = put_object(path, data, file.content_type or "image/png")
+    result = await put_object(path, data, file.content_type or "image/png")
     await db.tenants.update_one({"id": tid}, {"$set": {f"custom_moto_images.{type_key}": result["path"]}})
     await db.file_refs.insert_one({
         "id": uid(), "path": result["path"], "tenant_id": tid,
@@ -648,7 +648,7 @@ async def admin_pdf_preview(inp: PdfPreviewIn, user=Depends(require_super_admin)
     logo_path = tenant.get("logo_path")
     if logo_path:
         try:
-            logo_bytes, _ = get_object(logo_path)
+            logo_bytes, _ = await get_object(logo_path)
         except Exception:
             logo_bytes = None
     # Sample order data for preview
@@ -808,7 +808,7 @@ async def upload_tenant_logo(file: UploadFile = File(...), user=Depends(require_
         raise HTTPException(400, "Sadece görsel dosyası yüklenebilir")
     path = f"{APP_NAME}/tenants/{tid}/logo.{ext}"
     data = await file.read()
-    result = put_object(path, data, file.content_type or "image/png")
+    result = await put_object(path, data, file.content_type or "image/png")
     await db.tenants.update_one({"id": tid}, {"$set": {"logo_path": result["path"]}})
     await db.file_refs.insert_one({
         "id": uid(), "path": result["path"], "tenant_id": tid,
@@ -827,7 +827,7 @@ async def upload_moto_image(type_key: str, file: UploadFile = File(...), user=De
     safe_key = type_key.replace("/", "_").replace(" ", "_")
     path = f"{APP_NAME}/tenants/{tid}/moto-{safe_key}.{ext}"
     data = await file.read()
-    result = put_object(path, data, file.content_type or "image/png")
+    result = await put_object(path, data, file.content_type or "image/png")
     await db.tenants.update_one({"id": tid}, {"$set": {f"custom_moto_images.{type_key}": result["path"]}})
     await db.file_refs.insert_one({
         "id": uid(), "path": result["path"], "tenant_id": tid,
@@ -1925,7 +1925,7 @@ async def upload_photo(sid: str, file: UploadFile = File(...), caption: str = Fo
     photo_id = uid()
     path = f"{APP_NAME}/tenants/{tid}/service-orders/{sid}/{photo_id}.{ext}"
     data = await file.read()
-    result = put_object(path, data, file.content_type or "image/jpeg")
+    result = await put_object(path, data, file.content_type or "image/jpeg")
     photo = {
         "id": photo_id, "path": result["path"], "caption": caption or "",
         "size": result.get("size", len(data)), "content_type": file.content_type or "image/jpeg",
@@ -1965,7 +1965,7 @@ async def download_file(path: str, request: Request, auth: str = Query(None)):
     user_tid = payload.get("tenant_id")
     if ref.get("tenant_id") and ref["tenant_id"] != user_tid and payload.get("role") != "super_admin":
         raise HTTPException(403, "Erişim engellendi")
-    data, ct = get_object(path)
+    data, ct = await get_object(path)
     return Response(content=data, media_type=ref.get("content_type", ct))
 
 # ---------- Signature ----------
@@ -2011,7 +2011,7 @@ async def service_pdf(sid: str, kind: str, request: Request, auth: str = Query(N
     logo_bytes = None
     if tenant.get("logo_path"):
         try:
-            logo_bytes, _ = get_object(tenant["logo_path"])
+            logo_bytes, _ = await get_object(tenant["logo_path"])
         except Exception:
             logo_bytes = None
     pdf_bytes = build_service_pdf(order, kind=kind, tenant=tenant, logo_bytes=logo_bytes)
@@ -2906,7 +2906,7 @@ async def on_startup():
     if os.environ.get("SEED_DEMO_DATA", "").lower() in {"1", "true", "yes"}:
         await seed_demo_data()
     try:
-        init_storage()
+        init_storage(db)
         logger.info("Object storage initialized")
     except Exception as e:
         logger.warning(f"Storage init failed: {e}")
