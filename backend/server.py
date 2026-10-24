@@ -238,7 +238,13 @@ class TenantCreateWithAdmin(TenantIn):
     admin_password: str
     admin_name: str
 
+MIN_PASSWORD_LEN = 8
+
 class PasswordResetIn(BaseModel):
+    new_password: str
+
+class ChangePasswordIn(BaseModel):
+    current_password: str
     new_password: str
 
 class GlobalApplyIn(BaseModel):
@@ -409,6 +415,23 @@ async def me(user=Depends(get_current_user)):
         tenant = await db.tenants.find_one({"id": user["tenant_id"]}, {"_id": 0})
     return {**user, "tenant": tenant}
 
+@api.post("/auth/change-password")
+async def change_password(inp: ChangePasswordIn, user=Depends(get_current_user)):
+    """Oturum açmış her kullanıcı (Süper Admin dahil) kendi şifresini değiştirir."""
+    if len(inp.new_password) < MIN_PASSWORD_LEN:
+        raise HTTPException(400, f"Yeni şifre en az {MIN_PASSWORD_LEN} karakter olmalıdır")
+    if inp.new_password == inp.current_password:
+        raise HTTPException(400, "Yeni şifre mevcut şifreden farklı olmalıdır")
+    doc = await db.users.find_one({"id": user["id"]})
+    if not doc or not verify_password(inp.current_password, doc["password_hash"]):
+        raise HTTPException(400, "Mevcut şifre hatalı")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"password_hash": hash_password(inp.new_password)}})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": user.get("tenant_id"), "user": user["email"],
+        "action": "user.password_change", "entity_id": user["id"], "at": now_iso(),
+    })
+    return {"ok": True}
+
 # ---------- Users (admin) ----------
 @api.get("/users")
 async def list_users(user=Depends(require_role("admin"))):
@@ -559,8 +582,8 @@ async def admin_upload_moto_img(tid: str, type_key: str, file: UploadFile = File
 
 @api.put("/admin/users/{uid_}/password")
 async def reset_user_password(uid_: str, inp: PasswordResetIn, user=Depends(require_super_admin)):
-    if len(inp.new_password) < 1:
-        raise HTTPException(400, "Şifre en az 1 karakter olmalıdır")
+    if len(inp.new_password) < MIN_PASSWORD_LEN:
+        raise HTTPException(400, f"Şifre en az {MIN_PASSWORD_LEN} karakter olmalıdır")
     r = await db.users.update_one({"id": uid_}, {"$set": {"password_hash": hash_password(inp.new_password)}})
     if r.matched_count == 0:
         raise HTTPException(404, "Kullanıcı bulunamadı")

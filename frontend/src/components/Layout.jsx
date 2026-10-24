@@ -3,7 +3,7 @@ import { NavLink, Outlet, Navigate, useLocation, useNavigate } from "react-route
 import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList,
-  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText, Trash2,
+  Wallet, Receipt, BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText, Trash2, KeyRound,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
@@ -21,12 +21,17 @@ const NAV_TENANT = [
   { to: "/reports", label: "Raporlar", icon: BarChart3 },
   { to: "/trash", label: "Çöp Kutusu", icon: Trash2, adminOnly: true },
   { to: "/settings", label: "Ayarlar", icon: Settings },
+  { to: "/account/password", label: "Şifre Değiştir", icon: KeyRound },
 ];
 
 const NAV_SUPER = [
   { to: "/admin/tenants", label: "Firma Yönetimi", icon: Building2, end: true },
   { to: "/admin/audit-logs", label: "Denetim Kayıtları", icon: History },
+  { to: "/account/password", label: "Şifre Değiştir", icon: KeyRound },
 ];
+
+// Süper Admin'in firma verisi dışında erişebildiği sayfalar
+const SUPER_ADMIN_ALLOWED = ["/settings", "/account/password"];
 
 export default function Layout() {
   const { user, tenant, logout } = useAuth();
@@ -42,7 +47,7 @@ export default function Layout() {
   };
 
   // Süper Admin firma verisine erişemez (backend 403 döner); firma sayfalarına girerse firma yönetimine yönlendir
-  if (user?.role === "super_admin" && !pathname.startsWith("/admin") && pathname !== "/settings") {
+  if (user?.role === "super_admin" && !pathname.startsWith("/admin") && !SUPER_ADMIN_ALLOWED.includes(pathname)) {
     return <Navigate to="/admin/tenants" replace />;
   }
 
