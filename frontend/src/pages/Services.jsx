@@ -32,7 +32,7 @@ export default function Services() {
       <div className="flex justify-between items-center">
         <div><h1 className="font-heading text-3xl font-bold text-slate-900">Hizmetler</h1><p className="text-sm text-slate-500 mt-1">{items.length} hizmet</p></div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button className="bg-orange-500 hover:bg-orange-600"><Plus className="h-4 w-4 mr-2" />Yeni Hizmet</Button></DialogTrigger>
+          <DialogTrigger asChild><Button className="bg-brand-500 hover:bg-brand-600"><Plus className="h-4 w-4 mr-2" />Yeni Hizmet</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Yeni Hizmet</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-4">
@@ -42,7 +42,7 @@ export default function Services() {
               <div><Label>Fiyat (₺)</Label><Input type="number" value={form.price} onChange={(e)=>setForm({...form, price:e.target.value})} /></div>
               <div><Label>KDV (%)</Label><Input type="number" value={form.vat} onChange={(e)=>setForm({...form, vat:e.target.value})} /></div>
             </div>
-            <DialogFooter><Button variant="outline" onClick={()=>setOpen(false)}>İptal</Button><Button className="bg-orange-500 hover:bg-orange-600" onClick={save}>Kaydet</Button></DialogFooter>
+            <DialogFooter><Button variant="outline" onClick={()=>setOpen(false)}>İptal</Button><Button className="bg-brand-500 hover:bg-brand-600" onClick={save}>Kaydet</Button></DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

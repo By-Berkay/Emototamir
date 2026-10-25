@@ -96,7 +96,7 @@ export default function Payments() {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openNew} className="bg-orange-500 hover:bg-orange-600" data-testid="btn-new-payment"><Plus className="h-4 w-4 mr-2" />Yeni Tahsilat</Button>
+            <Button onClick={openNew} className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-payment"><Plus className="h-4 w-4 mr-2" />Yeni Tahsilat</Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>{editing ? "Tahsilat Düzenle" : "Yeni Tahsilat"}</DialogTitle></DialogHeader>
@@ -129,7 +129,7 @@ export default function Payments() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={()=>setOpen(false)}>İptal</Button>
-              <Button className="bg-orange-500 hover:bg-orange-600" onClick={save} disabled={saving} data-testid="pay-save">{editing ? "Güncelle" : "Kaydet"}</Button>
+              <Button className="bg-brand-500 hover:bg-brand-600" onClick={save} disabled={saving} data-testid="pay-save">{editing ? "Güncelle" : "Kaydet"}</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -152,7 +152,7 @@ export default function Payments() {
                 <tr key={p.id} className="border-t hover:bg-slate-50" data-testid={`payment-row-${p.id}`}>
                   <td className="px-4 py-3">{fmtDate(p.created_at)}</td>
                   <td className="px-4 py-3 font-mono text-xs">{p.payment_no}</td>
-                  <td className="px-4 py-3 text-slate-600 text-xs">{p.service_order_id ? "Servise Bağlı" : <span className="text-orange-600 font-semibold">Harici</span>}</td>
+                  <td className="px-4 py-3 text-slate-600 text-xs">{p.service_order_id ? "Servise Bağlı" : <span className="text-brand-600 font-semibold">Harici</span>}</td>
                   <td className="px-4 py-3">{methodLabel(p.method)}</td>
                   <td className="px-4 py-3 text-slate-600 text-xs">{p.note || "-"}</td>
                   <td className="px-4 py-3 text-right font-semibold text-emerald-600">{fmtMoney(p.amount)}</td>

@@ -67,7 +67,7 @@ export default function AdminTenants() {
           <p className="text-sm text-slate-500 mt-1">{tenants.length} firma · Her firma kendi verilerini ayrı görür</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild><Button className="bg-orange-500 hover:bg-orange-600" data-testid="btn-new-tenant"><Plus className="h-4 w-4 mr-2" />Yeni Firma</Button></DialogTrigger>
+          <DialogTrigger asChild><Button className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-tenant"><Plus className="h-4 w-4 mr-2" />Yeni Firma</Button></DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Yeni Firma Oluştur</DialogTitle></DialogHeader>
             <div className="grid grid-cols-2 gap-3">
@@ -89,7 +89,7 @@ export default function AdminTenants() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={()=>setOpen(false)}>İptal</Button>
-              <Button className="bg-orange-500 hover:bg-orange-600" onClick={save} data-testid="tenant-save">Firmayı Oluştur</Button>
+              <Button className="bg-brand-500 hover:bg-brand-600" onClick={save} data-testid="tenant-save">Firmayı Oluştur</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -101,11 +101,11 @@ export default function AdminTenants() {
           const expired = ends && new Date(ends) < new Date();
           const inactive = t.is_active === false;
           return (
-          <Card key={t.id} className={`border-slate-200 hover:shadow-md transition-all ${inactive || expired ? "opacity-70" : "hover:border-orange-400"}`}>
+          <Card key={t.id} className={`border-slate-200 hover:shadow-md transition-all ${inactive || expired ? "opacity-70" : "hover:border-brand-400"}`}>
             <CardContent className="p-5">
               <Link to={`/admin/tenants/${t.id}`} className="block" data-testid={`tenant-card-${t.id}`}>
                 <div className="flex items-start gap-3">
-                  <div className="h-10 w-10 rounded-md bg-orange-100 text-orange-600 flex items-center justify-center"><Building2 className="h-5 w-5" /></div>
+                  <div className="h-10 w-10 rounded-md bg-brand-100 text-brand-600 flex items-center justify-center"><Building2 className="h-5 w-5" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="font-heading font-semibold truncate">{t.name}</div>
                     <div className="text-xs text-slate-500">{t.city}{t.district?` / ${t.district}`:""}</div>
@@ -124,9 +124,9 @@ export default function AdminTenants() {
               </div>
               {t.phone && <div className="text-xs text-slate-500 mt-2 font-mono">{t.phone}</div>}
               <div className="mt-3 pt-3 border-t flex items-center justify-between">
-                <Link to={`/admin/tenants/${t.id}`} className="text-xs text-orange-600 font-semibold flex items-center gap-1"><Settings2 className="h-3 w-3" />Firmayı yönet →</Link>
+                <Link to={`/admin/tenants/${t.id}`} className="text-xs text-brand-600 font-semibold flex items-center gap-1"><Settings2 className="h-3 w-3" />Firmayı yönet →</Link>
                 <div className="flex items-center gap-1">
-                  <button onClick={()=>openClone(t)} className="text-slate-500 hover:text-orange-600 p-1" title="Firmayı klonla" data-testid={`clone-tenant-${t.id}`}><Copy className="h-3.5 w-3.5" /></button>
+                  <button onClick={()=>openClone(t)} className="text-slate-500 hover:text-brand-600 p-1" title="Firmayı klonla" data-testid={`clone-tenant-${t.id}`}><Copy className="h-3.5 w-3.5" /></button>
                   <button onClick={()=>del(t)} className="text-red-500 hover:text-red-700 p-1" title="Firmayı sil" data-testid={`del-tenant-${t.id}`}><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
@@ -155,7 +155,7 @@ export default function AdminTenants() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={()=>setCloneSrc(null)}>Vazgeç</Button>
-            <Button className="bg-orange-500 hover:bg-orange-600" onClick={doClone} data-testid="clone-save"><Copy className="h-4 w-4 mr-1" />Klonla</Button>
+            <Button className="bg-brand-500 hover:bg-brand-600" onClick={doClone} data-testid="clone-save"><Copy className="h-4 w-4 mr-1" />Klonla</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

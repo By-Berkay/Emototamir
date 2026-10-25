@@ -150,7 +150,7 @@ export default function AdminTenantEdit() {
             <Checkbox checked={applyAll} onCheckedChange={setApplyAll} data-testid="apply-all" />
             Tema/font tüm firmalara uygulansın
           </label>
-          <Button className="bg-orange-500 hover:bg-orange-600" onClick={saveTenant} data-testid="save-tenant"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
+          <Button className="bg-brand-500 hover:bg-brand-600" onClick={saveTenant} data-testid="save-tenant"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
         </div>
       </div>
 
@@ -326,7 +326,7 @@ export default function AdminTenantEdit() {
             <Label>Özel Arıza Bölgeleri</Label>
             <div className="flex gap-2 mb-3 max-w-md mt-2">
               <Input placeholder="Yeni bölge adı" value={newZone} onChange={(e)=>setNewZone(e.target.value)} />
-              <Button onClick={()=>{if(!newZone.trim())return; upd({custom_fault_zones:[...(t.custom_fault_zones||[]),{key:newZone.trim(),cx:200,cy:130}]}); setNewZone("");}} className="bg-orange-500 hover:bg-orange-600"><Plus className="h-4 w-4" /></Button>
+              <Button onClick={()=>{if(!newZone.trim())return; upd({custom_fault_zones:[...(t.custom_fault_zones||[]),{key:newZone.trim(),cx:200,cy:130}]}); setNewZone("");}} className="bg-brand-500 hover:bg-brand-600"><Plus className="h-4 w-4" /></Button>
             </div>
             <div className="flex flex-wrap gap-2">
               {(t.custom_fault_zones||[]).map((z,i)=>(
@@ -342,7 +342,7 @@ export default function AdminTenantEdit() {
         <TabsContent value="users">
           <Card><CardHeader className="flex-row justify-between items-center"><CardTitle className="text-base">Kullanıcılar</CardTitle>
             <Dialog open={newUserOpen} onOpenChange={setNewUserOpen}>
-              <DialogTrigger asChild><Button className="bg-orange-500 hover:bg-orange-600"><Plus className="h-4 w-4 mr-1" />Yeni Kullanıcı</Button></DialogTrigger>
+              <DialogTrigger asChild><Button className="bg-brand-500 hover:bg-brand-600"><Plus className="h-4 w-4 mr-1" />Yeni Kullanıcı</Button></DialogTrigger>
               <DialogContent><DialogHeader><DialogTitle>Yeni Kullanıcı</DialogTitle></DialogHeader>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="col-span-2"><Label>Ad</Label><Input value={newUser.name} onChange={(e)=>setNewUser({...newUser,name:e.target.value})} /></div>
@@ -355,7 +355,7 @@ export default function AdminTenantEdit() {
                     </Select>
                   </div>
                 </div>
-                <DialogFooter><Button onClick={createUser} className="bg-orange-500 hover:bg-orange-600">Oluştur</Button></DialogFooter>
+                <DialogFooter><Button onClick={createUser} className="bg-brand-500 hover:bg-brand-600">Oluştur</Button></DialogFooter>
               </DialogContent>
             </Dialog>
           </CardHeader>
@@ -385,7 +385,7 @@ export default function AdminTenantEdit() {
               <Input type="password" value={pwNew} onChange={(e)=>setPwNew(e.target.value)} data-testid="new-password" />
               <DialogFooter>
                 <Button variant="outline" onClick={()=>{setPwUser(null); setPwNew("");}}>İptal</Button>
-                <Button onClick={resetPassword} className="bg-orange-500 hover:bg-orange-600" data-testid="save-password">Şifreyi Değiştir</Button>
+                <Button onClick={resetPassword} className="bg-brand-500 hover:bg-brand-600" data-testid="save-password">Şifreyi Değiştir</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>

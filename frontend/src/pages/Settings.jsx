@@ -61,7 +61,7 @@ export default function Settings() {
   useEffect(() => { load().catch(() => toast.error("Ayarlar yüklenemedi")); /* eslint-disable-next-line */ }, [user]);
 
   if (user?.role === "super_admin") {
-    return <div className="max-w-lg"><Card><CardContent className="p-6"><p>Süper Admin panelini kullanın: <Link to="/admin/tenants" className="text-orange-600 underline">Firma Yönetimi</Link></p></CardContent></Card></div>;
+    return <div className="max-w-lg"><Card><CardContent className="p-6"><p>Süper Admin panelini kullanın: <Link to="/admin/tenants" className="text-brand-600 underline">Firma Yönetimi</Link></p></CardContent></Card></div>;
   }
   if (!tenant) return <div>Yükleniyor…</div>;
 
@@ -175,7 +175,7 @@ export default function Settings() {
             <div><Label>Banka</Label><Input value={tenant.bank_name || ""} onChange={(e)=>setTenant({...tenant, bank_name:e.target.value})} disabled={!isAdmin} /></div>
             <div><Label>Hesap Sahibi</Label><Input value={tenant.bank_account_name || ""} onChange={(e)=>setTenant({...tenant, bank_account_name:e.target.value})} disabled={!isAdmin} /></div>
             <div className="md:col-span-2"><Label>IBAN</Label><Input value={tenant.iban || ""} onChange={(e)=>setTenant({...tenant, iban:e.target.value})} disabled={!isAdmin} placeholder="TR ..." className="font-mono" /></div>
-            {isAdmin && <div className="md:col-span-2"><Button className="bg-orange-500 hover:bg-orange-600" onClick={saveTenant}>Kaydet</Button></div>}
+            {isAdmin && <div className="md:col-span-2"><Button className="bg-brand-500 hover:bg-brand-600" onClick={saveTenant}>Kaydet</Button></div>}
           </CardContent></Card>
         </TabsContent>
 
@@ -225,7 +225,7 @@ export default function Settings() {
                       <div><Label>Stok</Label><Input type="number" value={pForm.stock} onChange={(e)=>setPForm({...pForm, stock:e.target.value})} /></div>
                       <div><Label>Min Stok</Label><Input type="number" value={pForm.min_stock} onChange={(e)=>setPForm({...pForm, min_stock:e.target.value})} /></div>
                     </div>
-                    <DialogFooter><Button onClick={savePr} className="bg-orange-500 hover:bg-orange-600">Kaydet</Button></DialogFooter>
+                    <DialogFooter><Button onClick={savePr} className="bg-brand-500 hover:bg-brand-600">Kaydet</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
@@ -249,7 +249,7 @@ export default function Settings() {
                       <div><Label>Fiyat ₺</Label><Input type="number" value={sForm.price} onChange={(e)=>setSForm({...sForm, price:e.target.value})} /></div>
                       <div><Label>KDV %</Label><Input type="number" value={sForm.vat} onChange={(e)=>setSForm({...sForm, vat:e.target.value})} /></div>
                     </div>
-                    <DialogFooter><Button onClick={saveSv} className="bg-orange-500 hover:bg-orange-600">Kaydet</Button></DialogFooter>
+                    <DialogFooter><Button onClick={saveSv} className="bg-brand-500 hover:bg-brand-600">Kaydet</Button></DialogFooter>
                   </DialogContent>
                 </Dialog>
               </CardHeader>
@@ -269,7 +269,7 @@ export default function Settings() {
             <p className="text-sm text-slate-500 mb-3">Servis kabul formuna ek arıza bölgesi ekleyebilirsiniz. Bu bölgeler standart listeye eklenir.</p>
             {isAdmin && <div className="flex gap-2 mb-3 max-w-md">
               <Input placeholder="Örn. Ön Cam Sensörü" value={newZone} onChange={(e)=>setNewZone(e.target.value)} data-testid="new-zone" />
-              <Button onClick={addZone} className="bg-orange-500 hover:bg-orange-600"><Plus className="h-4 w-4 mr-1" />Ekle</Button>
+              <Button onClick={addZone} className="bg-brand-500 hover:bg-brand-600"><Plus className="h-4 w-4 mr-1" />Ekle</Button>
             </div>}
             <div className="flex flex-wrap gap-2">
               {faultZones.map((z, i) => (
@@ -280,7 +280,7 @@ export default function Settings() {
               ))}
               {faultZones.length === 0 && <span className="text-slate-500 text-sm">Henüz özel bölge eklenmedi.</span>}
             </div>
-            {isAdmin && <Button size="sm" className="mt-4 bg-orange-500 hover:bg-orange-600" onClick={saveTenant}>Kaydet</Button>}
+            {isAdmin && <Button size="sm" className="mt-4 bg-brand-500 hover:bg-brand-600" onClick={saveTenant}>Kaydet</Button>}
           </CardContent></Card>
         </TabsContent>
 
@@ -289,7 +289,7 @@ export default function Settings() {
           <Card>
             <CardHeader className="flex-row justify-between items-center"><CardTitle className="text-base">Personel Yönetimi ({users.length})</CardTitle>
               <Dialog open={uOpen} onOpenChange={setUOpen}>
-                <DialogTrigger asChild><Button className="bg-orange-500 hover:bg-orange-600"><Plus className="h-4 w-4 mr-1" />Yeni Kullanıcı</Button></DialogTrigger>
+                <DialogTrigger asChild><Button className="bg-brand-500 hover:bg-brand-600"><Plus className="h-4 w-4 mr-1" />Yeni Kullanıcı</Button></DialogTrigger>
                 <DialogContent><DialogHeader><DialogTitle>Yeni Kullanıcı</DialogTitle></DialogHeader>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="col-span-2"><Label>Ad</Label><Input value={uForm.name} onChange={(e)=>setUForm({...uForm, name:e.target.value})} /></div>
@@ -307,7 +307,7 @@ export default function Settings() {
                       </Select>
                     </div>
                   </div>
-                  <DialogFooter><Button onClick={async()=>{try{await api.post("/users", uForm); toast.success("Eklendi"); setUOpen(false); const {data}=await api.get("/users"); setUsers(data);}catch{toast.error("Başarısız");}}} className="bg-orange-500 hover:bg-orange-600">Kaydet</Button></DialogFooter>
+                  <DialogFooter><Button onClick={async()=>{try{await api.post("/users", uForm); toast.success("Eklendi"); setUOpen(false); const {data}=await api.get("/users"); setUsers(data);}catch{toast.error("Başarısız");}}} className="bg-brand-500 hover:bg-brand-600">Kaydet</Button></DialogFooter>
                 </DialogContent>
               </Dialog>
             </CardHeader>

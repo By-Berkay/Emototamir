@@ -178,7 +178,7 @@ export default function ServiceOrderCreate() {
               <div className="flex flex-wrap gap-2 mt-1">
                 {ACCESSORY_OPTS.map(a => (
                   <button key={a} type="button" onClick={()=>toggleAcc(a)}
-                    className={`text-xs px-3 py-1.5 rounded-md border ${accessories.includes(a) ? "bg-orange-500 text-white border-orange-500" : "bg-white border-slate-200 text-slate-700"}`}>
+                    className={`text-xs px-3 py-1.5 rounded-md border ${accessories.includes(a) ? "bg-brand-500 text-white border-brand-500" : "bg-white border-slate-200 text-slate-700"}`}>
                     {a}
                   </button>
                 ))}
@@ -242,7 +242,7 @@ export default function ServiceOrderCreate() {
             <div className="flex justify-between"><span className="text-slate-500">İskonto</span><span className="text-red-600">-{fmtMoney(discount)}</span></div>
             <div className="flex justify-between text-lg font-bold pt-2 border-t"><span>Genel Toplam</span><span>{fmtMoney(totals.grand)}</span></div>
           </div>
-          <Button onClick={save} disabled={saving} className="w-full mt-4 h-11 bg-orange-500 hover:bg-orange-600 font-semibold" data-testid="so-save">
+          <Button onClick={save} disabled={saving} className="w-full mt-4 h-11 bg-brand-500 hover:bg-brand-600 font-semibold" data-testid="so-save">
             <Plus className="h-4 w-4 mr-2" /> Servisi Oluştur
           </Button>
         </CardContent></Card>
@@ -260,7 +260,7 @@ export default function ServiceOrderCreate() {
             <div><Label>E-posta</Label><Input value={custForm.email} onChange={(e)=>setCustForm({...custForm,email:e.target.value})} /></div>
             <div><Label>İl</Label><Input value={custForm.city} onChange={(e)=>setCustForm({...custForm,city:e.target.value})} /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={()=>setCustOpen(false)}>Vazgeç</Button><Button className="bg-orange-500 hover:bg-orange-600" onClick={saveCustomer} data-testid="qa-save-customer">Kaydet</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={()=>setCustOpen(false)}>Vazgeç</Button><Button className="bg-brand-500 hover:bg-brand-600" onClick={saveCustomer} data-testid="qa-save-customer">Kaydet</Button></DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -286,7 +286,7 @@ export default function ServiceOrderCreate() {
             </div>
             <div><Label>Önizleme</Label><MotorcycleIllustration type={motoForm.type} className="w-full h-32" /></div>
           </div>
-          <DialogFooter><Button variant="outline" onClick={()=>setMotoOpen(false)}>Vazgeç</Button><Button className="bg-orange-500 hover:bg-orange-600" onClick={saveMoto} data-testid="qa-save-moto">Kaydet</Button></DialogFooter>
+          <DialogFooter><Button variant="outline" onClick={()=>setMotoOpen(false)}>Vazgeç</Button><Button className="bg-brand-500 hover:bg-brand-600" onClick={saveMoto} data-testid="qa-save-moto">Kaydet</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

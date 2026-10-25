@@ -277,3 +277,188 @@ def _sig_cell(sig_b64, style):
         return [Paragraph(f"<font face='{FONT_BOLD}'>MÜŞTERİ İMZA</font>", style), img]
     except Exception:
         return Paragraph(f"<font face='{FONT_BOLD}'>MÜŞTERİ İMZA</font><br/><br/><br/>_______________________<br/>Ad Soyad / İmza", style)
+
+
+# ---------- Ekspertiz (kontrol) raporu ----------
+from xml.sax.saxutils import escape as _esc  # noqa: E402
+from reportlab.platypus import PageBreak  # noqa: E402
+
+INSPECTION_STATUS_META = {
+    "good": ("İYİ", colors.HexColor("#059669")),
+    "medium": ("ORTA", colors.HexColor("#D97706")),
+    "service": ("BAKIM", colors.HexColor("#DC2626")),
+}
+BRAND_ORANGE = colors.HexColor("#F97316")
+INK = colors.HexColor("#0F172A")
+MUTED = colors.HexColor("#64748B")
+LINE = colors.HexColor("#E2E8F0")
+
+
+def _p(text, size=9, bold=False, color=INK, align="left"):
+    from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
+    style = ParagraphStyle(
+        "p", fontName=FONT_BOLD if bold else FONT_NAME, fontSize=size, leading=size * 1.35,
+        textColor=color, alignment={"right": TA_RIGHT, "center": TA_CENTER}.get(align, TA_LEFT),
+    )
+    return Paragraph(_esc(str(text or "")), style)
+
+
+def _section(title):
+    t = Table([[_p(title, 9, bold=True)]], colWidths=[A4[0] - 30 * mm])
+    t.setStyle(TableStyle([
+        ("LINEBELOW", (0, 0), (-1, -1), 1.2, BRAND_ORANGE),
+        ("LEFTPADDING", (0, 0), (-1, -1), 0), ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+    ]))
+    return [Spacer(1, 6 * mm), t, Spacer(1, 3 * mm)]
+
+
+def _fit_image(data: bytes, max_w: float, max_h: float):
+    from reportlab.lib.utils import ImageReader
+    iw, ih = ImageReader(io.BytesIO(data)).getSize()
+    scale = min(max_w / iw, max_h / ih)
+    return Image(io.BytesIO(data), width=iw * scale, height=ih * scale)
+
+
+def build_inspection_pdf(doc: dict, tenant: dict = None, photo_bytes: dict = None, logo_bytes: bytes = None) -> bytes:
+    """Ekspertiz raporu: başlık, araç bilgileri, kontrol listesi, notlar, imzalar ve fotoğraflar."""
+    _register_fonts()
+    tenant = tenant or {}
+    photo_bytes = photo_bytes or {}
+    buf = io.BytesIO()
+    pdf = SimpleDocTemplate(
+        buf, pagesize=A4, leftMargin=15 * mm, rightMargin=15 * mm, topMargin=14 * mm, bottomMargin=16 * mm,
+        title=f"Ekspertiz {doc.get('report_no', '')}", author=tenant.get("name", ""),
+    )
+    W = A4[0] - 30 * mm
+    story = []
+
+    # Başlık
+    left = [_p(tenant.get("name") or "Servis", 14, bold=True)]
+    for key in ("address", "phone"):
+        if tenant.get(key):
+            left.append(_p(tenant[key], 8, color=MUTED))
+    logo_cell = ""
+    if logo_bytes:
+        try:
+            logo_cell = Image(io.BytesIO(logo_bytes), width=18 * mm, height=18 * mm, kind="proportional")
+        except Exception:
+            logo_cell = ""
+    right = [
+        _p("EKSPERTİZ RAPORU", 13, bold=True, color=BRAND_ORANGE, align="right"),
+        _p(f"Rapor No: {doc.get('report_no', '-')}", 9, align="right"),
+        _p(f"Tarih: {_fmt_date(doc.get('inspection_date'))}", 9, color=MUTED, align="right"),
+    ]
+    head = Table([[logo_cell, left, right]], colWidths=[22 * mm, W * 0.45, W * 0.55 - 22 * mm])
+    head.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("LINEBELOW", (0, 0), (-1, -1), 1.5, BRAND_ORANGE), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+    ]))
+    story.append(head)
+
+    # Araç ve sahip bilgileri (2 çift sütun)
+    info = [
+        ("Araç Sahibi", doc.get("owner_name")), ("Telefon", doc.get("customer_phone")),
+        ("Plaka", doc.get("plate")), ("Marka / Model", doc.get("make_model")),
+        ("Model Yılı", doc.get("year")), ("Kilometre", doc.get("km")),
+        ("Şase No", doc.get("chassis_no")),
+    ]
+    rows = []
+    for i in range(0, len(info), 2):
+        row = []
+        for label, val in info[i:i + 2]:
+            row += [_p(label.upper(), 7, color=MUTED), _p(val or "-", 9, bold=True)]
+        row += [""] * (4 - len(row))
+        rows.append(row)
+    grid = Table(rows, colWidths=[W * 0.16, W * 0.34, W * 0.16, W * 0.34])
+    grid.setStyle(TableStyle([
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    story.append(Spacer(1, 4 * mm))
+    story.append(grid)
+
+    # Kontrol listesi (gruplu)
+    story += _section("KONTROL LİSTESİ")
+    groups: dict = {}
+    for it in doc.get("items", []):
+        groups.setdefault(it.get("group") or "Diğer", []).append(it)
+    table_rows = [[_p("Madde", 8, bold=True, color=MUTED), _p("Durum", 8, bold=True, color=MUTED, align="center"),
+                   _p("Not", 8, bold=True, color=MUTED)]]
+    cmds = [("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LINEBELOW", (0, 0), (-1, -1), 0.3, LINE),
+            ("TOPPADDING", (0, 0), (-1, -1), 4), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]
+    for gname, items in groups.items():
+        table_rows.append([_p(gname.upper(), 7.5, bold=True, color=BRAND_ORANGE), "", ""])
+        r = len(table_rows) - 1
+        cmds += [("SPAN", (0, r), (-1, r)), ("BACKGROUND", (0, r), (-1, r), colors.HexColor("#F8FAFC"))]
+        for it in items:
+            meta = INSPECTION_STATUS_META.get(it.get("status"))
+            if meta:
+                pill = Table([[_p(meta[0], 7, bold=True, color=colors.white, align="center")]],
+                             colWidths=[18 * mm], hAlign="CENTER")
+                pill.setStyle(TableStyle([
+                    ("BACKGROUND", (0, 0), (-1, -1), meta[1]), ("TOPPADDING", (0, 0), (-1, -1), 2),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+                ]))
+                status_cell = pill
+            else:
+                status_cell = _p("-", 8, color=MUTED, align="center")
+            table_rows.append([_p(it.get("label", ""), 9), status_cell, _p(it.get("note") or "", 8, color=MUTED)])
+    if len(table_rows) > 1:
+        checklist = Table(table_rows, colWidths=[W * 0.42, W * 0.18, W * 0.40], repeatRows=1)
+        checklist.setStyle(TableStyle(cmds))
+        story.append(checklist)
+    else:
+        story.append(_p("Kontrol maddesi girilmedi.", 9, color=MUTED))
+
+    # Notlar
+    if doc.get("notes"):
+        story += _section("NOTLAR VE GÖZLEMLER")
+        box = Table([[_p(doc["notes"], 9)]], colWidths=[W])
+        box.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#FFF7ED")),
+            ("LINEBEFORE", (0, 0), (0, -1), 2.5, BRAND_ORANGE),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10), ("TOPPADDING", (0, 0), (-1, -1), 8),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ]))
+        story.append(box)
+
+    # İmzalar
+    story.append(Spacer(1, 10 * mm))
+    sig = Table(
+        [[_p("Teknisyen", 8, color=MUTED), _p("Teslim Alan", 8, color=MUTED)],
+         ["", ""],
+         [_p(doc.get("technician_name") or " ", 10, bold=True), _p(doc.get("receiver_name") or " ", 10, bold=True)]],
+        colWidths=[W / 2, W / 2], rowHeights=[None, 16 * mm, None],
+    )
+    sig.setStyle(TableStyle([("LINEABOVE", (0, 2), (-1, 2), 0.5, MUTED), ("TOPPADDING", (0, 2), (-1, 2), 4)]))
+    story.append(sig)
+
+    # Fotoğraflar (2 sütunlu ızgara)
+    photos = [p for p in doc.get("photos", []) if p.get("id") in photo_bytes]
+    if photos:
+        story.append(PageBreak())
+        story += _section("FOTOĞRAFLAR")
+        label_map = {it["key"]: it.get("label", it["key"]) for it in doc.get("items", [])}
+        cells = []
+        for p in photos:
+            try:
+                img = _fit_image(photo_bytes[p["id"]], W / 2 - 8 * mm, 62 * mm)
+            except Exception:
+                continue
+            cells.append([img, _p(label_map.get(p.get("item_key"), p.get("item_key", "")), 8, color=MUTED)])
+        for i in range(0, len(cells), 2):
+            pair = cells[i:i + 2] + [""] * (2 - len(cells[i:i + 2]))
+            grid_row = Table([pair], colWidths=[W / 2, W / 2])
+            grid_row.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 8)]))
+            story.append(grid_row)
+
+    def _footer(canv, _doc):
+        canv.saveState()
+        canv.setFont(FONT_NAME, 7.5)
+        canv.setFillColor(MUTED)
+        canv.drawString(15 * mm, 9 * mm, f"{tenant.get('name', '')} · Ekspertiz {doc.get('report_no', '')}")
+        canv.drawRightString(A4[0] - 15 * mm, 9 * mm, f"Sayfa {canv.getPageNumber()}")
+        canv.restoreState()
+
+    pdf.build(story, onFirstPage=_footer, onLaterPages=_footer)
+    return buf.getvalue()

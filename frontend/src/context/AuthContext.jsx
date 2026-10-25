@@ -58,6 +58,13 @@ function shade(hex, pct) {
   return "#" + [r, g, b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2, "0")).join("");
 }
 
+function hexToTriplet(hex) {
+  const h = (hex || "").replace("#", "");
+  if (h.length !== 6) return "249 115 22";
+  const num = parseInt(h, 16);
+  return `${(num >> 16) & 0xff} ${(num >> 8) & 0xff} ${num & 0xff}`;
+}
+
 export function applyTheme(tenant) {
   const root = document.documentElement;
   const primary = tenant?.primary_color || "#F97316";
@@ -68,6 +75,11 @@ export function applyTheme(tenant) {
   root.style.setProperty("--brand-primary-strong", shade(primary, -0.28));
   root.style.setProperty("--brand-primary-soft", shade(primary, 0.85));
   root.style.setProperty("--brand-secondary", secondary);
+  // Tailwind brand-* sınıfları "R G B" üçlülerini kullanır (opaklık modifier'ları için)
+  root.style.setProperty("--brand-rgb", hexToTriplet(primary));
+  root.style.setProperty("--brand-hover-rgb", hexToTriplet(shade(primary, -0.12)));
+  root.style.setProperty("--brand-soft-rgb", hexToTriplet(shade(primary, 0.85)));
+  root.style.setProperty("--brand-strong-rgb", hexToTriplet(shade(primary, -0.28)));
   root.style.setProperty("--brand-font", `'${font}', ui-sans-serif, system-ui, sans-serif`);
   document.body.style.fontFamily = `'${font}', ui-sans-serif, system-ui, sans-serif`;
   if (font && font !== "IBM Plex Sans") {

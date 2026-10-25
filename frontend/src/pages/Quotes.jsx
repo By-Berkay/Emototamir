@@ -61,10 +61,10 @@ export default function Quotes() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><FileText className="h-7 w-7 text-orange-500" />Fiyat Teklifleri</h1>
+          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><FileText className="h-7 w-7 text-brand-500" />Fiyat Teklifleri</h1>
           <p className="text-sm text-slate-500 mt-1">Servisten önce müşteriye teklif gönderin — link ile onayladığında iş emrine dönüşür.</p>
         </div>
-        <Link to="/quotes/new"><Button className="bg-orange-500 hover:bg-orange-600" data-testid="quote-new"><Plus className="h-4 w-4 mr-1" />Yeni Teklif</Button></Link>
+        <Link to="/quotes/new"><Button className="bg-brand-500 hover:bg-brand-600" data-testid="quote-new"><Plus className="h-4 w-4 mr-1" />Yeni Teklif</Button></Link>
       </div>
 
       <div className="flex gap-3 items-center flex-wrap">

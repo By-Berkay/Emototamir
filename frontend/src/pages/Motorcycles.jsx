@@ -85,7 +85,7 @@ export default function Motorcycles() {
           <p className="text-sm text-slate-500 mt-1">{items.length} motosiklet</p>
         </div>
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
-          <DialogTrigger asChild><Button className="bg-orange-500 hover:bg-orange-600" data-testid="btn-new-motorcycle"><Plus className="h-4 w-4 mr-2" /> Yeni Motosiklet</Button></DialogTrigger>
+          <DialogTrigger asChild><Button className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-motorcycle"><Plus className="h-4 w-4 mr-2" /> Yeni Motosiklet</Button></DialogTrigger>
           <DialogContent className="max-w-3xl">
             <DialogHeader><DialogTitle>Yeni Motosiklet</DialogTitle></DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -121,7 +121,7 @@ export default function Motorcycles() {
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={()=>setOpen(false)}>İptal</Button>
-              <Button className="bg-orange-500 hover:bg-orange-600" onClick={save} data-testid="btn-save-motorcycle">Kaydet</Button>
+              <Button className="bg-brand-500 hover:bg-brand-600" onClick={save} data-testid="btn-save-motorcycle">Kaydet</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -136,7 +136,7 @@ export default function Motorcycles() {
         {items.map((m) => (
           <div key={m.id} className="relative group">
             <Link to={`/motorcycles/${m.id}`}>
-              <Card className="border-slate-200 hover:border-orange-400 hover:shadow-md transition-all duration-150">
+              <Card className="border-slate-200 hover:border-brand-400 hover:shadow-md transition-all duration-150">
                 <CardContent className="p-5">
                   <MotorcycleIllustration type={m.type} className="w-full h-32 mb-4" />
                   <div className="flex items-start justify-between">

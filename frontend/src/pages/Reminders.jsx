@@ -74,7 +74,7 @@ export default function Reminders() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><BellRing className="h-7 w-7 text-orange-500" />Bakım Hatırlatmaları</h1>
+          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><BellRing className="h-7 w-7 text-brand-500" />Bakım Hatırlatmaları</h1>
           <p className="text-sm text-slate-500 mt-1">
             Kural: son servisten sonra <b>{policy.reminder_km || 5000} km</b> {policy.reminder_mode === "and" ? "ve" : "veya"} <b>{policy.reminder_months || 6} ay</b> geçen motosikletler.
           </p>
@@ -87,9 +87,9 @@ export default function Reminders() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button onClick={()=>{ setTab("due"); setSelected({}); }} className={`text-left rounded-md p-4 border-2 transition-colors ${tab==="due"?"border-orange-500 bg-orange-50":"border-slate-200 hover:border-slate-300"}`} data-testid="tab-due">
+        <button onClick={()=>{ setTab("due"); setSelected({}); }} className={`text-left rounded-md p-4 border-2 transition-colors ${tab==="due"?"border-brand-500 bg-brand-50":"border-slate-200 hover:border-slate-300"}`} data-testid="tab-due">
           <div className="text-xs uppercase text-slate-500">Vadesi Doldu</div>
-          <div className="text-3xl font-bold text-orange-600">{data.due.length}</div>
+          <div className="text-3xl font-bold text-brand-600">{data.due.length}</div>
           <div className="text-xs text-slate-500 mt-1">Politika koşulu sağlanan</div>
         </button>
         <button onClick={()=>{ setTab("overdue"); setSelected({}); }} className={`text-left rounded-md p-4 border-2 transition-colors ${tab==="overdue"?"border-red-500 bg-red-50":"border-slate-200 hover:border-slate-300"}`} data-testid="tab-overdue">
@@ -107,7 +107,7 @@ export default function Reminders() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">Liste ({rows.length})</CardTitle>
-          <button onClick={toggleAll} className="text-sm text-slate-600 hover:text-orange-600 flex items-center gap-1" data-testid="toggle-all">
+          <button onClick={toggleAll} className="text-sm text-slate-600 hover:text-brand-600 flex items-center gap-1" data-testid="toggle-all">
             {allSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />} Tümünü Seç
           </button>
         </CardHeader>

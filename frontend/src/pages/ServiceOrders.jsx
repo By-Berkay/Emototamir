@@ -40,7 +40,7 @@ export default function ServiceOrders() {
           <h1 className="font-heading text-3xl font-bold text-slate-900">Servis Kayıtları</h1>
           <p className="text-sm text-slate-500 mt-1">{items.length} servis kaydı</p>
         </div>
-        <Link to="/service-orders/new"><Button className="bg-orange-500 hover:bg-orange-600" data-testid="btn-new-service"><Plus className="h-4 w-4 mr-2" />Yeni Servis</Button></Link>
+        <Link to="/service-orders/new"><Button className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-service"><Plus className="h-4 w-4 mr-2" />Yeni Servis</Button></Link>
       </div>
 
       <Card className="border-slate-200"><CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">

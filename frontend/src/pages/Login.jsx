@@ -4,8 +4,30 @@ import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Wrench } from "lucide-react";
+import { Wrench, ClipboardCheck, Wallet, MessageCircle } from "lucide-react";
 import { toast } from "sonner";
+
+const WHATSAPP_URL = `https://wa.me/447378552959?text=${encodeURIComponent(
+  "Merhaba E-Moto Tamir uygulaması için bilgi istiyorum."
+)}`;
+
+const FEATURES = [
+  {
+    icon: Wrench,
+    title: "İş emri ve servis takibi",
+    text: "Arıza tespitinden teslimata kadar her aşama tek kayıtta izlenir.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Fiyat teklifi ve onay",
+    text: "Müşteriye bağlantıyla teklif gönderin, onayını kayda alın.",
+  },
+  {
+    icon: Wallet,
+    title: "Tahsilat ve cari hesap",
+    text: "Borç, ödeme ve bakiye hareketleri müşteri bazında takip edilir.",
+  },
+];
 
 function formatErr(d) {
   if (!d) return "Bir hata oluştu";
@@ -23,10 +45,6 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const whatsappMessage = encodeURIComponent(
-    "Merhaba E-Moto Tamir uygulaması için bilgi istiyorum."
-  );
 
   const submit = async (e) => {
     e.preventDefault();
@@ -49,157 +67,130 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex bg-slate-50 font-body">
-      {/* Sol Panel */}
-      <div className="hidden lg:flex flex-1 bg-slate-900 text-white p-12 flex-col justify-between relative overflow-hidden">
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-orange-500/10 blur-3xl" />
-
-        {/* Logo */}
-        <div className="flex items-center relative">
-          <div className="h-11 w-11 bg-orange-500 rounded-md flex items-center justify-center mr-3">
-            <Wrench className="h-6 w-6" />
-          </div>
-
+    <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      {/* Marka paneli (yalnızca masaüstü) */}
+      <aside className="hidden flex-col justify-between bg-slate-900 p-12 text-white lg:flex" data-testid="login-brand-panel">
+        <div className="flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-500">
+            <Wrench className="h-5 w-5 text-white" />
+          </span>
           <div>
-            <div className="font-heading font-bold text-xl">
-              E-MOTO TAMİR
-            </div>
-
-            <div className="text-xs text-slate-400 tracking-wider">
-              SERVİS YÖNETİM SİSTEMİ
-            </div>
+            <div className="font-heading text-lg font-bold tracking-tight">E-MOTO TAMİR</div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Servis yönetim sistemi</div>
           </div>
         </div>
 
-        {/* Tanıtım */}
-        <div className="relative">
-          <h1 className="font-heading text-4xl xl:text-5xl font-bold leading-tight tracking-tight">
-            Servis operasyonunu{" "}
-            <span className="text-orange-500">tek ekrandan</span> yönetin.
+        <div className="max-w-lg">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">Motosiklet servisleri için</p>
+          <h1 className="mt-4 font-heading text-4xl font-bold leading-[1.1] tracking-tight xl:text-5xl">
+            Servis operasyonunuzu <span className="text-brand-400">tek ekrandan</span> yönetin.
           </h1>
 
-          <p className="mt-6 text-slate-300 text-base max-w-md">
-            Müşteri, motosiklet, iş emri, parça, tahsilat ve cari hesap
-            yönetimi. Türkiye'deki motosiklet servisleri için tasarlandı.
-          </p>
+          <ul className="mt-10 space-y-6">
+            {FEATURES.map(({ icon: Icon, title, text }) => (
+              <li key={title} className="flex gap-4">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
+                  <Icon className="h-4 w-4 text-brand-400" />
+                </span>
+                <div>
+                  <div className="text-sm font-semibold text-white">{title}</div>
+                  <div className="mt-1 text-sm leading-relaxed text-slate-400">{text}</div>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        {/* Alt Bilgi */}
-        <div className="relative flex flex-col gap-2">
-          <div className="text-xs text-slate-500">
-            © E-Moto Tamir · v1.0
-          </div>
-
+        <div className="flex items-center justify-between text-xs text-slate-500">
+          <span>© E-Moto Tamir · v1.0</span>
           <a
-            href={`https://wa.me/447378552959?text=${whatsappMessage}`}
+            href={WHATSAPP_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-slate-500 cursor-pointer hover:text-green-500 transition-colors w-fit"
+            className="inline-flex items-center gap-1.5 text-slate-400 transition-colors duration-150 hover:text-emerald-400"
           >
-            Whatsapp İletişim
+            <MessageCircle className="h-3.5 w-3.5" />
+            WhatsApp İletişim
           </a>
         </div>
-      </div>
+      </aside>
 
-      {/* Giriş Paneli */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-md">
-
-          {/* Mobil Logo */}
-          <div className="lg:hidden mb-8 flex items-center">
-            <div className="h-10 w-10 bg-orange-500 rounded-md flex items-center justify-center mr-3">
+      {/* Giriş formu */}
+      <main className="flex min-h-screen flex-col justify-center px-6 py-12 sm:px-12">
+        <div className="mx-auto w-full max-w-sm">
+          {/* Mobil marka başlığı */}
+          <div className="mb-10 flex items-center gap-3 lg:hidden">
+            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-500">
               <Wrench className="h-5 w-5 text-white" />
-            </div>
-
+            </span>
             <div>
-              <div className="font-heading font-bold text-slate-900">
-                E-MOTO TAMİR
-              </div>
-
-              <div className="text-xs text-slate-500">
-                Servis Yönetim Sistemi
-              </div>
+              <div className="font-heading font-bold tracking-tight text-slate-900">E-MOTO TAMİR</div>
+              <div className="text-xs text-slate-500">Servis yönetim sistemi</div>
             </div>
           </div>
 
-          {/* Başlık */}
-          <h2 className="font-heading text-3xl font-bold text-slate-900">
-            Giriş Yap
-          </h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600">Hoş geldiniz</p>
+          <h2 className="mt-2 font-heading text-3xl font-bold tracking-tight text-slate-900">Giriş Yap</h2>
+          <p className="mt-2 text-sm text-slate-500">Hesabınıza erişmek için bilgilerinizi girin.</p>
 
-          <p className="text-slate-500 text-sm mt-2 mb-8">
-            Hesabınıza erişmek için bilgilerinizi girin.
-          </p>
-
-          {/* Login Form */}
-          <form onSubmit={submit} className="space-y-4">
-
-            {/* E-posta */}
-            <div>
-              <Label htmlFor="email">
-                E-posta
-              </Label>
-
+          <form onSubmit={submit} className="mt-8 space-y-5">
+            <div className="space-y-1.5">
+              <Label htmlFor="email">E-posta</Label>
               <Input
                 id="email"
                 type="email"
+                autoComplete="username"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="ornek@servis.com"
-                className="mt-1.5 h-11"
+                className="h-11"
                 data-testid="login-email"
               />
             </div>
 
-            {/* Şifre */}
-            <div>
-              <Label htmlFor="password">
-                Şifre
-              </Label>
-
+            <div className="space-y-1.5">
+              <Label htmlFor="password">Şifre</Label>
               <Input
                 id="password"
                 type="password"
+                autoComplete="current-password"
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="mt-1.5 h-11"
+                className="h-11"
                 data-testid="login-password"
               />
             </div>
 
-            {/* Giriş Butonu */}
             <Button
               type="submit"
+              size="lg"
               disabled={loading}
-              className="w-full h-11 bg-orange-500 hover:bg-orange-600 text-white font-semibold"
+              className="w-full"
               data-testid="login-submit"
             >
               {loading ? "Giriş yapılıyor…" : "Giriş Yap"}
             </Button>
           </form>
 
-          {/* Demo Bilgisi */}
-          <div className="mt-8 text-xs text-slate-500 border-t pt-4">
+          <p className="mt-8 border-t border-slate-200 pt-5 text-xs leading-relaxed text-slate-500">
             Demo hesap ile giriş yapmak için bizimle iletişime geçin.
-          </div>
+          </p>
 
-          {/* Mobil WhatsApp */}
-          <div className="lg:hidden mt-4 text-center">
-            <a
-              href={`https://wa.me/447378552959?text=${whatsappMessage}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-sm text-slate-500 hover:text-green-600 transition-colors"
-            >
-              Whatsapp İletişim
-            </a>
-          </div>
-
+          {/* Mobil WhatsApp bağlantısı */}
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-flex items-center gap-1.5 text-sm text-slate-500 transition-colors duration-150 hover:text-emerald-600 lg:hidden"
+          >
+            <MessageCircle className="h-4 w-4" />
+            WhatsApp İletişim
+          </a>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

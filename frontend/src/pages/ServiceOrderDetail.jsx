@@ -290,7 +290,7 @@ export default function ServiceOrderDetail() {
             <ul className="space-y-3">
               {(o.status_history||[]).map((h, i) => (
                 <li key={i} className="flex items-center gap-3 flex-wrap">
-                  <span className="h-2 w-2 bg-orange-500 rounded-full"></span>
+                  <span className="h-2 w-2 bg-brand-500 rounded-full"></span>
                   <StatusBadge status={h.status} />
                   <span className="text-sm text-slate-600">{fmtDate(h.at)}</span>
                   <span className="text-xs text-slate-500">— {h.by}</span>

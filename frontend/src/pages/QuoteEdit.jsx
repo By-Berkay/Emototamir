@@ -102,14 +102,14 @@ export default function QuoteEdit() {
     <div className="space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="sm" onClick={()=>nav("/quotes")} data-testid="back-to-quotes"><ArrowLeft className="h-4 w-4 mr-1" />Geri</Button>
-        <h1 className="font-heading text-2xl font-bold text-slate-900 flex items-center gap-2"><FileText className="h-6 w-6 text-orange-500" />
+        <h1 className="font-heading text-2xl font-bold text-slate-900 flex items-center gap-2"><FileText className="h-6 w-6 text-brand-500" />
           {isNew ? "Yeni Teklif" : quote?.quote_no}
         </h1>
         {quote && <span className="text-xs uppercase font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700">{STATUS_LABEL[quote.status] || quote.status}</span>}
       </div>
 
       {quote && (
-        <Card className="border-orange-200 bg-orange-50">
+        <Card className="border-brand-200 bg-brand-50">
           <CardContent className="p-4 flex items-center justify-between flex-wrap gap-3">
             <div>
               <div className="text-xs uppercase text-slate-600">Müşteri Paylaşım Linki</div>
@@ -213,7 +213,7 @@ export default function QuoteEdit() {
             {quote.approval.note && <div className="italic">"{quote.approval.note}"</div>}
           </div>
         )}
-        <Button onClick={save} className="bg-orange-500 hover:bg-orange-600" disabled={!editable || saving} data-testid="q-save"><Save className="h-4 w-4 mr-1" />{isNew ? "Oluştur" : "Kaydet"}</Button>
+        <Button onClick={save} className="bg-brand-500 hover:bg-brand-600" disabled={!editable || saving} data-testid="q-save"><Save className="h-4 w-4 mr-1" />{isNew ? "Oluştur" : "Kaydet"}</Button>
       </div>
     </div>
   );

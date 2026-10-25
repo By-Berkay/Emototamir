@@ -74,10 +74,10 @@ export default function AdminAuditLogs() {
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><History className="h-7 w-7 text-orange-500" />Denetim Kayıtları</h1>
+          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><History className="h-7 w-7 text-brand-500" />Denetim Kayıtları</h1>
           <p className="text-sm text-slate-500 mt-1">{logs.length} kayıt · Her işlem kim yaptı, ne zaman yaptı — filtreleyerek inceleyin.</p>
         </div>
-        <Button onClick={() => fetchLogs()} className="bg-orange-500 hover:bg-orange-600" data-testid="audit-refresh">
+        <Button onClick={() => fetchLogs()} className="bg-brand-500 hover:bg-brand-600" data-testid="audit-refresh">
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />Yenile
         </Button>
       </div>
@@ -154,7 +154,7 @@ export default function AdminAuditLogs() {
         <DialogContent className="max-w-2xl" data-testid="audit-detail-panel">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <History className="h-5 w-5 text-orange-500" />
+              <History className="h-5 w-5 text-brand-500" />
               Denetim Detayı
             </DialogTitle>
           </DialogHeader>

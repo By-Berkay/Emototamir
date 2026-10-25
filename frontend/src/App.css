@@ -1,24 +1,20 @@
-.App {
-  min-height: 100vh;
-}
-
-body {
-  font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
-  background: #F8FAFC;
-  color: #0F172A;
-}
+/* Uygulama genel stilleri index.css içinde; bu dosya yalnızca geriye dönük uyumluluk için kısa tutulur. */
 
 .font-heading {
-  font-family: 'Chivo', 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  font-family: "Chivo", "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
-.font-mono, .font-body {
-  font-feature-settings: "tnum" 1;
+.font-body {
+  font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
-table td, table th {
+/* Plaka, şasi ve servis numaraları için sabit genişlikli, tabular rakamlar */
+.font-mono,
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+table td,
+table th {
   vertical-align: middle;
 }
-
-/* Selection */
-::selection { background: #F97316; color: #fff; }

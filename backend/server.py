@@ -10,7 +10,7 @@ import logging
 import bcrypt
 import jwt
 from datetime import datetime, timezone, timedelta
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Union
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, Query, UploadFile, File, Form, Header
 from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -21,7 +21,8 @@ import re
 import secrets
 
 from storage_utils import put_object, get_object, init_storage, APP_NAME
-from pdf_utils import build_service_pdf
+from pdf_utils import build_service_pdf, build_inspection_pdf
+from totals import compute_document_totals, validate_money_fields, DEFAULT_PRICE_MODE, DEFAULT_VAT
 
 # ---------- Setup ----------
 mongo_url = os.environ['MONGO_URL']
@@ -100,6 +101,20 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
             token = h[7:]
     if not token:
         raise HTTPException(status_code=401, detail="Yetkisiz erişim")
+    return await _user_from_token(token)
+
+async def get_current_user_flex(request: Request, auth: Optional[str] = Query(None)) -> Dict[str, Any]:
+    """PDF ve fotoğraf bağlantıları için: token ?auth= parametresinden de okunabilir (yeni sekmede açılır)."""
+    token = auth or request.cookies.get("access_token")
+    if not token:
+        h = request.headers.get("Authorization", "")
+        if h.startswith("Bearer "):
+            token = h[7:]
+    if not token:
+        raise HTTPException(status_code=401, detail="Yetkisiz erişim")
+    return await _user_from_token(token)
+
+async def _user_from_token(token: str) -> Dict[str, Any]:
     try:
         payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
         user = await db.users.find_one({"id": payload["sub"]})
@@ -289,7 +304,8 @@ class ServiceItem(BaseModel):
     name: str
     qty: float = 1
     unit_price: float = 0
-    vat: float = 20
+    price_mode: str = DEFAULT_PRICE_MODE  # incl (KDV dahil) | excl (KDV hariç)
+    vat: float = DEFAULT_VAT
 
 class ServiceOrderIn(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -305,6 +321,8 @@ class ServiceOrderIn(BaseModel):
     notes: Optional[str] = ""
     items: List[ServiceItem] = []
     labor_total: float = 0
+    labor_price_mode: str = DEFAULT_PRICE_MODE
+    labor_vat: float = DEFAULT_VAT
     discount: float = 0
     status: str = "new"
 
@@ -1479,19 +1497,31 @@ async def _transition_order_status(so: Dict[str, Any], new_status: str, by: str,
     })
 
 def compute_totals(payload: Dict[str, Any]) -> Dict[str, Any]:
+    """Servis emri toplamı; kalem bazlı KDV dahil/hariç kuralı totals.py içinde (pricing.js ile aynı)."""
+    return compute_document_totals(
+        payload.get("items", []),
+        labor_total=payload.get("labor_total", 0),
+        labor_price_mode=payload.get("labor_price_mode", DEFAULT_PRICE_MODE),
+        labor_vat=payload.get("labor_vat", DEFAULT_VAT),
+        discount=payload.get("discount", 0),
+    )
+
+def check_document_money(payload: Dict[str, Any], min_qty_positive: bool = False) -> None:
+    """Servis emri / teklif kalemlerindeki tutar alanlarını doğrular (400 döner)."""
     items = payload.get("items", [])
-    parts_total = sum(i["qty"] * i["unit_price"] for i in items if i.get("kind") == "part")
-    services_total = sum(i["qty"] * i["unit_price"] for i in items if i.get("kind") == "service")
-    labor = float(payload.get("labor_total", 0) or 0)
-    discount = float(payload.get("discount", 0) or 0)
-    grand = parts_total + services_total + labor - discount
-    return {
-        "parts_total": round(parts_total, 2),
-        "services_total": round(services_total, 2),
-        "labor_total": round(labor, 2),
-        "discount": round(discount, 2),
-        "grand_total": round(grand, 2),
-    }
+    if min_qty_positive:
+        for it in items:
+            if float(it.get("qty") or 0) <= 0:
+                raise HTTPException(400, "Adet 0'dan büyük olmalı")
+    err = validate_money_fields(
+        items,
+        labor_total=payload.get("labor_total", 0),
+        labor_price_mode=payload.get("labor_price_mode", DEFAULT_PRICE_MODE),
+        labor_vat=payload.get("labor_vat", DEFAULT_VAT),
+        discount=payload.get("discount", 0),
+    )
+    if err:
+        raise HTTPException(400, err)
 
 async def next_service_no(tenant_id: str) -> str:
     year = datetime.now(timezone.utc).year
@@ -1536,6 +1566,7 @@ async def create_service_order(inp: ServiceOrderIn, user=Depends(get_current_use
     if inp.status not in ORDER_STATUSES or inp.status == "cancelled":
         raise HTTPException(400, "Yeni servis için geçersiz durum")
     payload = inp.model_dump()
+    check_document_money(payload)
     totals = compute_totals(payload)
     doc = {
         **payload,
@@ -1600,6 +1631,7 @@ async def update_service_order(sid: str, inp: ServiceOrderIn, user=Depends(requi
         raise HTTPException(400, "Müşteri veya motosiklet bulunamadı")
     payload = inp.model_dump()
     payload.pop("status", None)  # durum yalnızca /status uç noktasıyla değişir (geçmiş kaydı için)
+    check_document_money(payload)
     totals = compute_totals(payload)
     upd = {
         **payload, **totals, "updated_at": now_iso(),
@@ -2394,35 +2426,32 @@ class QuoteItemIn(BaseModel):
     name: str
     qty: float = 1  # kesirli adet (ör. yağ 0.5 L) desteklenir
     unit_price: float = 0
-    vat: float = 20
+    price_mode: str = DEFAULT_PRICE_MODE  # incl (KDV dahil) | excl (KDV hariç)
+    vat: float = DEFAULT_VAT
 
 class QuoteIn(BaseModel):
     customer_id: str
     motorcycle_id: str
     items: List[QuoteItemIn] = []
     labor_total: float = 0
+    labor_price_mode: str = DEFAULT_PRICE_MODE
+    labor_vat: float = DEFAULT_VAT
     discount: float = 0
     notes: Optional[str] = ""
     valid_until: Optional[str] = None  # ISO date
 
 def _quote_totals(payload):
-    """Birim fiyatlar KDV dahil kabul edilir (servis emirleriyle aynı kural). Böylece onaylanan teklif tutarı,
-    iş emrine dönüştürüldüğünde değişmez. Genel toplam = kalemler + işçilik - iskonto; KDV yalnızca bilgi amaçlı
-    olarak brüt tutardan ayrıştırılır."""
-    subtotal = 0.0
-    vat_total = 0.0
-    for it in payload.get("items", []):
-        gross = float(it.get("qty", 0) or 0) * float(it.get("unit_price", 0) or 0)
-        rate = float(it.get("vat", 0) or 0)
-        subtotal += gross
-        if rate > 0:
-            vat_total += gross * rate / (100 + rate)
-    labor = float(payload.get("labor_total", 0) or 0)
-    disc = float(payload.get("discount", 0) or 0)
-    grand = subtotal + labor - disc
-    return {"subtotal": round(subtotal, 2), "vat_total": round(vat_total, 2),
-            "labor_total": round(labor, 2), "discount": round(disc, 2),
-            "grand_total": round(grand, 2)}
+    """Teklif toplamları servis emriyle aynı kuraldan hesaplanır (totals.py). Onaylanan teklif tutarı, iş emrine
+    dönüştürüldüğünde değişmez. subtotal işçilik dahil, iskonto öncesi tutardır."""
+    t = compute_document_totals(
+        payload.get("items", []),
+        labor_total=payload.get("labor_total", 0),
+        labor_price_mode=payload.get("labor_price_mode", DEFAULT_PRICE_MODE),
+        labor_vat=payload.get("labor_vat", DEFAULT_VAT),
+        discount=payload.get("discount", 0),
+    )
+    return {k: t[k] for k in ("subtotal", "vat_total", "labor_total", "labor_gross", "discount",
+                              "grand_total", "parts_total", "services_total", "net_total")}
 
 @api.get("/quotes")
 async def list_quotes(status: str = "", user=Depends(get_current_user)):
@@ -2450,13 +2479,8 @@ async def create_quote(inp: QuoteIn, user=Depends(get_current_user)):
         raise HTTPException(400, "Motosiklet bulunamadı")
     if not inp.items:
         raise HTTPException(400, "En az bir kalem gerekli")
-    for it in inp.items:
-        if (it.qty or 0) <= 0: raise HTTPException(400, "Adet 0'dan büyük olmalı")
-        if (it.unit_price or 0) < 0: raise HTTPException(400, "Birim fiyat negatif olamaz")
-        if (it.vat or 0) < 0: raise HTTPException(400, "KDV negatif olamaz")
-    if (inp.labor_total or 0) < 0: raise HTTPException(400, "İşçilik negatif olamaz")
-    if (inp.discount or 0) < 0: raise HTTPException(400, "İskonto negatif olamaz")
     payload = inp.model_dump()
+    check_document_money(payload, min_qty_positive=True)
     totals = _quote_totals(payload)
     quote_no = f"TKF-{datetime.now(timezone.utc).year}-{uid()[:6].upper()}"
     doc = {
@@ -2498,12 +2522,7 @@ async def update_quote(qid: str, inp: QuoteIn, user=Depends(get_current_user)):
     payload = inp.model_dump()
     if not payload.get("items"):
         raise HTTPException(400, "En az bir kalem gerekli")
-    for it in payload["items"]:
-        if (it.get("qty") or 0) <= 0: raise HTTPException(400, "Adet 0'dan büyük olmalı")
-        if (it.get("unit_price") or 0) < 0: raise HTTPException(400, "Birim fiyat negatif olamaz")
-        if (it.get("vat") or 0) < 0: raise HTTPException(400, "KDV negatif olamaz")
-    if (payload.get("labor_total") or 0) < 0: raise HTTPException(400, "İşçilik negatif olamaz")
-    if (payload.get("discount") or 0) < 0: raise HTTPException(400, "İskonto negatif olamaz")
+    check_document_money(payload, min_qty_positive=True)
     totals = _quote_totals(payload)
     for it in payload["items"]:
         it["id"] = it.get("id") or uid()
@@ -2565,7 +2584,13 @@ async def convert_quote_to_order(qid: str, user=Depends(get_current_user)):
         raise HTTPException(400, "Bu teklif zaten iş emrine dönüştürüldü")
     try:
         items = [dict(it, id=uid()) for it in q.get("items", [])]
-        totals = compute_totals({"items": items, "labor_total": q.get("labor_total", 0), "discount": q.get("discount", 0)})
+        labor_fields = {
+            "labor_total": q.get("labor_total", 0),
+            "labor_price_mode": q.get("labor_price_mode", DEFAULT_PRICE_MODE),
+            "labor_vat": q.get("labor_vat", DEFAULT_VAT),
+            "discount": q.get("discount", 0),
+        }
+        totals = compute_totals({"items": items, **labor_fields})
         service_no = await next_service_no(tid)  # servis numarası tek sayaçtan üretilir (çakışma olmaz)
         now = now_iso()
         so = {
@@ -2578,8 +2603,7 @@ async def convert_quote_to_order(qid: str, user=Depends(get_current_user)):
             "km": moto.get("km") or 0, "fuel_level": "1/2", "accessories": [], "fault_zones": [],
             "complaint": "", "diagnosis": q.get("notes") or "", "operations": "",
             "notes": f"Teklif {q.get('quote_no')} üzerinden oluşturuldu.",
-            "items": items, **totals,
-            "labor_total": q.get("labor_total", 0), "discount": q.get("discount", 0),
+            "items": items, **labor_fields, **totals,
             "status": "new", "paid_total": 0,
             "created_at": now, "updated_at": now, "created_by": user["email"],
             "status_history": [{"status": "new", "at": now, "by": user["email"], "note": "Tekliften oluşturuldu"}],
@@ -2656,6 +2680,349 @@ async def public_quote_approve(token: str, inp: PublicQuoteApproveIn):
         "new_value": inp.customer_name.strip(), "at": now_iso(),
     })
     return {"ok": True, "status": new_status}
+
+# ---------- Ekspertiz (araç muayene raporu) ----------
+INSPECTION_CHECKLIST: List[Dict[str, str]] = [
+    {"key": "motor_performans", "label": "Motor çalışması ve performans", "group": "Motor & Şanzıman"},
+    {"key": "motor_yag", "label": "Yağ seviyesi ve kaçak", "group": "Motor & Şanzıman"},
+    {"key": "sogutma", "label": "Soğutma sıvısı ve radyatör", "group": "Motor & Şanzıman"},
+    {"key": "transmisyon", "label": "Zincir, kayış veya şanzıman", "group": "Motor & Şanzıman"},
+    {"key": "fren_on", "label": "Ön fren", "group": "Fren Sistemi"},
+    {"key": "fren_arka", "label": "Arka fren", "group": "Fren Sistemi"},
+    {"key": "fren_balata", "label": "Fren balataları ve diskler", "group": "Fren Sistemi"},
+    {"key": "fren_hidrolik", "label": "Fren hidroliği ve hortumlar", "group": "Fren Sistemi"},
+    {"key": "sus_on", "label": "Ön süspansiyon (çatal)", "group": "Süspansiyon"},
+    {"key": "sus_arka", "label": "Arka amortisör", "group": "Süspansiyon"},
+    {"key": "direksiyon", "label": "Direksiyon kafası ve rulmanlar", "group": "Süspansiyon"},
+    {"key": "aku", "label": "Akü durumu ve şarj", "group": "Elektrik & Aydınlatma"},
+    {"key": "far", "label": "Far, stop ve sinyaller", "group": "Elektrik & Aydınlatma"},
+    {"key": "gosterge", "label": "Gösterge paneli ve kontroller", "group": "Elektrik & Aydınlatma"},
+    {"key": "kablolama", "label": "Kablolama ve sigortalar", "group": "Elektrik & Aydınlatma"},
+    {"key": "lastik_on", "label": "Ön lastik (diş derinliği, yaşlanma)", "group": "Lastik & Jant"},
+    {"key": "lastik_arka", "label": "Arka lastik (diş derinliği, yaşlanma)", "group": "Lastik & Jant"},
+    {"key": "jant", "label": "Jant ve rot balans", "group": "Lastik & Jant"},
+    {"key": "govde", "label": "Gövde ve plastik parçalar", "group": "Gövde & Boya"},
+    {"key": "boya", "label": "Boya durumu", "group": "Gövde & Boya"},
+    {"key": "yakit", "label": "Yakıt sistemi ve sızıntı", "group": "Yakıt & Egzoz"},
+    {"key": "egzoz", "label": "Egzoz sistemi ve ses", "group": "Yakıt & Egzoz"},
+    {"key": "kilit", "label": "Kilitler ve anahtarlar", "group": "Diğer"},
+]
+INSPECTION_STATUSES = ("good", "medium", "service")  # İYİ, ORTA, BAKIM
+INSPECTION_MAX_ITEMS = 60
+INSPECTION_MAX_PHOTOS = 60
+INSPECTION_PHOTO_MAX_BYTES = 10 * 1024 * 1024
+PHOTO_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
+_DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+class InspectionItemIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    key: str
+    label: Optional[str] = ""
+    group: Optional[str] = ""
+    status: Optional[str] = None  # good | medium | service | null (işaretlenmedi)
+    note: Optional[str] = ""
+
+class InspectionIn(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    customer_id: Optional[str] = None
+    motorcycle_id: Optional[str] = None
+    owner_name: Optional[str] = ""
+    customer_phone: Optional[str] = ""
+    plate: Optional[str] = ""
+    make_model: Optional[str] = ""
+    year: Union[int, str, None] = ""
+    km: Union[int, str, None] = ""
+    chassis_no: Optional[str] = ""
+    inspection_date: Optional[str] = None  # YYYY-MM-DD; boşsa bugün
+    technician_name: Optional[str] = ""
+    receiver_name: Optional[str] = ""
+    notes: Optional[str] = ""
+    items: List[InspectionItemIn] = []
+
+def _text(value: Any, limit: int = 300) -> str:
+    return "" if value is None else str(value).strip()[:limit]
+
+def _inspection_items(raw: List[InspectionItemIn]) -> List[Dict[str, Any]]:
+    """Gelen kontrol maddelerini doğrular; boş listede şablon kullanılır."""
+    template = {x["key"]: x for x in INSPECTION_CHECKLIST}
+    source = raw or [InspectionItemIn(**x) for x in INSPECTION_CHECKLIST]
+    if len(source) > INSPECTION_MAX_ITEMS:
+        raise HTTPException(400, "Kontrol listesi çok uzun")
+    out: List[Dict[str, Any]] = []
+    seen: set = set()
+    for it in source:
+        key = _text(it.key, 64)
+        if not key:
+            raise HTTPException(400, "Kontrol maddesi anahtarı boş olamaz")
+        status = it.status or None
+        if status and status not in INSPECTION_STATUSES:
+            raise HTTPException(400, "Geçersiz kontrol durumu")
+        if key in seen:
+            continue
+        seen.add(key)
+        base = template.get(key, {})
+        out.append({
+            "key": key,
+            "label": _text(it.label, 200) or base.get("label", key),
+            "group": _text(it.group, 80) or base.get("group", "Diğer"),
+            "status": status,
+            "note": _text(it.note, 1000),
+        })
+    return out
+
+async def _inspection_fields(tid: str, inp: InspectionIn) -> Dict[str, Any]:
+    """Girdiyi doğrular; müşteri/motosiklet seçiliyse boş alanları kayıttan doldurur."""
+    moto = None
+    if inp.motorcycle_id:
+        moto = await db.motorcycles.find_one({"id": inp.motorcycle_id, "tenant_id": tid}, {"_id": 0})
+        if not moto:
+            raise HTTPException(400, "Motosiklet bulunamadı")
+    customer_id = inp.customer_id or (moto or {}).get("customer_id") or None
+    cust = None
+    if customer_id:
+        cust = await db.customers.find_one({"id": customer_id, "tenant_id": tid}, {"_id": 0})
+        if not cust:
+            raise HTTPException(400, "Müşteri bulunamadı")
+    if moto and cust and moto.get("customer_id") != cust["id"]:
+        raise HTTPException(400, "Motosiklet bu müşteriye ait değil")
+    inspection_date = _text(inp.inspection_date, 10) or datetime.now(TR_TZ).date().isoformat()
+    if not _DATE_RE.match(inspection_date):
+        raise HTTPException(400, "Tarih biçimi YYYY-AA-GG olmalı")
+    year = inp.year if inp.year not in (None, "") else (moto or {}).get("year")
+    km = inp.km if inp.km not in (None, "") else (moto or {}).get("km")
+    owner_default = f"{cust.get('first_name', '')} {cust.get('last_name', '')}".strip() if cust else ""
+    model_default = f"{moto.get('brand', '')} {moto.get('model', '')}".strip() if moto else ""
+    return {
+        "customer_id": customer_id,
+        "motorcycle_id": inp.motorcycle_id or None,
+        "owner_name": _text(inp.owner_name, 120) or owner_default,
+        "customer_phone": _text(inp.customer_phone, 30) or (cust or {}).get("phone", ""),
+        "plate": _text(inp.plate, 20).upper().replace(" ", "") or (moto or {}).get("plate", ""),
+        "make_model": _text(inp.make_model, 120) or model_default,
+        "year": _text(year, 10),
+        "km": _text(km, 12),
+        "chassis_no": _text(inp.chassis_no, 40).upper() or (moto or {}).get("vin", "") or "",
+        "inspection_date": inspection_date,
+        "technician_name": _text(inp.technician_name, 120),
+        "receiver_name": _text(inp.receiver_name, 120),
+        "notes": _text(inp.notes, 4000),
+        "items": _inspection_items(inp.items),
+    }
+
+async def next_inspection_no(tenant_id: str) -> str:
+    counter = await db.counters.find_one_and_update(
+        {"_id": f"inspection_{tenant_id}"}, {"$inc": {"seq": 1}}, upsert=True, return_document=True
+    )
+    seq = counter["seq"] if counter else 1
+    return f"EKS-{seq:05d}"
+
+def _item_counts(items: List[Dict[str, Any]]) -> Dict[str, int]:
+    counts = {"good": 0, "medium": 0, "service": 0, "open": 0}
+    for it in items or []:
+        counts[it.get("status") if it.get("status") in INSPECTION_STATUSES else "open"] += 1
+    return counts
+
+async def _get_inspection(tid: str, iid: str) -> Dict[str, Any]:
+    doc = await db.inspections.find_one({"id": iid, "tenant_id": tid}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Ekspertiz raporu bulunamadı")
+    return doc
+
+@api.get("/inspections/checklist-template")
+async def inspection_checklist_template(user=Depends(get_current_user)):
+    tenant_id_of(user)
+    return [dict(x) for x in INSPECTION_CHECKLIST]
+
+@api.get("/inspections")
+async def list_inspections(q: str = "", limit: int = Query(100, ge=1, le=500), user=Depends(get_current_user)):
+    tid = tenant_id_of(user)
+    query: Dict[str, Any] = {"tenant_id": tid}
+    if q.strip():
+        rx = {"$regex": re.escape(q.strip()), "$options": "i"}
+        query["$or"] = [{"report_no": rx}, {"owner_name": rx}, {"plate": rx}, {"chassis_no": rx}, {"inspection_date": rx}]
+    docs = await db.inspections.find(query, {"_id": 0, "photos": 0, "share_token": 0}).sort("created_at", -1).to_list(limit)
+    out = []
+    for d in docs:
+        items = d.pop("items", [])
+        d["item_counts"] = _item_counts(items)
+        out.append(d)
+    return out
+
+@api.post("/inspections")
+async def create_inspection(inp: InspectionIn, user=Depends(get_current_user)):
+    tid = tenant_id_of(user)
+    fields = await _inspection_fields(tid, inp)
+    now = now_iso()
+    doc = {
+        **fields, "id": uid(), "tenant_id": tid, "report_no": await next_inspection_no(tid),
+        "photos": [], "share_token": None,
+        "created_at": now, "updated_at": now, "created_by": user["email"],
+    }
+    await db.inspections.insert_one(doc)
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tid, "user": user["email"], "action": "inspection.create",
+        "entity_id": doc["id"], "new_value": doc["report_no"], "at": now_iso(),
+    })
+    doc.pop("_id", None)
+    return doc
+
+@api.get("/inspections/{iid}")
+async def get_inspection(iid: str, user=Depends(get_current_user)):
+    return await _get_inspection(tenant_id_of(user), iid)
+
+@api.put("/inspections/{iid}")
+async def update_inspection(iid: str, inp: InspectionIn, user=Depends(get_current_user)):
+    tid = tenant_id_of(user)
+    existing = await _get_inspection(tid, iid)
+    fields = await _inspection_fields(tid, inp)
+    fields["updated_at"] = now_iso()
+    fields["updated_by"] = user["email"]
+    changes = _diff_dicts(existing, {**existing, **fields},
+                          ignore={"id", "tenant_id", "report_no", "photos", "items", "share_token",
+                                  "created_at", "created_by", "updated_at", "updated_by"})
+    await db.inspections.update_one({"id": iid, "tenant_id": tid}, {"$set": fields})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tid, "user": user["email"], "action": "inspection.update",
+        "entity_id": iid, "changes": changes, "at": now_iso(),
+    })
+    return await _get_inspection(tid, iid)
+
+@api.delete("/inspections/{iid}")
+async def delete_inspection(iid: str, user=Depends(require_role("admin"))):
+    tid = tenant_id_of(user)
+    existing = await _get_inspection(tid, iid)
+    await db.inspections.delete_one({"id": iid, "tenant_id": tid})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tid, "user": user["email"], "action": "inspection.delete",
+        "entity_id": iid, "old_value": existing.get("report_no"), "at": now_iso(),
+    })
+    return {"ok": True}
+
+@api.post("/inspections/{iid}/photos")
+async def upload_inspection_photo(iid: str, file: UploadFile = File(...), item_key: str = Form(...),
+                                  user=Depends(get_current_user)):
+    tid = tenant_id_of(user)
+    doc = await db.inspections.find_one({"id": iid, "tenant_id": tid}, {"_id": 0, "items": 1, "photos": 1})
+    if not doc:
+        raise HTTPException(404, "Ekspertiz raporu bulunamadı")
+    if item_key not in {it.get("key") for it in doc.get("items", [])}:
+        raise HTTPException(400, "Geçersiz kontrol maddesi")
+    if len(doc.get("photos", [])) >= INSPECTION_MAX_PHOTOS:
+        raise HTTPException(400, f"Bir raporda en fazla {INSPECTION_MAX_PHOTOS} fotoğraf olabilir")
+    name = file.filename or ""
+    ext = name.rsplit(".", 1)[-1].lower() if "." in name else ""
+    if ext not in PHOTO_EXTENSIONS or (file.content_type and not file.content_type.startswith("image/")):
+        raise HTTPException(400, "Sadece görsel dosyaları yüklenebilir")
+    data = await file.read(INSPECTION_PHOTO_MAX_BYTES + 1)
+    if not data:
+        raise HTTPException(400, "Dosya boş")
+    if len(data) > INSPECTION_PHOTO_MAX_BYTES:
+        raise HTTPException(400, "Fotoğraf en fazla 10 MB olabilir")
+    photo_id = uid()
+    content_type = file.content_type or "image/jpeg"
+    path = f"{APP_NAME}/tenants/{tid}/inspections/{iid}/{photo_id}.{ext}"
+    result = await put_object(path, data, content_type)
+    photo = {
+        "id": photo_id, "item_key": item_key, "path": result["path"], "filename": name or f"foto.{ext}",
+        "content_type": content_type, "size": result.get("size", len(data)),
+        "created_at": now_iso(), "uploaded_by": user["email"],
+    }
+    await db.inspections.update_one({"id": iid, "tenant_id": tid}, {"$push": {"photos": photo}})
+    return {k: v for k, v in photo.items() if k != "path"}
+
+@api.get("/inspections/{iid}/photos/{pid}")
+async def get_inspection_photo(iid: str, pid: str, user=Depends(get_current_user_flex)):
+    tid = tenant_id_of(user)
+    doc = await db.inspections.find_one({"id": iid, "tenant_id": tid}, {"_id": 0, "photos": 1})
+    photo = next((p for p in (doc or {}).get("photos", []) if p.get("id") == pid), None)
+    if not photo:
+        raise HTTPException(404, "Fotoğraf bulunamadı")
+    try:
+        data, ct = await get_object(photo["path"])
+    except FileNotFoundError:
+        raise HTTPException(404, "Fotoğraf bulunamadı")
+    return Response(content=data, media_type=photo.get("content_type") or ct,
+                    headers={"Cache-Control": "private, max-age=300"})
+
+@api.delete("/inspections/{iid}/photos/{pid}")
+async def delete_inspection_photo(iid: str, pid: str, user=Depends(get_current_user)):
+    tid = tenant_id_of(user)
+    res = await db.inspections.update_one({"id": iid, "tenant_id": tid, "photos.id": pid},
+                                          {"$pull": {"photos": {"id": pid}}})
+    if res.modified_count == 0:
+        raise HTTPException(404, "Fotoğraf bulunamadı")
+    return {"ok": True}
+
+async def _inspection_pdf_bytes(doc: Dict[str, Any], tenant: Dict[str, Any]) -> bytes:
+    photo_bytes: Dict[str, bytes] = {}
+    for p in doc.get("photos", []):
+        try:
+            photo_bytes[p["id"]], _ = await get_object(p["path"])
+        except Exception:
+            continue
+    logo = None
+    if tenant.get("logo_path"):
+        try:
+            logo, _ = await get_object(tenant["logo_path"])
+        except Exception:
+            logo = None
+    return build_inspection_pdf(doc, tenant, photo_bytes, logo_bytes=logo)
+
+@api.get("/inspections/{iid}/pdf")
+async def inspection_pdf(iid: str, user=Depends(get_current_user_flex)):
+    tid = tenant_id_of(user)
+    doc = await _get_inspection(tid, iid)
+    tenant = await db.tenants.find_one({"id": tid}, {"_id": 0}) or {}
+    pdf = await _inspection_pdf_bytes(doc, tenant)
+    return StreamingResponse(io.BytesIO(pdf), media_type="application/pdf",
+                             headers={"Content-Disposition": f'inline; filename="{doc["report_no"]}.pdf"'})
+
+@api.post("/inspections/{iid}/share")
+async def share_inspection(iid: str, user=Depends(get_current_user)):
+    """Her çağrıda yeni token üretilir; eski paylaşım bağlantısı geçersiz olur."""
+    tid = tenant_id_of(user)
+    token = secrets.token_urlsafe(24)
+    res = await db.inspections.update_one({"id": iid, "tenant_id": tid},
+                                          {"$set": {"share_token": token, "shared_at": now_iso()}})
+    if res.matched_count == 0:
+        raise HTTPException(404, "Ekspertiz raporu bulunamadı")
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tid, "user": user["email"], "action": "inspection.share",
+        "entity_id": iid, "at": now_iso(),
+    })
+    return {"share_token": token, "pdf_url": f"/api/public/inspections/{token}/pdf"}
+
+async def _public_inspection(token: str) -> Dict[str, Any]:
+    if not token or len(token) < 20:
+        raise HTTPException(404, "Bağlantı geçersiz")
+    doc = await db.inspections.find_one({"share_token": token}, {"_id": 0})
+    if not doc:
+        raise HTTPException(404, "Bağlantı geçersiz")
+    return doc
+
+@api.get("/public/inspections/{token}")
+async def public_get_inspection(token: str):
+    doc = await _public_inspection(token)
+    tenant = await db.tenants.find_one({"id": doc["tenant_id"]},
+                                       {"_id": 0, "name": 1, "phone": 1, "primary_color": 1, "secondary_color": 1}) or {}
+    return {
+        "report_no": doc.get("report_no"), "inspection_date": doc.get("inspection_date"),
+        "owner_name": doc.get("owner_name"), "plate": doc.get("plate"), "make_model": doc.get("make_model"),
+        "year": doc.get("year"), "km": doc.get("km"), "chassis_no": doc.get("chassis_no"),
+        "technician_name": doc.get("technician_name"), "receiver_name": doc.get("receiver_name"),
+        "notes": doc.get("notes"),
+        "items": [{k: it.get(k) for k in ("key", "label", "group", "status", "note")} for it in doc.get("items", [])],
+        "photo_count": len(doc.get("photos", [])),
+        "tenant": tenant,
+    }
+
+@api.get("/public/inspections/{token}/pdf")
+async def public_inspection_pdf(token: str):
+    doc = await _public_inspection(token)
+    tenant = await db.tenants.find_one({"id": doc["tenant_id"]}, {"_id": 0}) or {}
+    pdf = await _inspection_pdf_bytes(doc, tenant)
+    return StreamingResponse(io.BytesIO(pdf), media_type="application/pdf",
+                             headers={"Content-Disposition": f'inline; filename="{doc["report_no"]}.pdf"'})
 
 # ---------- Seeding ----------
 async def seed_admin_and_indexes():
