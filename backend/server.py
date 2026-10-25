@@ -103,9 +103,9 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=401, detail="Yetkisiz erişim")
     return await _user_from_token(token)
 
-async def get_current_user_flex(request: Request, auth: Optional[str] = Query(None)) -> Dict[str, Any]:
-    """PDF ve fotoğraf bağlantıları için: token ?auth= parametresinden de okunabilir (yeni sekmede açılır)."""
-    token = auth or request.cookies.get("access_token")
+async def get_current_user_flex(request: Request) -> Dict[str, Any]:
+    """Token yalnızca Authorization başlığı veya çerezden okunur (URL'de token taşınmaz)."""
+    token = request.cookies.get("access_token")
     if not token:
         h = request.headers.get("Authorization", "")
         if h.startswith("Bearer "):
@@ -1998,15 +1998,12 @@ async def delete_photo(sid: str, pid: str, user=Depends(get_current_user)):
     return {"ok": True}
 
 @api.get("/files/{path:path}")
-async def download_file(path: str, request: Request, auth: str = Query(None)):
+async def download_file(path: str, request: Request):
     token = None
-    if auth:
-        token = auth
-    else:
-        h = request.headers.get("Authorization", "")
-        if h.startswith("Bearer "):
-            token = h[7:]
-        token = token or request.cookies.get("access_token")
+    h = request.headers.get("Authorization", "")
+    if h.startswith("Bearer "):
+        token = h[7:]
+    token = token or request.cookies.get("access_token")
     if not token:
         raise HTTPException(401, "Yetkisiz")
     try:

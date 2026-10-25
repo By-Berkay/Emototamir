@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../components/
 import { History, RefreshCw, Filter, ArrowRight, X } from "lucide-react";
 import { fmtDate } from "../lib/api";
 import { toast } from "sonner";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 
 const ACTION_COLORS = {
   create: "bg-emerald-50 text-emerald-700 border-emerald-200",
@@ -72,15 +74,15 @@ export default function AdminAuditLogs() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><History className="h-7 w-7 text-brand-500" />Denetim Kayıtları</h1>
-          <p className="text-sm text-slate-500 mt-1">{logs.length} kayıt · Her işlem kim yaptı, ne zaman yaptı — filtreleyerek inceleyin.</p>
-        </div>
-        <Button onClick={() => fetchLogs()} className="bg-brand-500 hover:bg-brand-600" data-testid="audit-refresh">
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />Yenile
-        </Button>
-      </div>
+      <PageHeader
+        title={<span className="inline-flex items-center gap-2"><History className="h-7 w-7 text-brand-500" />Denetim Kayıtları</span>}
+        description={`${logs.length} kayıt · Her işlem kim yaptı, ne zaman yaptı — filtreleyerek inceleyin.`}
+        actions={
+          <Button onClick={() => fetchLogs()} className="bg-brand-500 hover:bg-brand-600" data-testid="audit-refresh">
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />Yenile
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Filter className="h-4 w-4" />Filtreler</CardTitle></CardHeader>
@@ -116,7 +118,7 @@ export default function AdminAuditLogs() {
 
       <Card>
         <CardContent className="p-0">
-          {logs.length === 0 && !loading && <div className="p-10 text-center text-slate-500">Bu filtrelere uyan kayıt yok.</div>}
+          {logs.length === 0 && !loading && <EmptyState icon={History} title="Bu filtrelere uyan kayıt yok." />}
           {Object.entries(grouped).map(([date, items]) => (
             <div key={date}>
               <div className="px-4 py-2 bg-slate-50 border-y text-xs font-semibold text-slate-600 uppercase">{new Date(date + "T00:00:00").toLocaleDateString("tr-TR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>

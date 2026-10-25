@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
 import { Plus, Search, Bike, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 import MotorcycleIllustration from "../components/MotorcycleIllustration";
 import { useAuth } from "../context/AuthContext";
 import { Textarea } from "../components/ui/textarea";
@@ -79,11 +81,10 @@ export default function Motorcycles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900">Motosikletler</h1>
-          <p className="text-sm text-slate-500 mt-1">{items.length} motosiklet</p>
-        </div>
+      <PageHeader
+        title="Motosikletler"
+        description={`${items.length} motosiklet`}
+        actions={
         <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setForm(empty); }}>
           <DialogTrigger asChild><Button className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-motorcycle"><Plus className="h-4 w-4 mr-2" /> Yeni Motosiklet</Button></DialogTrigger>
           <DialogContent className="max-w-3xl">
@@ -125,7 +126,8 @@ export default function Motorcycles() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -165,7 +167,7 @@ export default function Motorcycles() {
             )}
           </div>
         ))}
-        {items.length === 0 && <div className="text-slate-500 col-span-full text-center py-12"><Bike className="h-10 w-10 mx-auto opacity-40 mb-2" /> Motosiklet bulunamadı</div>}
+        {items.length === 0 && <div className="col-span-full"><EmptyState icon={Bike} title="Motosiklet bulunamadı" /></div>}
       </div>
 
       <Dialog open={delDialog.open} onOpenChange={(o)=>{ if(!o) setDelDialog({ open:false, moto:null, reason:"" }); }}>

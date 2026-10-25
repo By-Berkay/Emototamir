@@ -5,6 +5,8 @@ import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 import { FileText, Plus, ExternalLink, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
 
@@ -59,13 +61,11 @@ export default function Quotes() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><FileText className="h-7 w-7 text-brand-500" />Fiyat Teklifleri</h1>
-          <p className="text-sm text-slate-500 mt-1">Servisten önce müşteriye teklif gönderin — link ile onayladığında iş emrine dönüşür.</p>
-        </div>
-        <Link to="/quotes/new"><Button className="bg-brand-500 hover:bg-brand-600" data-testid="quote-new"><Plus className="h-4 w-4 mr-1" />Yeni Teklif</Button></Link>
-      </div>
+      <PageHeader
+        title={<span className="flex items-center gap-2"><FileText className="h-7 w-7 text-brand-500" />Fiyat Teklifleri</span>}
+        description="Servisten önce müşteriye teklif gönderin — link ile onayladığında iş emrine dönüşür."
+        actions={<Link to="/quotes/new"><Button className="bg-brand-500 hover:bg-brand-600" data-testid="quote-new"><Plus className="h-4 w-4 mr-1" />Yeni Teklif</Button></Link>}
+      />
 
       <div className="flex gap-3 items-center flex-wrap">
         <Input placeholder="Ara (no, müşteri, motosiklet)" value={q} onChange={(e)=>setQ(e.target.value)} className="max-w-xs" data-testid="quote-search" />
@@ -119,7 +119,7 @@ export default function Quotes() {
                 </tr>
               );
             })}
-            {filtered.length === 0 && <tr><td colSpan={7} className="text-center py-10 text-slate-500">Teklif bulunamadı.</td></tr>}
+            {filtered.length === 0 && <tr><td colSpan={7}><EmptyState icon={FileText} title="Teklif bulunamadı." /></td></tr>}
           </tbody>
         </table>
       </CardContent></Card>

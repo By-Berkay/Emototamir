@@ -6,6 +6,7 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
+import PageHeader from "../components/PageHeader";
 
 const MIN_LEN = 8;
 const EMPTY = { current_password: "", new_password: "", confirm_password: "" };
@@ -48,10 +49,7 @@ export default function ChangePassword() {
 
   return (
     <div className="max-w-md mx-auto">
-      <div className="mb-6">
-        <h1 className="font-heading text-2xl font-bold text-slate-900">Şifre Değiştir</h1>
-        <p className="text-sm text-slate-500 mt-1">Hesabınızın şifresini güncelleyin.</p>
-      </div>
+      <PageHeader title="Şifre Değiştir" description="Hesabınızın şifresini güncelleyin." />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">

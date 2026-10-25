@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import api, { API, fmtMoney, fmtDate, fmtDateShort, STATUS_META, STATUS_LIST } from "../lib/api";
+import api, { openAuthedPdf, fmtMoney, fmtDate, fmtDateShort, STATUS_META, STATUS_LIST } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
@@ -9,6 +9,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "../components/ui/dialog";
+import PageHeader from "../components/PageHeader";
+import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import SignaturePad from "../components/SignaturePad";
 import PhotoUploader from "../components/PhotoUploader";
@@ -35,7 +37,6 @@ export default function ServiceOrderDetail() {
   if (!o) return <div>Yükleniyor…</div>;
   const remaining = (o.grand_total || 0) - (o.paid_total || 0);
   const token = localStorage.getItem("token");
-  const pdfUrl = (kind) => `${API}/service-orders/${id}/pdf/${kind}?auth=${token}`;
 
   const changeStatus = async (s) => {
     try {
@@ -91,30 +92,27 @@ export default function ServiceOrderDetail() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <span className="font-mono text-2xl font-bold">{o.service_no}</span>
+      <PageHeader
+        title={
+          <span className="inline-flex flex-wrap items-center gap-3">
+            <span className="font-mono">{o.service_no}</span>
             <StatusBadge status={o.status} />
             {o.approval_status && (
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${o.approval_status==="approved" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : o.approval_status==="rejected" ? "bg-red-50 text-red-700 border-red-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}>
                 Müşteri: {o.approval_status === "approved" ? "Onayladı" : o.approval_status === "rejected" ? "Reddetti" : "Beklemede"}
               </span>
             )}
-          </div>
-          <div className="text-sm text-slate-500 mt-1">{fmtDate(o.created_at)}</div>
-        </div>
+          </span>
+        }
+        description={fmtDate(o.created_at)}
+        actions={
         <div className="flex gap-2 flex-wrap">
           <Select value={o.status} onValueChange={changeStatus}>
             <SelectTrigger className="w-48" data-testid="change-status"><SelectValue /></SelectTrigger>
             <SelectContent>{STATUS_LIST.map(s => <SelectItem key={s} value={s}>{STATUS_META[s].label}</SelectItem>)}</SelectContent>
           </Select>
-          <a href={pdfUrl("kabul")} target="_blank" rel="noreferrer">
-            <Button variant="outline" data-testid="btn-pdf-kabul"><FileDown className="h-4 w-4 mr-1" />Kabul PDF</Button>
-          </a>
-          <a href={pdfUrl("teslim")} target="_blank" rel="noreferrer">
-            <Button variant="outline" data-testid="btn-pdf-teslim"><FileDown className="h-4 w-4 mr-1" />Teslim PDF</Button>
-          </a>
+          <Button onClick={() => openAuthedPdf(`/service-orders/${id}/pdf/kabul`)} variant="outline" data-testid="btn-pdf-kabul"><FileDown className="h-4 w-4 mr-1" />Kabul PDF</Button>
+          <Button onClick={() => openAuthedPdf(`/service-orders/${id}/pdf/teslim`)} variant="outline" data-testid="btn-pdf-teslim"><FileDown className="h-4 w-4 mr-1" />Teslim PDF</Button>
           <Button variant="outline" onClick={openWhatsApp} data-testid="btn-whatsapp"><MessageCircle className="h-4 w-4 mr-1 text-emerald-600" />WhatsApp Onay</Button>
           <Dialog open={payOpen} onOpenChange={setPayOpen}>
             <DialogTrigger asChild>
@@ -150,7 +148,8 @@ export default function ServiceOrderDetail() {
             </>
           )}
         </div>
-      </div>
+        }
+      />
 
       {/* WhatsApp dialog */}
       <Dialog open={waOpen} onOpenChange={setWaOpen}>
@@ -194,11 +193,12 @@ export default function ServiceOrderDetail() {
             <span>{o.km?.toLocaleString("tr-TR")} km</span>
           </div>
         </CardContent></Card>
-        <Card className="border-slate-200"><CardContent className="p-5">
-          <div className="text-xs uppercase text-slate-500">Ödeme Durumu</div>
-          <div className="text-lg font-bold">{fmtMoney(o.grand_total)}</div>
-          <div className="text-xs text-slate-500">Ödenen: {fmtMoney(o.paid_total)} · Kalan: <span className={remaining>0.01?"text-red-600 font-bold":"text-emerald-600"}>{fmtMoney(remaining)}</span></div>
-        </CardContent></Card>
+        <StatCard
+          label="Ödeme Durumu"
+          value={fmtMoney(o.grand_total)}
+          hint={<>Ödenen: {fmtMoney(o.paid_total)} · Kalan: <span className={remaining>0.01?"text-red-600 font-bold":"text-emerald-600"}>{fmtMoney(remaining)}</span></>}
+          tone={remaining>0.01?"red":"emerald"}
+        />
       </div>
 
       <Tabs defaultValue="details">

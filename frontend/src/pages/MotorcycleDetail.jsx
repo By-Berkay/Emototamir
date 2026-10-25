@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import api, { fmtMoney, fmtDateShort } from "../lib/api";
 import { Card, CardContent } from "../components/ui/card";
+import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import MotorcycleIllustration from "../components/MotorcycleIllustration";
 import { toast } from "sonner";
@@ -43,10 +44,10 @@ export default function MotorcycleDetail() {
         </CardContent></Card>
 
         <Card className="lg:col-span-2 border-slate-200"><CardContent className="p-5">
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div><div className="text-xs uppercase text-slate-500">Toplam Servis</div><div className="text-2xl font-bold">{m.total_services}</div></div>
-            <div><div className="text-xs uppercase text-slate-500">Toplam Harcama</div><div className="text-2xl font-bold">{fmtMoney(m.total_spent)}</div></div>
-            <div><div className="text-xs uppercase text-slate-500">Son Servis</div><div className="text-sm">{fmtDateShort(m.last_service_date)}</div></div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+            <StatCard label="Toplam Servis" value={m.total_services} tone="brand" />
+            <StatCard label="Toplam Harcama" value={fmtMoney(m.total_spent)} tone="emerald" />
+            <StatCard label="Son Servis" value={fmtDateShort(m.last_service_date)} tone="slate" />
           </div>
           <h3 className="font-heading text-lg font-semibold mb-3">Servis Geçmişi</h3>
           <table className="min-w-full text-sm">

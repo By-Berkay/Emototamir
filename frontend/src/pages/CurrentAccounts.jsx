@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import api, { fmtMoney, fmtDateShort } from "../lib/api";
+import api, { fmtMoney } from "../lib/api";
 import { Card, CardContent } from "../components/ui/card";
+import PageHeader from "../components/PageHeader";
+import StatCard from "../components/StatCard";
 
 export default function CurrentAccounts() {
   const [rows, setRows] = useState([]);
@@ -11,9 +13,9 @@ export default function CurrentAccounts() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-bold text-slate-900">Cari Hesaplar</h1>
-        <p className="text-sm text-slate-500 mt-1">Toplam Alacak: <span className="font-bold text-red-600">{fmtMoney(totalDebt)}</span></p>
+      <PageHeader title="Cari Hesaplar" />
+      <div className="max-w-xs">
+        <StatCard label="Toplam Alacak" value={fmtMoney(totalDebt)} tone="red" />
       </div>
       <Card className="border-slate-200"><CardContent className="p-0">
         <div className="overflow-x-auto">

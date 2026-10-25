@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useAuth } from "../context/AuthContext";
 import api, { API } from "../lib/api";
+import AuthedImage from "../components/AuthedImage";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -12,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Upload, Trash2, Palette, Building, Users2, Package, Hammer, MapPin, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 
 const THEMES = [
   { key: "orange", label: "Turuncu (Varsayılan)", primary: "#F97316", secondary: "#0F172A" },
@@ -145,7 +148,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <div><h1 className="font-heading text-3xl font-bold text-slate-900">Ayarlar</h1></div>
+      <PageHeader title="Ayarlar" />
       <Tabs defaultValue="firma">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="firma"><Building className="h-4 w-4 mr-1" />Firma Bilgileri</TabsTrigger>
@@ -158,7 +161,7 @@ export default function Settings() {
         <TabsContent value="firma">
           <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2 flex items-center gap-4 pb-4 border-b">
-              {tenant.logo_path ? <img src={`${API}/files/${tenant.logo_path}?auth=${localStorage.getItem("token")}`} alt="logo" className="h-16 w-16 object-contain border rounded p-1" /> :
+              {tenant.logo_path ? <AuthedImage path={tenant.logo_path} alt="logo" className="h-16 w-16 object-contain border rounded p-1" /> :
                 <div className="h-16 w-16 border-2 border-dashed border-slate-300 rounded flex items-center justify-center text-slate-400"><ImageIcon /></div>}
               <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={uploadLogo} />
               <Button variant="outline" onClick={()=>logoRef.current?.click()} disabled={!isAdmin}><Upload className="h-4 w-4 mr-2" />Logo Yükle</Button>
@@ -278,7 +281,7 @@ export default function Settings() {
                   {isAdmin && <button onClick={()=>setFaultZones(faultZones.filter((_,x)=>x!==i))} className="text-red-500"><Trash2 className="h-3.5 w-3.5" /></button>}
                 </span>
               ))}
-              {faultZones.length === 0 && <span className="text-slate-500 text-sm">Henüz özel bölge eklenmedi.</span>}
+              {faultZones.length === 0 && <EmptyState className="w-full rounded-lg border border-dashed border-slate-300" title="Henüz özel bölge eklenmedi." />}
             </div>
             {isAdmin && <Button size="sm" className="mt-4 bg-brand-500 hover:bg-brand-600" onClick={saveTenant}>Kaydet</Button>}
           </CardContent></Card>
@@ -330,7 +333,7 @@ function MotoTypeSlot({ type, currentPath, onUpload, disabled }) {
   return (
     <div className="border border-slate-200 rounded-md p-3 flex flex-col items-center gap-2">
       <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">{type}</div>
-      {currentPath ? <img src={`${API}/files/${currentPath}?auth=${localStorage.getItem("token")}`} className="h-16 object-contain" alt={type} /> :
+      {currentPath ? <AuthedImage path={currentPath} className="h-16 object-contain" alt={type} /> :
         <div className="h-16 flex items-center text-slate-400 text-xs">Varsayılan görsel</div>}
       <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e)=>onUpload(e.target.files?.[0])} />
       <Button size="sm" variant="outline" onClick={()=>ref.current?.click()} disabled={disabled}><Upload className="h-3 w-3 mr-1" />{currentPath?"Değiştir":"Yükle"}</Button>

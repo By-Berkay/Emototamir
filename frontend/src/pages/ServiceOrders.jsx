@@ -7,6 +7,7 @@ import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import StatusBadge from "../components/StatusBadge";
 import { Plus, Search } from "lucide-react";
+import PageHeader from "../components/PageHeader";
 import { toast } from "sonner";
 
 export default function ServiceOrders() {
@@ -35,13 +36,13 @@ export default function ServiceOrders() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900">Servis Kayıtları</h1>
-          <p className="text-sm text-slate-500 mt-1">{items.length} servis kaydı</p>
-        </div>
-        <Link to="/service-orders/new"><Button className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-service"><Plus className="h-4 w-4 mr-2" />Yeni Servis</Button></Link>
-      </div>
+      <PageHeader
+        title="Servis Kayıtları"
+        description={`${items.length} servis kaydı`}
+        actions={
+          <Link to="/service-orders/new"><Button className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-service"><Plus className="h-4 w-4 mr-2" />Yeni Servis</Button></Link>
+        }
+      />
 
       <Card className="border-slate-200"><CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="relative md:col-span-2">

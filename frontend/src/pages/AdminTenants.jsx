@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Building2, Trash2, Settings2, Copy, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 
 const empty = {
   name:"", subtitle:"YETKİLİ SERVİS & SHOWROOM", address:"", city:"", district:"", phone:"", email:"",
@@ -61,11 +63,10 @@ export default function AdminTenants() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900">Firma Yönetimi</h1>
-          <p className="text-sm text-slate-500 mt-1">{tenants.length} firma · Her firma kendi verilerini ayrı görür</p>
-        </div>
+      <PageHeader
+        title="Firma Yönetimi"
+        description={`${tenants.length} firma · Her firma kendi verilerini ayrı görür`}
+        actions={
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-tenant"><Plus className="h-4 w-4 mr-2" />Yeni Firma</Button></DialogTrigger>
           <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -93,7 +94,8 @@ export default function AdminTenants() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {tenants.map(t => {
@@ -133,7 +135,7 @@ export default function AdminTenants() {
             </CardContent>
           </Card>
         );})}
-        {tenants.length === 0 && <div className="col-span-full text-center py-12 text-slate-500"><Building2 className="h-10 w-10 mx-auto opacity-40 mb-2" />Henüz firma yok. Yeni firma oluşturun.</div>}
+        {tenants.length === 0 && <EmptyState className="col-span-full rounded-xl border border-dashed border-slate-300 bg-white" icon={Building2} title="Henüz firma yok. Yeni firma oluşturun." />}
       </div>
 
       {/* Clone dialog */}

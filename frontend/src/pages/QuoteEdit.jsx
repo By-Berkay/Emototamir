@@ -8,6 +8,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
+import PageHeader from "../components/PageHeader";
 import { Save, Trash2, ArrowLeft, Copy, ExternalLink, FileText } from "lucide-react";
 
 const STATUS_LABEL = {
@@ -100,13 +101,17 @@ export default function QuoteEdit() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3">
+      <div>
         <Button variant="ghost" size="sm" onClick={()=>nav("/quotes")} data-testid="back-to-quotes"><ArrowLeft className="h-4 w-4 mr-1" />Geri</Button>
-        <h1 className="font-heading text-2xl font-bold text-slate-900 flex items-center gap-2"><FileText className="h-6 w-6 text-brand-500" />
-          {isNew ? "Yeni Teklif" : quote?.quote_no}
-        </h1>
-        {quote && <span className="text-xs uppercase font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700">{STATUS_LABEL[quote.status] || quote.status}</span>}
       </div>
+      <PageHeader
+        title={
+          <span className="flex flex-wrap items-center gap-3">
+            <span className="flex items-center gap-2"><FileText className="h-6 w-6 text-brand-500" />{isNew ? "Yeni Teklif" : quote?.quote_no}</span>
+            {quote && <span className="text-xs uppercase font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700">{STATUS_LABEL[quote.status] || quote.status}</span>}
+          </span>
+        }
+      />
 
       {quote && (
         <Card className="border-brand-200 bg-brand-50">

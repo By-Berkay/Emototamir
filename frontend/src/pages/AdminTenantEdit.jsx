@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api, { API } from "../lib/api";
+import AuthedImage from "../components/AuthedImage";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -174,7 +175,7 @@ export default function AdminTenantEdit() {
         <TabsContent value="firma">
           <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2 flex items-center gap-4 pb-4 border-b">
-              {t.logo_path ? <img src={`${API}/files/${t.logo_path}?auth=${token}`} className="h-16 w-16 object-contain border rounded p-1" alt="logo" /> :
+              {t.logo_path ? <AuthedImage path={t.logo_path} className="h-16 w-16 object-contain border rounded p-1" alt="logo" /> :
                 <div className="h-16 w-16 border-2 border-dashed rounded flex items-center justify-center text-slate-400"><Upload /></div>}
               <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={uploadLogo} />
               <Button variant="outline" onClick={()=>logoRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Logo Değiştir</Button>
@@ -424,7 +425,7 @@ function MotoImageSlot({ type, currentPath, token, onUpload }) {
   return (
     <div className="border border-slate-200 rounded-md p-3 flex flex-col items-center gap-2">
       <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">{type}</div>
-      {currentPath ? <img src={`${API}/files/${currentPath}?auth=${token}`} className="h-20 object-contain" alt={type} /> :
+      {currentPath ? <AuthedImage path={currentPath} className="h-20 object-contain" alt={type} /> :
         <div className="h-20 flex items-center text-slate-400 text-xs">Varsayılan silüet</div>}
       <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e)=>onUpload(e.target.files?.[0])} />
       <Button size="sm" variant="outline" onClick={()=>ref.current?.click()}><Upload className="h-3 w-3 mr-1" />{currentPath?"Değiştir":"Yükle"}</Button>

@@ -129,9 +129,11 @@ export default function Login() {
             </div>
           </div>
 
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-brand-600">Hoş geldiniz</p>
-          <h2 className="mt-2 font-heading text-3xl font-bold tracking-tight text-slate-900">Giriş Yap</h2>
-          <p className="mt-2 text-sm text-slate-500">Hesabınıza erişmek için bilgilerinizi girin.</p>
+          <div className="relative overflow-hidden rounded-xl border border-slate-200/80 bg-white p-6 shadow-card sm:p-8">
+          <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-brand-500" />
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-brand-600">Hoş geldiniz</p>
+          <h2 className="font-heading text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Giriş Yap</h2>
+          <p className="mt-1 text-sm text-slate-500">Hesabınıza erişmek için bilgilerinizi girin.</p>
 
           <form onSubmit={submit} className="mt-8 space-y-5">
             <div className="space-y-1.5">
@@ -178,6 +180,7 @@ export default function Login() {
           <p className="mt-8 border-t border-slate-200 pt-5 text-xs leading-relaxed text-slate-500">
             Demo hesap ile giriş yapmak için bizimle iletişime geçin.
           </p>
+          </div>
 
           {/* Mobil WhatsApp bağlantısı */}
           <a

@@ -8,6 +8,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Trash2, Save } from "lucide-react";
+import PageHeader from "../components/PageHeader";
 import { toast } from "sonner";
 import FaultDiagram from "../components/FaultDiagram";
 
@@ -77,16 +78,16 @@ export default function ServiceOrderEdit() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900">Servis Düzenle</h1>
-          <p className="text-sm text-slate-500 mt-1 font-mono">{order.service_no}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => nav(`/service-orders/${id}`)}>Vazgeç</Button>
-          <Button className="bg-brand-500 hover:bg-brand-600" onClick={save} disabled={saving} data-testid="edit-save"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Servis Düzenle"
+        description={<span className="font-mono">{order.service_no}</span>}
+        actions={
+          <>
+            <Button variant="outline" onClick={() => nav(`/service-orders/${id}`)}>Vazgeç</Button>
+            <Button className="bg-brand-500 hover:bg-brand-600" onClick={save} disabled={saving} data-testid="edit-save"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-slate-200">

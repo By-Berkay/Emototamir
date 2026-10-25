@@ -8,6 +8,9 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
+import PageHeader from "../components/PageHeader";
+import StatCard from "../components/StatCard";
+import EmptyState from "../components/EmptyState";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -89,11 +92,9 @@ export default function Payments() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center flex-wrap gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900">Tahsilatlar</h1>
-          <p className="text-sm text-slate-500 mt-1">Toplam: <span className="font-bold text-emerald-600">{fmtMoney(total)}</span></p>
-        </div>
+      <PageHeader
+        title="Tahsilatlar"
+        actions={
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
             <Button onClick={openNew} className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-payment"><Plus className="h-4 w-4 mr-2" />Yeni Tahsilat</Button>
@@ -133,6 +134,11 @@ export default function Payments() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        }
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <StatCard label="Toplam" value={fmtMoney(total)} tone="emerald" />
       </div>
 
       <Card className="border-slate-200"><CardContent className="p-0">
@@ -166,7 +172,7 @@ export default function Payments() {
                   )}
                 </tr>
               ))}
-              {items.length === 0 && <tr><td colSpan={isAdmin?7:6} className="px-4 py-8 text-center text-slate-500">Tahsilat kaydı yok</td></tr>}
+              {items.length === 0 && <tr><td colSpan={isAdmin?7:6}><EmptyState title="Tahsilat kaydı yok" /></td></tr>}
             </tbody>
           </table>
         </div>

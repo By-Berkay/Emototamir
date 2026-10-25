@@ -6,6 +6,9 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { toast } from "sonner";
+import PageHeader from "../components/PageHeader";
+import StatCard from "../components/StatCard";
+import EmptyState from "../components/EmptyState";
 import { BellRing, Download, MessageCircle, RefreshCw, AlertCircle, CheckSquare, Square } from "lucide-react";
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -72,35 +75,29 @@ export default function Reminders() {
   const policy = data.policy || {};
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2"><BellRing className="h-7 w-7 text-brand-500" />Bakım Hatırlatmaları</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Kural: son servisten sonra <b>{policy.reminder_km || 5000} km</b> {policy.reminder_mode === "and" ? "ve" : "veya"} <b>{policy.reminder_months || 6} ay</b> geçen motosikletler.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={load} data-testid="reminders-refresh"><RefreshCw className={`h-4 w-4 mr-1 ${loading?"animate-spin":""}`} />Yenile</Button>
-          <Button variant="outline" onClick={downloadCsv} data-testid="reminders-csv"><Download className="h-4 w-4 mr-1" />CSV İndir</Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={!anySelected} onClick={openWhatsApp} data-testid="reminders-whatsapp"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp Yayını</Button>
-        </div>
-      </div>
+      <PageHeader
+        title={<span className="flex items-center gap-2"><BellRing className="h-7 w-7 text-brand-500" />Bakım Hatırlatmaları</span>}
+        description={
+          <>Kural: son servisten sonra <b>{policy.reminder_km || 5000} km</b> {policy.reminder_mode === "and" ? "ve" : "veya"} <b>{policy.reminder_months || 6} ay</b> geçen motosikletler.</>
+        }
+        actions={
+          <>
+            <Button variant="outline" onClick={load} data-testid="reminders-refresh"><RefreshCw className={`h-4 w-4 mr-1 ${loading?"animate-spin":""}`} />Yenile</Button>
+            <Button variant="outline" onClick={downloadCsv} data-testid="reminders-csv"><Download className="h-4 w-4 mr-1" />CSV İndir</Button>
+            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" disabled={!anySelected} onClick={openWhatsApp} data-testid="reminders-whatsapp"><MessageCircle className="h-4 w-4 mr-1" />WhatsApp Yayını</Button>
+          </>
+        }
+      />
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <button onClick={()=>{ setTab("due"); setSelected({}); }} className={`text-left rounded-md p-4 border-2 transition-colors ${tab==="due"?"border-brand-500 bg-brand-50":"border-slate-200 hover:border-slate-300"}`} data-testid="tab-due">
-          <div className="text-xs uppercase text-slate-500">Vadesi Doldu</div>
-          <div className="text-3xl font-bold text-brand-600">{data.due.length}</div>
-          <div className="text-xs text-slate-500 mt-1">Politika koşulu sağlanan</div>
+        <button onClick={()=>{ setTab("due"); setSelected({}); }} className={`block w-full text-left rounded-xl transition-all ${tab==="due"?"ring-2 ring-brand-500":"hover:ring-1 hover:ring-slate-300"}`} data-testid="tab-due">
+          <StatCard label="Vadesi Doldu" value={data.due.length} hint="Politika koşulu sağlanan" tone="brand" />
         </button>
-        <button onClick={()=>{ setTab("overdue"); setSelected({}); }} className={`text-left rounded-md p-4 border-2 transition-colors ${tab==="overdue"?"border-red-500 bg-red-50":"border-slate-200 hover:border-slate-300"}`} data-testid="tab-overdue">
-          <div className="text-xs uppercase text-slate-500">Gecikmiş (Tarih)</div>
-          <div className="text-3xl font-bold text-red-600">{data.overdue.length}</div>
-          <div className="text-xs text-slate-500 mt-1">Bakım tarihi geçmiş</div>
+        <button onClick={()=>{ setTab("overdue"); setSelected({}); }} className={`block w-full text-left rounded-xl transition-all ${tab==="overdue"?"ring-2 ring-red-500":"hover:ring-1 hover:ring-slate-300"}`} data-testid="tab-overdue">
+          <StatCard label="Gecikmiş (Tarih)" value={data.overdue.length} hint="Bakım tarihi geçmiş" tone="red" />
         </button>
-        <button onClick={()=>{ setTab("upcoming"); setSelected({}); }} className={`text-left rounded-md p-4 border-2 transition-colors ${tab==="upcoming"?"border-amber-500 bg-amber-50":"border-slate-200 hover:border-slate-300"}`} data-testid="tab-upcoming">
-          <div className="text-xs uppercase text-slate-500">30 Gün İçinde</div>
-          <div className="text-3xl font-bold text-amber-600">{data.upcoming.length}</div>
-          <div className="text-xs text-slate-500 mt-1">Yaklaşan bakım</div>
+        <button onClick={()=>{ setTab("upcoming"); setSelected({}); }} className={`block w-full text-left rounded-xl transition-all ${tab==="upcoming"?"ring-2 ring-amber-500":"hover:ring-1 hover:ring-slate-300"}`} data-testid="tab-upcoming">
+          <StatCard label="30 Gün İçinde" value={data.upcoming.length} hint="Yaklaşan bakım" tone="amber" />
         </button>
       </div>
 
@@ -146,7 +143,7 @@ export default function Reminders() {
                 );
               })}
               {rows.length === 0 && !loading && (
-                <tr><td colSpan={8} className="text-center py-10 text-slate-500"><AlertCircle className="h-6 w-6 mx-auto opacity-40 mb-2" />Bu sekmede kayıt yok.</td></tr>
+                <tr><td colSpan={8}><EmptyState icon={AlertCircle} title="Bu sekmede kayıt yok." /></td></tr>
               )}
             </tbody>
           </table>

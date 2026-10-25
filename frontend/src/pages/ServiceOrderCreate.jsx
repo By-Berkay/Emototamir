@@ -7,12 +7,14 @@ import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import { Trash2, Plus, UserPlus, Bike as BikeIcon } from "lucide-react";
+import { Trash2, Plus, UserPlus, Bike as BikeIcon, Package } from "lucide-react";
 import { toast } from "sonner";
 import FaultDiagram from "../components/FaultDiagram";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { MOTO_TYPES } from "../lib/api";
 import MotorcycleIllustration from "../components/MotorcycleIllustration";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 
 const ACCESSORY_OPTS = ["Kask", "Telefon Tutucu", "Çanta", "Topcase", "Yan Çanta", "Navigasyon"];
 const FUEL_OPTS = ["Boş", "1/4", "1/2", "3/4", "Dolu"];
@@ -137,10 +139,7 @@ export default function ServiceOrderCreate() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-3xl font-bold text-slate-900">Yeni Servis Kaydı</h1>
-        <p className="text-sm text-slate-500 mt-1">İş emri oluşturmak için müşteri, motosiklet ve arıza bilgilerini girin.</p>
-      </div>
+      <PageHeader title="Yeni Servis Kaydı" description="İş emri oluşturmak için müşteri, motosiklet ve arıza bilgilerini girin." />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-slate-200">
@@ -223,7 +222,7 @@ export default function ServiceOrderCreate() {
                 <td className="px-4 py-2"><button onClick={()=>rmItem(it.id)} className="text-red-500 hover:text-red-700"><Trash2 className="h-4 w-4" /></button></td>
               </tr>
             ))}
-            {items.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Henüz parça veya hizmet eklenmedi</td></tr>}
+            {items.length === 0 && <tr><td colSpan={6}><EmptyState icon={Package} title="Henüz parça veya hizmet eklenmedi" /></td></tr>}
           </tbody>
         </table>
       </CardContent></Card>

@@ -54,7 +54,7 @@ export default function PublicApproval() {
           </div>
         </div>
 
-        <Card className="border-slate-200">
+        <Card className="border-slate-200 border-t-4 border-t-brand-500 shadow-card">
           <CardContent className="p-6 sm:p-8 space-y-6">
             <div>
               <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Servis</div>

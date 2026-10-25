@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
+import PageHeader from "../components/PageHeader";
+import EmptyState from "../components/EmptyState";
 import { Trash2, ArchiveRestore, ArchiveX, User as UserIcon, Bike, RefreshCw, AlertTriangle } from "lucide-react";
 
 function fmtDT(iso) {
@@ -59,13 +61,10 @@ export default function Trash() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-heading text-3xl font-bold text-slate-900 flex items-center gap-2">
-            <Trash2 className="h-7 w-7 text-red-500" />Çöp Kutusu
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Silinen kayıtlar 30 gün saklanır. Sonrasında otomatik olarak kalıcı silinir.</p>
-        </div>
+      <PageHeader
+        title={<span className="flex items-center gap-2"><Trash2 className="h-7 w-7 text-red-500" />Çöp Kutusu</span>}
+        description="Silinen kayıtlar 30 gün saklanır. Sonrasında otomatik olarak kalıcı silinir."
+        actions={
         <div className="flex gap-2">
           <Select value={type} onValueChange={setType}>
             <SelectTrigger className="w-40" data-testid="trash-filter"><SelectValue /></SelectTrigger>
@@ -77,7 +76,8 @@ export default function Trash() {
           </Select>
           <Button variant="outline" onClick={load} data-testid="trash-refresh"><RefreshCw className={`h-4 w-4 mr-1 ${loading?"animate-spin":""}`} />Yenile</Button>
         </div>
-      </div>
+        }
+      />
 
       <Card>
         <CardHeader className="pb-2"><CardTitle className="text-sm text-slate-600">{rows.length} kayıt</CardTitle></CardHeader>
@@ -131,10 +131,7 @@ export default function Trash() {
                 );
               })}
               {rows.length === 0 && (
-                <tr><td colSpan={8} className="text-center py-12 text-slate-500">
-                  <Trash2 className="h-10 w-10 mx-auto opacity-30 mb-2" />
-                  Çöp kutusu boş.
-                </td></tr>
+                <tr><td colSpan={8}><EmptyState icon={Trash2} title="Çöp kutusu boş." /></td></tr>
               )}
             </tbody>
           </table>

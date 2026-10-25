@@ -7,6 +7,7 @@ import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
 import { Plus } from "lucide-react";
+import PageHeader from "../components/PageHeader";
 import { toast } from "sonner";
 
 const empty = { code:"", name:"", description:"", price:0, vat:20 };
@@ -29,8 +30,10 @@ export default function Services() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div><h1 className="font-heading text-3xl font-bold text-slate-900">Hizmetler</h1><p className="text-sm text-slate-500 mt-1">{items.length} hizmet</p></div>
+      <PageHeader
+        title="Hizmetler"
+        description={`${items.length} hizmet`}
+        actions={
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button className="bg-brand-500 hover:bg-brand-600"><Plus className="h-4 w-4 mr-2" />Yeni Hizmet</Button></DialogTrigger>
           <DialogContent>
@@ -45,7 +48,8 @@ export default function Services() {
             <DialogFooter><Button variant="outline" onClick={()=>setOpen(false)}>İptal</Button><Button className="bg-brand-500 hover:bg-brand-600" onClick={save}>Kaydet</Button></DialogFooter>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map(s=>(
           <Card key={s.id} className="border-slate-200"><CardContent className="p-5">

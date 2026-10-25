@@ -54,3 +54,16 @@ export const MOTO_TYPES = [
   "Adventure", "Enduro", "Cross", "Chopper", "Cruiser",
   "Cafe Racer", "Elektrikli", "Diğer",
 ];
+
+// Kimlik doğrulamalı dosyalar (görsel, PDF) token'ı URL'de taşımadan, Authorization başlığıyla çekilir.
+export async function openAuthedPdf(path) {
+  const win = window.open("", "_blank", "noopener");
+  try {
+    const res = await api.get(path, { responseType: "blob" });
+    const url = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+    if (win) win.location.href = url;
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch {
+    if (win) win.close();
+  }
+}

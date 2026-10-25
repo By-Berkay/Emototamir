@@ -3,6 +3,8 @@ import api, { fmtMoney } from "../lib/api";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Download } from "lucide-react";
+import PageHeader from "../components/PageHeader";
+import StatCard from "../components/StatCard";
 import { toast } from "sonner";
 
 function toCSV(rows, headers) {
@@ -26,13 +28,13 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div><h1 className="font-heading text-3xl font-bold text-slate-900">Raporlar</h1></div>
+      <PageHeader title="Raporlar" />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="border-slate-200"><CardContent className="p-5"><div className="text-xs uppercase text-slate-500">Toplam Ciro</div><div className="text-2xl font-bold">{fmtMoney(r.totals.total_revenue)}</div></CardContent></Card>
-        <Card className="border-slate-200"><CardContent className="p-5"><div className="text-xs uppercase text-slate-500">Toplam Tahsilat</div><div className="text-2xl font-bold text-emerald-600">{fmtMoney(r.totals.total_collected)}</div></CardContent></Card>
-        <Card className="border-slate-200"><CardContent className="p-5"><div className="text-xs uppercase text-slate-500">Alacak</div><div className="text-2xl font-bold text-red-600">{fmtMoney(r.totals.receivables)}</div></CardContent></Card>
-        <Card className="border-slate-200"><CardContent className="p-5"><div className="text-xs uppercase text-slate-500">Servis Sayısı</div><div className="text-2xl font-bold">{r.totals.orders_count}</div></CardContent></Card>
+        <StatCard label="Toplam Ciro" value={fmtMoney(r.totals.total_revenue)} tone="brand" />
+        <StatCard label="Toplam Tahsilat" value={fmtMoney(r.totals.total_collected)} tone="emerald" />
+        <StatCard label="Alacak" value={fmtMoney(r.totals.receivables)} tone="red" />
+        <StatCard label="Servis Sayısı" value={r.totals.orders_count} tone="slate" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -1,5 +1,6 @@
 import React from "react";
 import { API } from "../lib/api";
+import AuthedImage from "./AuthedImage";
 import { useAuth } from "../context/AuthContext";
 
 /**
@@ -206,7 +207,7 @@ export default function MotorcycleIllustration({ type = "Naked", className = "" 
     const token = localStorage.getItem("token");
     return (
       <div className={className}>
-        <img src={`${API}/files/${custom}?auth=${token}`} alt={type}
+        <AuthedImage path={custom} alt={type}
              className="w-full h-full object-contain rounded-md bg-slate-100" />
       </div>
     );
