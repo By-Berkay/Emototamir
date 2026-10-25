@@ -24,7 +24,7 @@ const NAV_TENANT = [
   {
     title: "Genel",
     items: [
-      { to: "/", label: "Dashboard", icon: LayoutDashboard, end: true },
+      { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
       { to: "/customers", label: "Müşteriler", icon: Users },
       { to: "/motorcycles", label: "Motosikletler", icon: Bike },
     ],
@@ -65,6 +65,8 @@ const NAV_SUPER = [
     title: "Yönetim",
     items: [
       { to: "/admin/tenants", label: "Firma Yönetimi", icon: Building2, end: true },
+      { to: "/admin/report", label: "3D Rapor", icon: BarChart3 },
+      { to: "/admin/pricing", label: "Fiyat & Paketler", icon: Receipt },
       { to: "/admin/audit-logs", label: "Denetim Kayıtları", icon: History },
       { to: "/account/password", label: "Şifre Değiştir", icon: KeyRound },
     ],

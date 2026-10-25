@@ -7,6 +7,7 @@ import { Label } from "../components/ui/label";
 import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
+import PinChangeCard from "../components/PinChangeCard";
 
 const MIN_LEN = 8;
 const EMPTY = { current_password: "", new_password: "", confirm_password: "" };
@@ -103,6 +104,7 @@ export default function ChangePassword() {
           </form>
         </CardContent>
       </Card>
+      <PinChangeCard />
     </div>
   );
 }

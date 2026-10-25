@@ -3391,6 +3391,155 @@ async def backfill_cancel_reversals() -> int:
         logger.info(f"İptal ters kayıtları eklendi: {added}")
     return added
 
+# ---------- Halka açık fiyat sayfası (Süper Admin yönetir) ----------
+DEFAULT_PRICING_PACKAGES = [
+    {"id": "pkg-temel", "name": "Temel Bakım", "price": 650, "unit": "başlangıç fiyatı", "highlight": False,
+     "features": ["Motor yağı ve yağ filtresi değişimi", "Genel kontrol", "Lastik basınç kontrolü"]},
+    {"id": "pkg-standart", "name": "Standart Bakım", "price": 1450, "unit": "başlangıç fiyatı", "highlight": True,
+     "features": ["Yağ, hava ve yağ filtreleri", "Buji değişimi", "Zincir ayarı ve yağlama", "Fren kontrolü"]},
+    {"id": "pkg-kapsamli", "name": "Kapsamlı Bakım", "price": 2800, "unit": "başlangıç fiyatı", "highlight": False,
+     "features": ["Standart bakımın tümü", "Fren balatası ve sıvı kontrolü", "Triger ve soğutma kontrolü", "Bilgisayar arıza taraması"]},
+    {"id": "pkg-ariza", "name": "Arıza Tespiti", "price": 250, "unit": "tespit ücreti", "highlight": False,
+     "features": ["Diagnostik cihazla arıza okuma", "Elektrik devre kontrolü", "Yazılı arıza raporu"]},
+]
+
+class PricingItemIn(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    description: str = Field(default="", max_length=300)
+    price: float = Field(ge=0, le=10_000_000)
+    unit: str = Field(default="TL", max_length=30)
+
+class PricingPackageIn(BaseModel):
+    id: str = Field(min_length=1, max_length=60)
+    name: str = Field(min_length=1, max_length=80)
+    price: float = Field(ge=0, le=10_000_000)
+    unit: str = Field(default="başlangıç fiyatı", max_length=40)
+    highlight: bool = False
+    features: List[str] = Field(default_factory=list, max_length=20)
+
+class PricingIn(BaseModel):
+    packages: List[PricingPackageIn] = Field(default_factory=list, max_length=12)
+    items: List[PricingItemIn] = Field(default_factory=list, max_length=300)
+
+async def _pricing_doc() -> Dict[str, Any]:
+    doc = await db.site_content.find_one({"_id": "pricing"}, {"_id": 0})
+    if doc:
+        return doc
+    return {
+        "packages": DEFAULT_PRICING_PACKAGES,
+        "items": [{"name": n, "description": d, "price": price, "unit": "TL"} for (_c, n, d, price) in DEFAULT_SERVICES],
+        "updated_at": None,
+    }
+
+@api.get("/public/pricing")
+async def public_pricing():
+    doc = await _pricing_doc()
+    return {"packages": doc.get("packages", []), "items": doc.get("items", []), "updated_at": doc.get("updated_at")}
+
+@api.get("/admin/pricing")
+async def admin_get_pricing(user=Depends(require_super_admin)):
+    return await _pricing_doc()
+
+@api.put("/admin/pricing")
+async def admin_put_pricing(inp: PricingIn, user=Depends(require_super_admin)):
+    ids = [p.id for p in inp.packages]
+    if len(set(ids)) != len(ids):
+        raise HTTPException(400, "Paket kimlikleri benzersiz olmalıdır")
+    doc = {
+        "packages": [p.model_dump() for p in inp.packages],
+        "items": [i.model_dump() for i in inp.items],
+        "updated_at": now_iso(), "updated_by": user["email"],
+    }
+    await db.site_content.update_one({"_id": "pricing"}, {"$set": doc}, upsert=True)
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": None, "user": user["email"], "action": "pricing.update",
+        "entity_id": "pricing", "at": now_iso(),
+    })
+    return {"ok": True, "updated_at": doc["updated_at"]}
+
+# ---------- Süper Admin genel durum raporu ----------
+@api.get("/admin/overview")
+async def admin_overview(user=Depends(require_super_admin)):
+    tenants = await db.tenants.find({}, {"_id": 0, "id": 1, "name": 1, "is_active": 1, "plan": 1,
+                                         "subscription_ends_at": 1, "trial_ends_at": 1}).to_list(1000)
+    orders = await db.service_orders.find({"status": {"$ne": "cancelled"}},
+                                          {"_id": 0, "tenant_id": 1, "customer_id": 1, "grand_total": 1,
+                                           "paid_total": 1, "created_at": 1}).to_list(50000)
+    payments = await db.payments.find({}, {"_id": 0, "tenant_id": 1, "amount": 1, "created_at": 1}).to_list(50000)
+    customers = await db.customers.find({}, {"_id": 0, "id": 1, "tenant_id": 1, "first_name": 1, "last_name": 1,
+                                             "phone": 1, "created_at": 1}).to_list(50000)
+    moto_counts: Dict[str, int] = {}
+    async for m in db.motorcycles.find({}, {"_id": 0, "tenant_id": 1}):
+        moto_counts[m.get("tenant_id")] = moto_counts.get(m.get("tenant_id"), 0) + 1
+
+    def f(v) -> float:
+        return float(v or 0)
+
+    by_tenant: Dict[str, Dict[str, float]] = {}
+    for o in orders:
+        t = by_tenant.setdefault(o.get("tenant_id"), {"revenue": 0.0, "receivables": 0.0, "orders": 0, "collected": 0.0})
+        t["revenue"] += f(o.get("grand_total"))
+        t["receivables"] += max(0.0, f(o.get("grand_total")) - f(o.get("paid_total")))
+        t["orders"] += 1
+    for p in payments:
+        t = by_tenant.setdefault(p.get("tenant_id"), {"revenue": 0.0, "receivables": 0.0, "orders": 0, "collected": 0.0})
+        t["collected"] += f(p.get("amount"))
+    cust_count: Dict[str, int] = {}
+    for c in customers:
+        cust_count[c.get("tenant_id")] = cust_count.get(c.get("tenant_id"), 0) + 1
+
+    tenant_rows = []
+    for t in tenants:
+        agg = by_tenant.get(t["id"], {"revenue": 0.0, "receivables": 0.0, "orders": 0, "collected": 0.0})
+        tenant_rows.append({
+            "id": t["id"], "name": t.get("name"), "is_active": t.get("is_active", True), "plan": t.get("plan"),
+            "ends_at": t.get("subscription_ends_at") or t.get("trial_ends_at"),
+            "customers": cust_count.get(t["id"], 0), "motorcycles": moto_counts.get(t["id"], 0),
+            "orders": agg["orders"], "revenue": round(agg["revenue"], 2),
+            "collected": round(agg["collected"], 2), "receivables": round(agg["receivables"], 2),
+        })
+    tenant_rows.sort(key=lambda r: -r["revenue"])
+
+    # Müşteri bazlı açık bakiye (tüm firmalar)
+    bal: Dict[str, float] = {}
+    for o in orders:
+        if o.get("customer_id"):
+            bal[o["customer_id"]] = bal.get(o["customer_id"], 0.0) + max(0.0, f(o.get("grand_total")) - f(o.get("paid_total")))
+    tenant_name = {t["id"]: t.get("name") for t in tenants}
+    customer_rows = sorted(
+        [{"id": c["id"], "name": f"{c.get('first_name', '')} {c.get('last_name', '')}".strip(),
+          "phone": c.get("phone", ""), "tenant": tenant_name.get(c.get("tenant_id"), "-"),
+          "balance": round(bal.get(c["id"], 0.0), 2), "created_at": c.get("created_at")} for c in customers],
+        key=lambda r: (-r["balance"], r["name"]))[:300]
+
+    monthly: Dict[str, float] = {}
+    for o in orders:
+        k = (o.get("created_at") or "")[:7]
+        if k:
+            monthly[k] = monthly.get(k, 0.0) + f(o.get("grand_total"))
+    monthly_series = [{"month": k, "revenue": round(v, 2)} for k, v in sorted(monthly.items())[-12:]]
+
+    totals = {
+        "tenants": len(tenants),
+        "active_tenants": sum(1 for t in tenants if t.get("is_active", True)),
+        "customers": len(customers),
+        "motorcycles": sum(moto_counts.values()),
+        "orders": len(orders),
+        "revenue": round(sum(r["revenue"] for r in tenant_rows), 2),
+        "collected": round(sum(r["collected"] for r in tenant_rows), 2),
+        "receivables": round(sum(r["receivables"] for r in tenant_rows), 2),
+    }
+    system = {
+        "database": "MongoDB Atlas",
+        "db_name": os.environ.get("DB_NAME", ""),
+        "server_time": now_iso(),
+        "users": await db.users.count_documents({}),
+        "files": await db["app_files.files"].count_documents({}),
+        "audit_entries": await db.audit_logs.count_documents({}),
+    }
+    return {"totals": totals, "tenants": tenant_rows, "customers": customer_rows,
+            "monthly": monthly_series, "system": system}
+
 async def seed_default_catalog(tid: str) -> None:
     """Firma için varsayılan parça ve işçilik kataloğunu bir kez yükler (katalog boşsa)."""
     tenant = await db.tenants.find_one({"id": tid}, {"_id": 0, "catalog_seeded": 1})

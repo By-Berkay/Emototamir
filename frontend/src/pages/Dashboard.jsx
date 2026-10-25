@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import api, { fmtMoney, fmtDateShort, STATUS_META } from "../lib/api";
 import { useLayout } from "../lib/layoutPrefs";
 import { usePrivacy } from "../context/PrivacyContext";
+import { useAuth } from "../context/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -13,6 +14,7 @@ import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import Money from "../components/Money";
 import DashboardDebtorsTable from "../components/DashboardDebtorsTable";
+import DashboardHero from "../components/DashboardHero";
 import { DashboardSection, SectionsPanel } from "../components/DashboardLayout";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -72,6 +74,7 @@ const SECTION_BY_ID = Object.fromEntries(SECTIONS.map((s) => [s.id, s]));
 
 export default function Dashboard() {
   const { unlocked, openPin } = usePrivacy();
+  const { user, tenant } = useAuth();
   const [data, setData] = useState(null);
   const [digest, setDigest] = useState(null);
   const [regen, setRegen] = useState(false);
@@ -412,6 +415,8 @@ export default function Dashboard() {
           </>
         }
       />
+
+      <DashboardHero kpi={kpi} tenantName={tenant?.name} userName={user?.name} />
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {visible.map((id) => (

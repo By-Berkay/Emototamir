@@ -33,6 +33,9 @@ import ChangePassword from "./pages/ChangePassword";
 import Inspections from "./pages/Inspections";
 import InspectionEdit from "./pages/InspectionEdit";
 import InspectionDetail from "./pages/InspectionDetail";
+import Landing from "./pages/Landing";
+import AdminPricing from "./pages/AdminPricing";
+import AdminReport3D from "./pages/AdminReport3D";
 import "./App.css";
 
 function Protected({ children }) {
@@ -48,6 +51,14 @@ function IndexRoute() {
   return <Dashboard />;
 }
 
+// Kök adres: misafirlere fiyat/paket vitrini, giriş yapanlara panel.
+function RootGate() {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
+  if (!user) return <Landing />;
+  return <Navigate to={user.role === "super_admin" ? "/admin/tenants" : "/dashboard"} replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -55,11 +66,12 @@ export default function App() {
         <PrivacyProvider>
         <Toaster position="top-right" richColors />
         <Routes>
+          <Route path="/" element={<RootGate />} />
           <Route path="/login" element={<Login />} />
           <Route path="/onay/:token" element={<PublicApproval />} />
           <Route path="/q/:token" element={<QuotePublic />} />
           <Route element={<Protected><Layout /></Protected>}>
-            <Route index element={<IndexRoute />} />
+            <Route path="/dashboard" element={<IndexRoute />} />
             <Route path="/customers" element={<Customers />} />
             <Route path="/customers/:id" element={<CustomerDetail />} />
             <Route path="/motorcycles" element={<Motorcycles />} />
@@ -87,6 +99,8 @@ export default function App() {
             <Route path="/admin/tenants" element={<AdminTenants />} />
             <Route path="/admin/tenants/:id" element={<AdminTenantEdit />} />
             <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
+            <Route path="/admin/pricing" element={<AdminPricing />} />
+            <Route path="/admin/report" element={<AdminReport3D />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
