@@ -8,9 +8,14 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Yönetici PIN'i ile açılan kısa ömürlü token (bellekte; sayfa yenilenince kaybolur)
+let revealToken = null;
+export const setRevealToken = (t) => { revealToken = t || null; };
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (revealToken) config.headers["X-Reveal-Token"] = revealToken;
   return config;
 });
 

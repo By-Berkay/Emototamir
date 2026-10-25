@@ -1,6 +1,7 @@
 import React from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
+import { PrivacyProvider } from "./context/PrivacyContext";
 import { Toaster } from "sonner";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -51,6 +52,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <PrivacyProvider>
         <Toaster position="top-right" richColors />
         <Routes>
           <Route path="/login" element={<Login />} />
@@ -88,6 +90,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </PrivacyProvider>
       </AuthProvider>
     </BrowserRouter>
   );

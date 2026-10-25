@@ -7,6 +7,8 @@ import {
   Trash2, KeyRound, Plus,
 } from "lucide-react";
 import { Input } from "./ui/input";
+import { usePrivacy } from "../context/PrivacyContext";
+import { Lock, LockOpen } from "lucide-react";
 
 const ROLE_LABELS = {
   super_admin: "Süper Admin",
@@ -225,6 +227,7 @@ export default function Layout() {
             </div>
           </form>
           <div className="ml-auto flex items-center gap-3">
+            {(user?.role === "admin" || user?.role === "super_admin") && <AdminLockButton />}
             {!isSuper && (
               <Link
                 to="/service-orders/new"
@@ -263,5 +266,25 @@ export default function Layout() {
         />
       )}
     </div>
+  );
+}
+
+/** Başlıktaki yönetici ikonu: kilitliyken PIN ile açar, açıkken tekrar gizler. */
+function AdminLockButton() {
+  const { unlocked, lock, openPin } = usePrivacy();
+  const Icon = unlocked ? LockOpen : Lock;
+  return (
+    <button
+      type="button"
+      onClick={() => (unlocked ? lock() : openPin())}
+      title={unlocked ? "Tutarları gizle" : "Yönetici görünümü (PIN)"}
+      aria-label={unlocked ? "Tutarları gizle" : "Yönetici görünümünü aç"}
+      className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-colors ${
+        unlocked ? "border-brand-200 bg-brand-50 text-brand-600" : "border-slate-200 bg-white text-slate-500 hover:text-slate-800"
+      }`}
+      data-testid="btn-admin-lock"
+    >
+      <Icon className="h-4 w-4" />
+    </button>
   );
 }

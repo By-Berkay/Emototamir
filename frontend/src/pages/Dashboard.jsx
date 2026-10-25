@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import api, { fmtMoney, fmtDateShort, STATUS_META } from "../lib/api";
+import { useLayout } from "../lib/layoutPrefs";
+import { usePrivacy } from "../context/PrivacyContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
@@ -9,13 +11,16 @@ import StatusBadge from "../components/StatusBadge";
 import StatCard from "../components/StatCard";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
+import Money from "../components/Money";
+import DashboardDebtorsTable from "../components/DashboardDebtorsTable";
+import { DashboardSection, SectionsPanel } from "../components/DashboardLayout";
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, BarChart, Bar,
 } from "recharts";
 import {
   Wrench, ClipboardList, PackageCheck, Truck, Wallet, TrendingUp, HandCoins,
-  AlertTriangle, MessageCircle, RefreshCw, CircleCheck, BellRing,
+  AlertTriangle, MessageCircle, RefreshCw, CircleCheck, BellRing, Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -52,15 +57,37 @@ function readBrandHex() {
 
 const compact = (v) => new Intl.NumberFormat("tr-TR", { notation: "compact", maximumFractionDigits: 1 }).format(v);
 
+const LAYOUT_KEY = "dash.layout.v1";
+const SECTIONS = [
+  { id: "kpi", label: "Özet göstergeler", span: "full" },
+  { id: "reminders", label: "Bugünkü bakım hatırlatmaları", span: "full" },
+  { id: "revenue", label: "Aylık ciro", span: "wide" },
+  { id: "status", label: "Servis durumu", span: "narrow" },
+  { id: "recent", label: "Son servis kayıtları", span: "wide" },
+  { id: "operations", label: "En çok yapılan işlemler", span: "narrow" },
+  { id: "debtors", label: "Borçlu müşteriler", span: "wide" },
+];
+const DEFAULT_IDS = SECTIONS.map((s) => s.id);
+const SECTION_BY_ID = Object.fromEntries(SECTIONS.map((s) => [s.id, s]));
+
 export default function Dashboard() {
+  const { unlocked, openPin } = usePrivacy();
   const [data, setData] = useState(null);
   const [digest, setDigest] = useState(null);
   const [regen, setRegen] = useState(false);
-  const brand = readBrandHex();
+  const { order, visible, hidden, toggle, reset, dnd } = useLayout(LAYOUT_KEY, DEFAULT_IDS);
+  const brand = useMemo(readBrandHex, []);
+
+  // Kilit açılıp kapanınca tutarlar yeniden alınır (sunucu parasal alanları gizlerse null gelir).
+  useEffect(() => {
+    let active = true;
+    api.get("/dashboard")
+      .then((r) => { if (active) setData(r.data); })
+      .catch(() => toast.error("Dashboard verileri yüklenemedi"));
+    return () => { active = false; };
+  }, [unlocked]);
 
   useEffect(() => {
-    api.get("/dashboard").then((r) => setData(r.data))
-      .catch(() => toast.error("Dashboard verileri yüklenemedi"));
     api.get("/dashboard/reminders-today").then((r) => setDigest(r.data)).catch(() => {});
   }, []);
 
@@ -83,38 +110,25 @@ export default function Dashboard() {
 
   if (!data) return <p className="text-sm text-slate-500">Yükleniyor…</p>;
 
-  const { kpi, monthly_revenue, status_distribution, top_operations, recent_orders } = data;
+  const { kpi, monthly_revenue, status_distribution, top_operations, recent_orders, debtors } = data;
   const links = digest?.links || [];
 
-  return (
-    <div className="space-y-8" data-testid="dashboard">
-      <PageHeader
-        eyebrow="Genel bakış"
-        title="Dashboard"
-        description="Servis operasyonunun anlık durumu"
-        actions={
-          <Button asChild data-testid="btn-new-service-order">
-            <Link to="/service-orders/new">
-              <ClipboardList />
-              Yeni Servis Kaydı
-            </Link>
-          </Button>
-        }
-      />
-
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4" aria-label="Özet göstergeler">
+  const bodies = {
+    kpi: (
+      <section aria-label="Özet göstergeler" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard icon={Wrench} label="Bugünkü servis" value={kpi.today_services} testId="kpi-today" />
         <StatCard icon={ClipboardList} label="Açık servisler" value={kpi.open_services} tone="slate" testId="kpi-open" />
         <StatCard icon={PackageCheck} label="Tamamlanan" value={kpi.completed_services} tone="emerald" testId="kpi-completed" />
         <StatCard icon={Truck} label="Teslim bekliyor" value={kpi.awaiting_delivery} tone="amber" testId="kpi-awaiting" />
-        <StatCard icon={HandCoins} label="Bugünkü tahsilat" value={fmtMoney(kpi.today_collection)} tone="emerald" testId="kpi-today-collection" />
-        <StatCard icon={TrendingUp} label="Bu ay ciro" value={fmtMoney(kpi.month_revenue)} tone="sky" testId="kpi-month-revenue" />
-        <StatCard icon={Wallet} label="Toplam alacak" value={fmtMoney(kpi.total_receivables)} tone="red" testId="kpi-receivables" />
+        <StatCard icon={HandCoins} label="Bugünkü tahsilat" value={<Money value={kpi.today_collection} />} tone="emerald" testId="kpi-today-collection" />
+        <StatCard icon={TrendingUp} label="Bu ay ciro" value={<Money value={kpi.month_revenue} />} tone="sky" testId="kpi-month-revenue" />
+        <StatCard icon={Wallet} label="Toplam alacak" value={<Money value={kpi.total_receivables} />} tone="red" testId="kpi-receivables" />
         <StatCard icon={AlertTriangle} label="Borçlu servis" value={kpi.unpaid_count} tone="amber" testId="kpi-unpaid" />
       </section>
+    ),
 
-      {/* Bakım hatırlatmaları */}
-      <Card className="border-brand-200" data-testid="reminders-widget">
+    reminders: (
+      <Card className="flex-1 border-brand-200" data-testid="reminders-widget">
         <CardHeader className="flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
@@ -198,121 +212,107 @@ export default function Dashboard() {
           )}
         </CardContent>
       </Card>
+    ),
 
-      {/* Ciro ve durum dağılımı */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-base">Aylık ciro</CardTitle>
-            <CardDescription>Son 12 ay</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {monthly_revenue?.length ? (
-              <div className="h-72">
+    revenue: (
+      <Card className="flex-1">
+        <CardHeader>
+          <CardTitle className="text-base">Aylık ciro</CardTitle>
+          <CardDescription>Son 12 ay</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!unlocked ? (
+            <EmptyState
+              icon={Lock}
+              title="Ciro grafiği gizli"
+              description="Tutarları görmek için kilidi açın."
+              action={<Button variant="outline" size="sm" onClick={openPin}>Kilidi aç</Button>}
+            />
+          ) : monthly_revenue?.length ? (
+            <div className="h-72">
+              <ResponsiveContainer>
+                <LineChart data={monthly_revenue} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="month" tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={56} tickFormatter={compact} />
+                  <Tooltip formatter={(v) => fmtMoney(v)} />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke={brand}
+                    strokeWidth={2.5}
+                    dot={{ r: 3, fill: brand, strokeWidth: 0 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState title="Henüz ciro verisi yok" description="Tamamlanan servisler burada grafik olarak görünür." />
+          )}
+        </CardContent>
+      </Card>
+    ),
+
+    status: (
+      <Card className="flex-1">
+        <CardHeader>
+          <CardTitle className="text-base">Servis durumu</CardTitle>
+          <CardDescription>Tüm kayıtlar</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {status_distribution?.length ? (
+            <>
+              <div className="h-52">
                 <ResponsiveContainer>
-                  <LineChart data={monthly_revenue} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-                    <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" vertical={false} />
-                    <XAxis dataKey="month" tick={AXIS_TICK} tickLine={false} axisLine={false} />
-                    <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={56} tickFormatter={compact} />
-                    <Tooltip formatter={(v) => fmtMoney(v)} />
-                    <Line
-                      type="monotone"
-                      dataKey="revenue"
-                      stroke={brand}
-                      strokeWidth={2.5}
-                      dot={{ r: 3, fill: brand, strokeWidth: 0 }}
-                      activeDot={{ r: 5 }}
-                    />
-                  </LineChart>
+                  <PieChart>
+                    <Pie
+                      data={status_distribution}
+                      dataKey="count"
+                      nameKey="status"
+                      innerRadius={55}
+                      outerRadius={84}
+                      paddingAngle={2}
+                      stroke="none"
+                    >
+                      {status_distribution.map((s) => (
+                        <Cell key={s.status} fill={statusColor(s.status)} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v, n) => [v, STATUS_META[n]?.label || n]} />
+                  </PieChart>
                 </ResponsiveContainer>
               </div>
-            ) : (
-              <EmptyState title="Henüz ciro verisi yok" description="Tamamlanan servisler burada grafik olarak görünür." />
-            )}
-          </CardContent>
-        </Card>
+              <ul className="mt-4 space-y-2">
+                {status_distribution.map((s) => (
+                  <li key={s.status} className="flex items-center justify-between text-xs text-slate-600">
+                    <span className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: statusColor(s.status) }} />
+                      {STATUS_META[s.status]?.label || s.status}
+                    </span>
+                    <span className="font-mono font-semibold text-slate-900">{s.count}</span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : (
+            <EmptyState title="Servis kaydı yok" description="İlk iş emrinizi oluşturduğunuzda dağılım burada görünür." />
+          )}
+        </CardContent>
+      </Card>
+    ),
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Servis durumu</CardTitle>
-            <CardDescription>Tüm kayıtlar</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {status_distribution?.length ? (
-              <>
-                <div className="h-52">
-                  <ResponsiveContainer>
-                    <PieChart>
-                      <Pie
-                        data={status_distribution}
-                        dataKey="count"
-                        nameKey="status"
-                        innerRadius={55}
-                        outerRadius={84}
-                        paddingAngle={2}
-                        stroke="none"
-                      >
-                        {status_distribution.map((s) => (
-                          <Cell key={s.status} fill={statusColor(s.status)} />
-                        ))}
-                      </Pie>
-                      <Tooltip formatter={(v, n) => [v, STATUS_META[n]?.label || n]} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <ul className="mt-4 space-y-2">
-                  {status_distribution.map((s) => (
-                    <li key={s.status} className="flex items-center justify-between text-xs text-slate-600">
-                      <span className="inline-flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: statusColor(s.status) }} />
-                        {STATUS_META[s.status]?.label || s.status}
-                      </span>
-                      <span className="font-mono font-semibold text-slate-900">{s.count}</span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            ) : (
-              <EmptyState title="Servis kaydı yok" description="İlk iş emrinizi oluşturduğunuzda dağılım burada görünür." />
-            )}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Operasyonlar ve son kayıtlar */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">En çok yapılan işlemler</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {top_operations?.length ? (
-              <div className="h-64">
-                <ResponsiveContainer>
-                  <BarChart data={top_operations} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
-                    <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" horizontal={false} />
-                    <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} allowDecimals={false} />
-                    <YAxis dataKey="name" type="category" width={110} tick={AXIS_TICK} tickLine={false} axisLine={false} />
-                    <Tooltip />
-                    <Bar dataKey="count" fill="#0F172A" radius={[0, 4, 4, 0]} barSize={14} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            ) : (
-              <EmptyState title="Henüz işlem yok" description="Servislerde yapılan işlemler burada sıralanır." />
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="lg:col-span-2 overflow-hidden">
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-base">Son servis kayıtları</CardTitle>
-            <Link to="/service-orders" className="text-xs font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700 hover:underline">
-              Tümünü gör →
-            </Link>
-          </CardHeader>
-          <CardContent className="p-0">
-            {recent_orders?.length ? (
+    recent: (
+      <Card className="flex-1 overflow-hidden">
+        <CardHeader className="flex-row items-center justify-between">
+          <CardTitle className="text-base">Son servis kayıtları</CardTitle>
+          <Link to="/service-orders" className="text-xs font-semibold text-brand-600 transition-colors duration-150 hover:text-brand-700 hover:underline">
+            Tümünü gör →
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0">
+          {recent_orders?.length ? (
+            <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent">
@@ -336,16 +336,95 @@ export default function Dashboard() {
                       <TableCell>{o.customer_name}</TableCell>
                       <TableCell className="font-mono">{o.plate}</TableCell>
                       <TableCell><StatusBadge status={o.status} /></TableCell>
-                      <TableCell className="text-right font-medium tabular-nums">{fmtMoney(o.grand_total)}</TableCell>
+                      <TableCell className="text-right">
+                        <Money value={o.grand_total} className="font-medium" />
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
               </Table>
-            ) : (
-              <EmptyState icon={Wrench} title="Henüz servis kaydı yok" description="Yeni iş emri oluşturarak başlayın." className="py-12" />
-            )}
-          </CardContent>
-        </Card>
+            </div>
+          ) : (
+            <EmptyState icon={Wrench} title="Henüz servis kaydı yok" description="Yeni iş emri oluşturarak başlayın." className="py-12" />
+          )}
+        </CardContent>
+      </Card>
+    ),
+
+    operations: (
+      <Card className="flex-1">
+        <CardHeader>
+          <CardTitle className="text-base">En çok yapılan işlemler</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {top_operations?.length ? (
+            <div className="h-64">
+              <ResponsiveContainer>
+                <BarChart data={top_operations} layout="vertical" margin={{ top: 4, right: 12, bottom: 0, left: 0 }}>
+                  <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" horizontal={false} />
+                  <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} allowDecimals={false} />
+                  <YAxis dataKey="name" type="category" width={110} tick={AXIS_TICK} tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Bar dataKey="count" fill="#0F172A" radius={[0, 4, 4, 0]} barSize={14} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState title="Henüz işlem yok" description="Servislerde yapılan işlemler burada sıralanır." />
+          )}
+        </CardContent>
+      </Card>
+    ),
+
+    debtors: (
+      <Card className="flex-1 overflow-hidden" data-testid="debtors-widget">
+        <CardHeader>
+          <CardTitle className="text-base">Borçlu müşteriler</CardTitle>
+          <CardDescription>Bakiyesi açık olan müşteriler</CardDescription>
+        </CardHeader>
+        <CardContent className="p-0">
+          <DashboardDebtorsTable debtors={debtors} />
+        </CardContent>
+      </Card>
+    ),
+  };
+
+  return (
+    <div className="space-y-8" data-testid="dashboard">
+      <PageHeader
+        eyebrow="Genel bakış"
+        title="Dashboard"
+        description="Servis operasyonunun anlık durumu"
+        actions={
+          <>
+            <SectionsPanel
+              sections={order.map((id) => SECTION_BY_ID[id])}
+              hidden={hidden}
+              onToggle={toggle}
+              onReset={reset}
+            />
+            <Button asChild data-testid="btn-new-service-order">
+              <Link to="/service-orders/new">
+                <ClipboardList />
+                Yeni Servis Kaydı
+              </Link>
+            </Button>
+          </>
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {visible.map((id) => (
+          <DashboardSection
+            key={id}
+            id={id}
+            label={SECTION_BY_ID[id].label}
+            span={SECTION_BY_ID[id].span}
+            dnd={dnd}
+          >
+            {bodies[id]}
+          </DashboardSection>
+        ))}
       </div>
     </div>
   );

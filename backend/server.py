@@ -22,6 +22,7 @@ import secrets
 
 from storage_utils import put_object, get_object, init_storage, APP_NAME
 from pdf_utils import build_service_pdf, build_inspection_pdf
+from default_catalog import DEFAULT_PRODUCTS, DEFAULT_SERVICES
 from totals import compute_document_totals, validate_money_fields, DEFAULT_PRICE_MODE, DEFAULT_VAT
 
 # ---------- Setup ----------
@@ -426,6 +427,58 @@ async def logout(response: Response):
     response.delete_cookie("access_token", path="/")
     return {"ok": True}
 
+class PinIn(BaseModel):
+    pin: str
+    current_pin: Optional[str] = None
+
+def _valid_pin(pin: str) -> bool:
+    return bool(re.fullmatch(r"\d{4}", pin or ""))
+
+@api.get("/auth/pin/status")
+async def pin_status(user=Depends(get_current_user)):
+    doc = await db.users.find_one({"id": user["id"]}, {"_id": 0, "pin_hash": 1})
+    return {"has_pin": bool(doc and doc.get("pin_hash"))}
+
+@api.put("/auth/pin")
+async def set_pin(inp: PinIn, user=Depends(get_current_user)):
+    """4 haneli yönetici PIN'i. PIN zaten varsa mevcut PIN ile değiştirilir."""
+    if not _valid_pin(inp.pin):
+        raise HTTPException(400, "PIN 4 haneli rakamlardan oluşmalıdır")
+    doc = await db.users.find_one({"id": user["id"]}, {"_id": 0, "pin_hash": 1})
+    if doc and doc.get("pin_hash"):
+        if not inp.current_pin or not verify_password(inp.current_pin, doc["pin_hash"]):
+            raise HTTPException(400, "Mevcut PIN hatalı")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"pin_hash": hash_password(inp.pin)}})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": user.get("tenant_id"), "user": user["email"],
+        "action": "user.pin_set", "entity_id": user["id"], "at": now_iso(),
+    })
+    return {"ok": True}
+
+@api.post("/auth/pin/verify")
+async def verify_pin(inp: PinIn, user=Depends(get_current_user)):
+    """Yönetici PIN'ini doğrular. 5 hatalı denemeden sonra 15 dk kilitlenir."""
+    key = f"pin:{user['id']}"
+    now = datetime.now(timezone.utc)
+    attempt = await db.login_attempts.find_one({"identifier": key}) or {}
+    if attempt.get("locked_until") and attempt["locked_until"] > now.isoformat():
+        raise HTTPException(429, "Çok fazla hatalı PIN. 15 dk sonra tekrar deneyin.")
+    doc = await db.users.find_one({"id": user["id"]}, {"_id": 0, "pin_hash": 1})
+    if not doc or not doc.get("pin_hash"):
+        raise HTTPException(400, "Önce PIN belirleyin")
+    if not _valid_pin(inp.pin) or not verify_password(inp.pin, doc["pin_hash"]):
+        count = attempt.get("count", 0) + 1
+        await db.login_attempts.update_one(
+            {"identifier": key},
+            {"$set": {"count": count, "locked_until": (now + timedelta(minutes=15)).isoformat() if count >= 5 else None}},
+            upsert=True,
+        )
+        raise HTTPException(403, "PIN hatalı")
+    await db.login_attempts.delete_one({"identifier": key})
+    exp = datetime.now(timezone.utc) + timedelta(minutes=REVEAL_TTL_MIN)
+    reveal = jwt.encode({"sub": user["id"], "scope": "reveal", "exp": exp}, JWT_SECRET, algorithm=JWT_ALG)
+    return {"ok": True, "reveal_token": reveal, "expires_in": REVEAL_TTL_MIN * 60}
+
 @api.get("/auth/me")
 async def me(user=Depends(get_current_user)):
     tenant = None
@@ -500,6 +553,7 @@ async def create_tenant(inp: TenantCreateWithAdmin, user=Depends(require_super_a
     if not tenant_data.get("slug"):
         tenant_data["slug"] = tenant_data["name"].lower().replace(" ", "-")
     await db.tenants.insert_one(tenant_data)
+    await seed_default_catalog(tenant_data["id"])
     await db.users.insert_one({
         "id": uid(), "email": admin_email, "name": admin_data["admin_name"],
         "role": "admin", "tenant_id": tenant_data["id"],
@@ -1814,8 +1868,52 @@ async def get_transactions(cid: str, user=Depends(get_current_user)):
     return txs
 
 # ---------- Dashboard ----------
+
+# ---------- Yönetici görünümü (PIN ile açılan para alanları) ----------
+REVEAL_TTL_MIN = 15
+REVEAL_KEYS = {
+    "today_collection", "month_revenue", "total_receivables", "revenue", "grand_total", "paid_total",
+    "spent", "amount", "balance", "debt", "total", "labor_total", "discount", "unit_price", "line_total",
+    "cost_price", "sale_price", "price", "net_total", "vat_total", "collected", "receivable",
+}
+
+async def _is_revealed(request: Request, user: Dict[str, Any]) -> bool:
+    tok = request.headers.get("X-Reveal-Token")
+    if not tok:
+        return False
+    try:
+        payload = jwt.decode(tok, JWT_SECRET, algorithms=[JWT_ALG])
+    except jwt.InvalidTokenError:
+        return False
+    return payload.get("scope") == "reveal" and payload.get("sub") == user["id"]
+
+def _mask_money(obj: Any) -> Any:
+    """Para alanlarını (sayı) null yapar; istemci bunları *** olarak gösterir."""
+    if isinstance(obj, dict):
+        return {k: (None if k in REVEAL_KEYS and isinstance(v, (int, float)) else _mask_money(v)) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_mask_money(x) for x in obj]
+    return obj
+
+
+def _debtors(orders: List[Dict[str, Any]], limit: int = 50) -> List[Dict[str, Any]]:
+    """Müşteri bazlı açık bakiye (borç) listesi; bakiye pozitif olanlar, en yüksekten."""
+    by: Dict[str, Dict[str, Any]] = {}
+    for o in orders:
+        cid = o.get("customer_id")
+        bal = float(o.get("grand_total", 0) or 0) - float(o.get("paid_total", 0) or 0)
+        if not cid or bal <= 0.01:
+            continue
+        row = by.setdefault(cid, {"customer_id": cid, "customer_name": o.get("customer_name") or "-", "balance": 0.0, "orders": 0})
+        row["balance"] += bal
+        row["orders"] += 1
+    rows = sorted(by.values(), key=lambda r: -r["balance"])[:limit]
+    for r in rows:
+        r["balance"] = round(r["balance"], 2)
+    return rows
+
 @api.get("/dashboard")
-async def dashboard(user=Depends(get_current_user)):
+async def dashboard(request: Request, user=Depends(get_current_user)):
     tid = tenant_id_of(user)
     all_orders = await db.service_orders.find({"tenant_id": tid}, {"grand_total": 1, "paid_total": 1, "status": 1, "created_at": 1, "customer_id": 1, "customer_name": 1, "plate": 1, "service_no": 1, "items": 1, "_id": 0}).sort("created_at", -1).to_list(2000)
     # İptal edilen servisler ciro, alacak ve sayılarda dikkate alınmaz (yalnızca durum dağılımında görünür)
@@ -1874,17 +1972,21 @@ async def dashboard(user=Depends(get_current_user)):
 
     recent = sorted(all_orders, key=lambda o: o.get("created_at") or "", reverse=True)[:10]
 
-    return {
+    result = {
         "kpi": kpi,
         "monthly_revenue": monthly_series,
         "status_distribution": status_series,
         "top_operations": top_operations,
         "recent_orders": recent,
+        "debtors": _debtors(orders, limit=10),
     }
+    if await _is_revealed(request, user):
+        return {**result, "masked": False}
+    return {**_mask_money(result), "masked": True}
 
 # ---------- Reports ----------
 @api.get("/reports/summary")
-async def report_summary(user=Depends(get_current_user)):
+async def report_summary(request: Request, user=Depends(get_current_user)):
     tid = tenant_id_of(user)
     # İptal edilen servisler raporlarda gelir/alacak olarak sayılmaz
     orders = await db.service_orders.find({"tenant_id": tid, "status": {"$ne": "cancelled"}}, {"grand_total": 1, "paid_total": 1, "customer_id": 1, "customer_name": 1, "items": 1, "labor_total": 1, "discount": 1, "_id": 0}).to_list(2000)
@@ -1946,7 +2048,7 @@ async def report_summary(user=Depends(get_current_user)):
                 services_revenue += qty * price
         labor_revenue += float(o.get("labor_total", 0))
     gross_profit = (parts_revenue - parts_cost) + services_revenue + labor_revenue - sum(o.get("discount",0) for o in orders)
-    return {
+    report = {
         "totals": {
             "total_revenue": round(total_revenue, 2),
             "total_collected": round(total_collected, 2),
@@ -1965,7 +2067,11 @@ async def report_summary(user=Depends(get_current_user)):
         "top_parts": top_parts,
         "top_services": top_services,
         "critical_stock": critical_stock,
+        "debtors": _debtors(orders),
     }
+    if await _is_revealed(request, user):
+        return {**report, "masked": False}
+    return {**_mask_money(report), "masked": True}
 
 # ---------- Photos ----------
 @api.post("/service-orders/{sid}/photos")
@@ -3285,10 +3391,38 @@ async def backfill_cancel_reversals() -> int:
         logger.info(f"İptal ters kayıtları eklendi: {added}")
     return added
 
+async def seed_default_catalog(tid: str) -> None:
+    """Firma için varsayılan parça ve işçilik kataloğunu bir kez yükler (katalog boşsa)."""
+    tenant = await db.tenants.find_one({"id": tid}, {"_id": 0, "catalog_seeded": 1})
+    if tenant is None or tenant.get("catalog_seeded"):
+        return
+    now = now_iso()
+    if await db.products.count_documents({"tenant_id": tid}) == 0:
+        docs = [{
+            "id": uid(), "tenant_id": tid, "code": c, "name": n, "brand": b, "category": cat,
+            "cost_price": cost, "sale_price": sale, "stock": 0, "min_stock": 2, "unit": unit,
+            "vat": DEFAULT_VAT, "price_mode": DEFAULT_PRICE_MODE, "created_at": now,
+        } for (c, n, b, cat, cost, sale, unit) in DEFAULT_PRODUCTS]
+        if docs:
+            await db.products.insert_many(docs)
+    if await db.service_catalog.count_documents({"tenant_id": tid}) == 0:
+        docs = [{
+            "id": uid(), "tenant_id": tid, "code": c, "name": n, "description": d,
+            "price": price, "vat": DEFAULT_VAT, "price_mode": DEFAULT_PRICE_MODE, "created_at": now,
+        } for (c, n, d, price) in DEFAULT_SERVICES]
+        if docs:
+            await db.service_catalog.insert_many(docs)
+    await db.tenants.update_one({"id": tid}, {"$set": {"catalog_seeded": True}})
+
+async def seed_catalogs_for_existing_tenants() -> None:
+    async for t in db.tenants.find({"catalog_seeded": {"$ne": True}}, {"_id": 0, "id": 1}):
+        await seed_default_catalog(t["id"])
+
 @app.on_event("startup")
 async def on_startup():
     await seed_admin_and_indexes()
     await backfill_cancel_reversals()
+    await seed_catalogs_for_existing_tenants()
     # Demo verisi (sahte müşteri/servis kayıtları) yalnızca açıkça istenirse yüklenir; üretim veritabanını kirletmez
     if os.environ.get("SEED_DEMO_DATA", "").lower() in {"1", "true", "yes"}:
         await seed_demo_data()

@@ -16,7 +16,7 @@ const GREEN = "#22C55E";
 const GROUND_Y = 186;
 
 // Parça türleri: { p: yol (dolgu f ya da çizgi s/w), c: [cx,cy,r] daire, r: [x,y,w,h,rx] dikdörtgen }
-const DESIGNS = {
+export const DESIGNS = {
   naked: {
     r: 34, fx: 300, rx: 104,
     frame: "M104 152 L170 150 L212 120 L262 118",
@@ -155,6 +155,12 @@ const TYPE_ALIASES = {
   "cross": "cross",
 };
 
+// Motor tipinden çizim tanımını bulur (bilinmeyen tipler için naked kullanılır).
+export function getBikeDesign(type) {
+  const key = (type || "").toLowerCase().trim();
+  return DESIGNS[TYPE_ALIASES[key] || key] || DESIGNS.naked;
+}
+
 function Wheel({ cx, cy, r }) {
   return (
     <g>
@@ -180,7 +186,7 @@ function Part({ p }) {
   return <path d={p.p} fill={p.f} />;
 }
 
-function BikeSvg({ design, label }) {
+export function BikeSvg({ design, label }) {
   const { r, rx, fx, frame, parts } = design;
   const rearCy = GROUND_Y - r;
   const frontCy = GROUND_Y - r;

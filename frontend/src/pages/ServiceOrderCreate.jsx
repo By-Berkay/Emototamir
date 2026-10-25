@@ -190,7 +190,7 @@ export default function ServiceOrderCreate() {
         </Card>
 
         <Card className="border-slate-200"><CardHeader><CardTitle className="text-base">Arızalı Bölgeler</CardTitle></CardHeader>
-          <CardContent><FaultDiagram selected={faults} onToggle={toggleFault} /></CardContent>
+          <CardContent><FaultDiagram selected={faults} onToggle={toggleFault} motoType={motos.find(x => x.id === motoId)?.type} /></CardContent>
         </Card>
       </div>
 

@@ -125,7 +125,7 @@ export default function ServiceOrderEdit() {
           </CardContent>
         </Card>
         <Card className="border-slate-200"><CardHeader><CardTitle className="text-base">Arızalı Bölgeler</CardTitle></CardHeader>
-          <CardContent><FaultDiagram selected={order.fault_zones || []} onToggle={toggleFault} /></CardContent>
+          <CardContent><FaultDiagram selected={order.fault_zones || []} onToggle={toggleFault} motoType={order.motorcycle?.type || order.moto_type} /></CardContent>
         </Card>
       </div>
 
