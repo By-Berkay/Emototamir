@@ -29,6 +29,9 @@ import QuoteEdit from "./pages/QuoteEdit";
 import QuotePublic from "./pages/QuotePublic";
 import Trash from "./pages/Trash";
 import ChangePassword from "./pages/ChangePassword";
+import Inspections from "./pages/Inspections";
+import InspectionEdit from "./pages/InspectionEdit";
+import InspectionDetail from "./pages/InspectionDetail";
 import "./App.css";
 
 function Protected({ children }) {
@@ -75,6 +78,10 @@ export default function App() {
             <Route path="/reminders" element={<Reminders />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/account/password" element={<ChangePassword />} />
+            <Route path="/inspections" element={<Inspections />} />
+            <Route path="/inspections/new" element={<InspectionEdit />} />
+            <Route path="/inspections/:id" element={<InspectionDetail />} />
+            <Route path="/inspections/:id/edit" element={<InspectionEdit />} />
             <Route path="/admin/tenants" element={<AdminTenants />} />
             <Route path="/admin/tenants/:id" element={<AdminTenantEdit />} />
             <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
