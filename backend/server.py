@@ -3431,6 +3431,114 @@ async def _pricing_doc() -> Dict[str, Any]:
         "updated_at": None,
     }
 
+
+# ---------- Vitrin (ana sayfa) içeriği: süper admin tarafından yönetilir ----------
+DEFAULT_LANDING: Dict[str, Any] = {
+    "phone": "+44 7378 552959",
+    "whatsapp": "447378552959",
+    "hero": {
+        "badge": "MOTOSİKLET SERVİSLERİ İÇİN",
+        "title": "Servisinin dijital akıl defteri.",
+        "description": "Müşteri, motosiklet, iş emri, parça, tahsilat, cari hesap ve otomatik hatırlatmalar tek ekranda. Kağıtsız, hızlı, denetlenebilir.",
+    },
+    "features_heading": {
+        "eyebrow": "NELER YAPABİLİRSİNİZ?",
+        "title": "Servisin tamamı, tek yerde.",
+        "description": "Her modülü gerçek servis ihtiyacına göre — kağıt formlarınızı ve WhatsApp mesajlarınızı akıllı hale getirerek seçebilirsiniz.",
+    },
+    "features": [
+        {"icon": "ClipboardList", "title": "İş Emri ve Kabul Formu", "text": "Kabul-Teslim PDF, imzalı, tek tıklamayla WhatsApp'tan oluşur."},
+        {"icon": "Bike", "title": "Mürettebat Kartı", "text": "Marka, model, plaka, KM, arıza haritaları, servis geçmişi hepsi bir arada."},
+        {"icon": "Users", "title": "Müşteri Cari", "text": "VIP/Borçlu/Sorunlu etiketleri, notlar, tahsilat ve bakiye takibi."},
+        {"icon": "BellRing", "title": "Otomatik Hatırlatma", "text": "Her sabah saat 09:00'da vadesi dolan bakımları WhatsApp bağlantısıyla."},
+        {"icon": "FileText", "title": "Fiyat Teklifi", "text": "Müşteri linki onaylansın, teklifler otomatik iş emrine dönüşsün."},
+        {"icon": "BarChart3", "title": "Tahsilat ve Rapor", "text": "Ciro, alacak, borçlu servis raporları — anlık kontrol paneli."},
+        {"icon": "Building2", "title": "Çok Firmalı SaaS", "text": "Süper Admin panelinden tema, PDF şablonu, içerik yönetimi."},
+        {"icon": "ShieldCheck", "title": "Denetim ve Silme", "text": "Kim ne zaman değiştirilmez + 30 gün çöp kutusu geri yükleme."},
+    ],
+    "pricing_heading": {
+        "eyebrow": "FİYATLANDIRMA",
+        "title": "Servisiniz için uygun planı seçin.",
+        "description": "14 gün ücretsiz deneme, iptal etmeniz kolay — kredi kartı gerektirmez.",
+    },
+    "plans": [
+        {"id": "deneme", "name": "Deneme", "price_text": "Ücretsiz", "period": "14 gün", "highlight": False,
+         "features": ["Tüm özellikler", "1 kullanıcı", "50 kayıt"]},
+        {"id": "temel", "name": "Temel", "price_text": "₺ 2.499", "period": "/ ay", "highlight": False,
+         "features": ["3 kullanıcı", "Sınırsız müşteri/motosiklet", "PDF + WhatsApp", "Kontrol Paneli"]},
+        {"id": "profesyonel", "name": "Profesyonel", "price_text": "₺ 3.999", "period": "/ ay", "highlight": True,
+         "features": ["10 kullanıcı", "Fiyat Teklifi + Onay bağlantısı", "Cronotou", "Öncelikli destek"]},
+        {"id": "kurumsal", "name": "Kurumsal", "price_text": "Teklif", "period": "/ yıllık", "highlight": False,
+         "features": ["Sınırsız kullanıcı", "Çoklu firma", "SLA + eğitim", "API'ler"]},
+    ],
+    "cta": {
+        "title": "Servisinizi bugün dijitalleştirin.",
+        "text": "14 gün ücretsiz deneme + kurulum ve eğitim sizin için biz yapıyoruz.",
+    },
+}
+LANDING_ICONS = {"ClipboardList", "Bike", "Users", "BellRing", "FileText", "BarChart3", "Building2", "ShieldCheck", "Wrench"}
+
+def _clip(v: Any, n: int = 300) -> str:
+    return str(v or "").strip()[:n]
+
+def _clean_landing(raw: Dict[str, Any]) -> Dict[str, Any]:
+    """Vitrin içeriğini şemaya göre temizler; bilinmeyen alanlar atılır, uzunluklar sınırlanır."""
+    hero = raw.get("hero") or {}
+    fh = raw.get("features_heading") or {}
+    ph = raw.get("pricing_heading") or {}
+    cta = raw.get("cta") or {}
+    features = [
+        {"icon": f.get("icon") if f.get("icon") in LANDING_ICONS else "Wrench",
+         "title": _clip(f.get("title"), 80), "text": _clip(f.get("text"), 200)}
+        for f in (raw.get("features") or [])[:12]
+    ]
+    plans = [
+        {"id": _clip(pl.get("id") or uid(), 40), "name": _clip(pl.get("name"), 60),
+         "price_text": _clip(pl.get("price_text"), 30), "period": _clip(pl.get("period"), 30),
+         "highlight": bool(pl.get("highlight")),
+         "features": [_clip(x, 120) for x in (pl.get("features") or [])[:12] if _clip(x)]}
+        for pl in (raw.get("plans") or [])[:6]
+    ]
+    return {
+        "phone": _clip(raw.get("phone"), 30),
+        "whatsapp": re.sub(r"\D", "", str(raw.get("whatsapp") or ""))[:20],
+        "hero": {"badge": _clip(hero.get("badge"), 60), "title": _clip(hero.get("title"), 120), "description": _clip(hero.get("description"), 300)},
+        "features_heading": {"eyebrow": _clip(fh.get("eyebrow"), 60), "title": _clip(fh.get("title"), 120), "description": _clip(fh.get("description"), 300)},
+        "features": features,
+        "pricing_heading": {"eyebrow": _clip(ph.get("eyebrow"), 60), "title": _clip(ph.get("title"), 120), "description": _clip(ph.get("description"), 300)},
+        "plans": plans,
+        "cta": {"title": _clip(cta.get("title"), 120), "text": _clip(cta.get("text"), 300)},
+    }
+
+async def _landing_doc() -> Dict[str, Any]:
+    doc = await db.site_content.find_one({"_id": "landing"}, {"_id": 0})
+    return doc or {**DEFAULT_LANDING, "updated_at": None}
+
+@api.get("/public/landing")
+async def public_landing():
+    doc = await _landing_doc()
+    return {k: v for k, v in doc.items() if k not in {"updated_by"}}
+
+@api.get("/admin/landing")
+async def admin_get_landing(user=Depends(require_super_admin)):
+    return await _landing_doc()
+
+@api.put("/admin/landing")
+async def admin_put_landing(request: Request, user=Depends(require_super_admin)):
+    raw = await request.json()
+    if not isinstance(raw, dict):
+        raise HTTPException(400, "Geçersiz içerik")
+    doc = _clean_landing(raw)
+    if not doc["plans"] or not doc["hero"]["title"]:
+        raise HTTPException(400, "Başlık ve en az bir plan gerekli")
+    doc.update({"updated_at": now_iso(), "updated_by": user["email"]})
+    await db.site_content.update_one({"_id": "landing"}, {"$set": doc}, upsert=True)
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": None, "user": user["email"], "action": "landing.update",
+        "entity_id": "landing", "at": now_iso(),
+    })
+    return {"ok": True}
+
 @api.get("/public/pricing")
 async def public_pricing():
     doc = await _pricing_doc()

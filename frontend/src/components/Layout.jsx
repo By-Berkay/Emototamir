@@ -66,7 +66,7 @@ const NAV_SUPER = [
     items: [
       { to: "/admin/tenants", label: "Firma Yönetimi", icon: Building2, end: true },
       { to: "/admin/report", label: "3D Rapor", icon: BarChart3 },
-      { to: "/admin/pricing", label: "Fiyat & Paketler", icon: Receipt },
+      { to: "/admin/pricing", label: "Vitrin & Fiyatlar", icon: Receipt },
       { to: "/admin/audit-logs", label: "Denetim Kayıtları", icon: History },
       { to: "/account/password", label: "Şifre Değiştir", icon: KeyRound },
     ],

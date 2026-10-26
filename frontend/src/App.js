@@ -34,7 +34,7 @@ import Inspections from "./pages/Inspections";
 import InspectionEdit from "./pages/InspectionEdit";
 import InspectionDetail from "./pages/InspectionDetail";
 import Landing from "./pages/Landing";
-import AdminPricing from "./pages/AdminPricing";
+import AdminLanding from "./pages/AdminLanding";
 import AdminReport3D from "./pages/AdminReport3D";
 import "./App.css";
 
@@ -67,6 +67,7 @@ export default function App() {
         <Toaster position="top-right" richColors />
         <Routes>
           <Route path="/" element={<RootGate />} />
+          <Route path="/landing" element={<Landing />} />
           <Route path="/login" element={<Login />} />
           <Route path="/onay/:token" element={<PublicApproval />} />
           <Route path="/q/:token" element={<QuotePublic />} />
@@ -99,7 +100,7 @@ export default function App() {
             <Route path="/admin/tenants" element={<AdminTenants />} />
             <Route path="/admin/tenants/:id" element={<AdminTenantEdit />} />
             <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
-            <Route path="/admin/pricing" element={<AdminPricing />} />
+            <Route path="/admin/pricing" element={<AdminLanding />} />
             <Route path="/admin/report" element={<AdminReport3D />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />

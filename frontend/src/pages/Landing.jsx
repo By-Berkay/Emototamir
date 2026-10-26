@@ -1,17 +1,43 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowRight, Bike, Check, FileText, RefreshCw, Search, ShieldCheck, Wrench } from "lucide-react";
-import api, { fmtDateShort, fmtMoney } from "../lib/api";
-import { Button, buttonVariants } from "../components/ui/button";
-import { Input } from "../components/ui/input";
-import EmptyState from "../components/EmptyState";
+import {
+  Bike, Building2, Check, ClipboardList, FileText, MessageCircle, Phone, ShieldCheck, Users,
+  BellRing, BarChart3, Wrench,
+} from "lucide-react";
+import api from "../lib/api";
 import { cn } from "../lib/utils";
 
-const HIGHLIGHTS = [
-  { icon: Wrench, title: "Servis emri takibi", text: "Arıza tespitinden teslime kadar her aşamayı izleyin." },
-  { icon: ShieldCheck, title: "Dijital onay", text: "Müşteri onayını bağlantı üzerinden, kağıt kullanmadan alın." },
-  { icon: FileText, title: "Teklif ve muayene", text: "Fiyat teklifleri ve muayene formları tek yerde." },
-];
+const ICONS = { ClipboardList, Bike, Users, BellRing, FileText, BarChart3, Building2, ShieldCheck, Wrench };
+
+// Sunucuya ulaşılamazsa gösterilen yedek içerik (sunucudaki varsayılanla aynı).
+const FALLBACK = {
+  phone: "+44 7378 552959",
+  whatsapp: "447378552959",
+  hero: {
+    badge: "MOTOSİKLET SERVİSLERİ İÇİN",
+    title: "Servisinin dijital akıl defteri.",
+    description: "Müşteri, motosiklet, iş emri, parça, tahsilat, cari hesap ve otomatik hatırlatmalar tek ekranda. Kağıtsız, hızlı, denetlenebilir.",
+  },
+  features_heading: { eyebrow: "NELER YAPABİLİRSİNİZ?", title: "Servisin tamamı, tek yerde.", description: "Her modülü gerçek servis ihtiyacına göre — kağıt formlarınızı ve WhatsApp mesajlarınızı akıllı hale getirerek seçebilirsiniz." },
+  features: [
+    { icon: "ClipboardList", title: "İş Emri ve Kabul Formu", text: "Kabul-Teslim PDF, imzalı, tek tıklamayla WhatsApp'tan oluşur." },
+    { icon: "Bike", title: "Mürettebat Kartı", text: "Marka, model, plaka, KM, arıza haritaları, servis geçmişi hepsi bir arada." },
+    { icon: "Users", title: "Müşteri Cari", text: "VIP/Borçlu/Sorunlu etiketleri, notlar, tahsilat ve bakiye takibi." },
+    { icon: "BellRing", title: "Otomatik Hatırlatma", text: "Her sabah saat 09:00'da vadesi dolan bakımları WhatsApp bağlantısıyla." },
+    { icon: "FileText", title: "Fiyat Teklifi", text: "Müşteri linki onaylansın, teklifler otomatik iş emrine dönüşsün." },
+    { icon: "BarChart3", title: "Tahsilat ve Rapor", text: "Ciro, alacak, borçlu servis raporları — anlık kontrol paneli." },
+    { icon: "Building2", title: "Çok Firmalı SaaS", text: "Süper Admin panelinden tema, PDF şablonu, içerik yönetimi." },
+    { icon: "ShieldCheck", title: "Denetim ve Silme", text: "Kim ne zaman değiştirilmez + 30 gün çöp kutusu geri yükleme." },
+  ],
+  pricing_heading: { eyebrow: "FİYATLANDIRMA", title: "Servisiniz için uygun planı seçin.", description: "14 gün ücretsiz deneme, iptal etmeniz kolay — kredi kartı gerektirmez." },
+  plans: [
+    { id: "deneme", name: "Deneme", price_text: "Ücretsiz", period: "14 gün", highlight: false, features: ["Tüm özellikler", "1 kullanıcı", "50 kayıt"] },
+    { id: "temel", name: "Temel", price_text: "₺ 2.499", period: "/ ay", highlight: false, features: ["3 kullanıcı", "Sınırsız müşteri/motosiklet", "PDF + WhatsApp", "Kontrol Paneli"] },
+    { id: "profesyonel", name: "Profesyonel", price_text: "₺ 3.999", period: "/ ay", highlight: true, features: ["10 kullanıcı", "Fiyat Teklifi + Onay bağlantısı", "Cronotou", "Öncelikli destek"] },
+    { id: "kurumsal", name: "Kurumsal", price_text: "Teklif", period: "/ yıllık", highlight: false, features: ["Sınırsız kullanıcı", "Çoklu firma", "SLA + eğitim", "API'ler"] },
+  ],
+  cta: { title: "Servisinizi bugün dijitalleştirin.", text: "14 gün ücretsiz deneme + kurulum ve eğitim sizin için biz yapıyoruz." },
+};
 
 const FLOAT_CSS = `
 @keyframes emt-float {
@@ -24,7 +50,28 @@ const FLOAT_CSS = `
 }
 `;
 
-/** CSS 3D sahne: eğik katmanlı, derinlikli kartlar (kütüphane yok). */
+const waLink = (wa, text) =>
+  wa ? `https://wa.me/${wa}?text=${encodeURIComponent(text)}` : "/login";
+
+/** Fareyle 3D eğilen kart. Azaltılmış hareket tercihinde devre dışı. */
+function Tilt({ children, className = "" }) {
+  const ref = useRef(null);
+  const onMove = (e) => {
+    if (!ref.current || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    const r = ref.current.getBoundingClientRect();
+    const x = (e.clientX - r.left) / r.width - 0.5;
+    const y = (e.clientY - r.top) / r.height - 0.5;
+    ref.current.style.transform = `perspective(900px) rotateX(${(-y * 8).toFixed(2)}deg) rotateY(${(x * 10).toFixed(2)}deg) translateY(-4px)`;
+  };
+  const onLeave = () => { if (ref.current) ref.current.style.transform = ""; };
+  return (
+    <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave}
+         className={cn("transition-transform duration-300 will-change-transform", className)}>
+      {children}
+    </div>
+  );
+}
+
 function HeroStage() {
   const card = "absolute left-1/2 top-1/2 h-44 w-56 rounded-2xl p-5 sm:h-48 sm:w-64";
   return (
@@ -84,288 +131,186 @@ function HeroStage() {
   );
 }
 
+
 function SectionHeading({ eyebrow, title, description }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">{eyebrow}</p>
-      <h2 className="mt-2 font-heading text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
-      {description && <p className="mt-3 text-base text-slate-500">{description}</p>}
+      {eyebrow && <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">{eyebrow}</p>}
+      <h2 className="font-heading mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
+      {description && <p className="mt-4 text-base text-slate-500">{description}</p>}
     </div>
   );
 }
 
-function LoadError({ onRetry }) {
+function PlanCard({ plan, wa }) {
+  const hl = plan.highlight;
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50/70 px-6 py-10 text-center">
-      <AlertCircle className="h-8 w-8 text-amber-500" />
-      <p className="font-heading text-base font-semibold text-slate-900">Fiyat bilgileri şu anda yüklenemedi</p>
-      <p className="max-w-sm text-sm text-slate-600">Bağlantınızı kontrol edip tekrar deneyebilirsiniz.</p>
-      <Button variant="outline" size="sm" onClick={onRetry} className="mt-1">
-        <RefreshCw /> Tekrar dene
-      </Button>
-    </div>
-  );
-}
-
-function PackageCard({ pkg }) {
-  const features = Array.isArray(pkg.features) ? pkg.features.filter(Boolean) : [];
-  const highlight = Boolean(pkg.highlight);
-  return (
-    <div
-      className={cn(
-        "relative flex flex-col rounded-2xl border p-6 transition duration-300",
-        highlight
-          ? "border-brand-500 bg-gradient-to-b from-white to-brand-50/70 shadow-xl shadow-brand-500/15 ring-2 ring-brand-500/30 md:-translate-y-3"
-          : "border-slate-200/80 bg-white shadow-sm shadow-slate-900/5 hover:-translate-y-1 hover:shadow-lg"
-      )}
-    >
-      {highlight && (
-        <span className="absolute -top-3 left-6 rounded-full bg-brand-500 px-3 py-1 text-xs font-semibold text-white shadow-md shadow-brand-500/30">
-          En popüler
-        </span>
-      )}
-      <h3 className="font-heading text-lg font-semibold text-slate-900">{pkg.name}</h3>
-      <div className="mt-4">
-        <p className="font-heading text-4xl font-bold tracking-tight text-slate-900">{fmtMoney(pkg.price)}</p>
-        {pkg.unit && <p className="mt-1 text-sm text-slate-500">{pkg.unit}</p>}
-      </div>
-      {features.length > 0 && (
-        <ul className="mt-6 space-y-3 border-t border-slate-100 pt-6">
-          {features.map((f, i) => (
-            <li key={i} className="flex items-start gap-2.5 text-sm text-slate-700">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" />
-              <span className="min-w-0 break-words">{f}</span>
+    <Tilt className={cn("relative h-full", hl && "lg:-mt-4 lg:mb-4")}>
+      <div className={cn(
+        "flex h-full flex-col rounded-2xl border p-6 shadow-card",
+        hl ? "border-brand-400 bg-gradient-to-b from-brand-50 to-white ring-2 ring-brand-400/40" : "border-slate-200 bg-white",
+      )}>
+        {hl && (
+          <span className="absolute -top-3 left-6 rounded-full bg-brand-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow">
+            En popüler
+          </span>
+        )}
+        <p className="text-sm font-semibold text-slate-700">{plan.name}</p>
+        <p className="mt-3 flex items-baseline gap-1.5">
+          <span className="font-heading text-3xl font-bold tracking-tight text-slate-900">{plan.price_text}</span>
+          {plan.period && <span className="text-xs text-slate-500">{plan.period}</span>}
+        </p>
+        <ul className="mt-6 flex-1 space-y-2.5">
+          {plan.features.map((f) => (
+            <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+              <span>{f}</span>
             </li>
           ))}
         </ul>
-      )}
-    </div>
+        <a
+          href={waLink(wa, `Merhaba, ${plan.name} planı hakkında bilgi almak istiyorum.`)}
+          target="_blank" rel="noreferrer"
+          className={cn(
+            "mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors",
+            hl ? "bg-brand-600 text-white hover:bg-brand-700" : "bg-slate-900 text-white hover:bg-slate-800",
+          )}
+        >
+          İletişime Geç <span aria-hidden>›</span>
+        </a>
+      </div>
+    </Tilt>
   );
 }
 
 export default function Landing() {
-  const [pricing, setPricing] = useState({ packages: [], items: [], updated_at: null });
-  const [status, setStatus] = useState("loading"); // loading | ready | error
-  const [query, setQuery] = useState("");
-
-  const loadPricing = useCallback(async () => {
-    setStatus("loading");
-    try {
-      const { data } = await api.get("/public/pricing");
-      setPricing({
-        packages: Array.isArray(data?.packages) ? data.packages : [],
-        items: Array.isArray(data?.items) ? data.items : [],
-        updated_at: data?.updated_at || null,
-      });
-      setStatus("ready");
-    } catch {
-      setStatus("error");
-    }
-  }, []);
+  const [c, setC] = useState(null);
 
   useEffect(() => {
-    loadPricing();
-  }, [loadPricing]);
+    let cancelled = false;
+    api.get("/public/landing")
+      .then(({ data }) => { if (!cancelled) setC(data); })
+      .catch(() => { if (!cancelled) setC(FALLBACK); });
+    return () => { cancelled = true; };
+  }, []);
 
-  const needle = query.trim().toLocaleLowerCase("tr-TR");
-  const visibleItems = useMemo(() => {
-    if (!needle) return pricing.items;
-    return pricing.items.filter((it) =>
-      `${it.name || ""} ${it.description || ""}`.toLocaleLowerCase("tr-TR").includes(needle)
-    );
-  }, [pricing.items, needle]);
+  if (!c) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
 
+  const wa = c.whatsapp;
+  const demo = waLink(wa, "Merhaba, E-Moto Tamir demo talep ediyorum.");
   const year = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-white text-slate-900">
       <style>{FLOAT_CSS}</style>
 
-      {/* Üst bar */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/70 text-white backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand-400 to-brand-600 shadow-lg shadow-brand-500/30">
-              <Bike className="h-5 w-5 text-white" />
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
+              <Wrench className="h-5 w-5" />
             </span>
-            <span className="truncate font-heading text-base font-bold tracking-tight">E-Moto Tamir</span>
+            <span className="min-w-0">
+              <span className="font-heading block text-sm font-bold leading-tight">E-MOTO TAMİR</span>
+              <span className="block truncate text-[10px] uppercase tracking-wider text-slate-500">Servis yönetim sistemi</span>
+            </span>
           </Link>
-          <nav className="flex items-center gap-2 sm:gap-6">
-            <a href="#paketler" className="hidden text-sm text-slate-300 transition hover:text-white sm:inline">
-              Paketler
+          <nav className="flex items-center gap-1 text-sm sm:gap-4">
+            <a href="#features" className="hidden rounded-md px-2 py-1.5 text-slate-600 hover:text-slate-900 sm:inline">Özellikler</a>
+            <a href="#pricing" className="hidden rounded-md px-2 py-1.5 text-slate-600 hover:text-slate-900 sm:inline">Fiyat</a>
+            <a href={demo} target="_blank" rel="noreferrer" className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-slate-600 hover:text-slate-900 md:inline-flex">
+              <MessageCircle className="h-4 w-4" /> İletişim
             </a>
-            <a href="#fiyatlar" className="hidden text-sm text-slate-300 transition hover:text-white sm:inline">
-              Fiyat Listesi
-            </a>
-            <Button asChild size="sm">
-              <Link to="/login">Giriş Yap</Link>
-            </Button>
+            <Link to="/login" className="rounded-lg border border-slate-300 px-3.5 py-1.5 font-medium text-slate-800 hover:bg-slate-50">
+              Giriş Yap
+            </Link>
           </nav>
         </div>
       </header>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 text-white">
-        <div aria-hidden="true" className="pointer-events-none absolute -left-32 top-0 h-96 w-96 rounded-full bg-brand-500/20 blur-3xl" />
-        <div aria-hidden="true" className="pointer-events-none absolute -right-24 bottom-0 h-80 w-80 rounded-full bg-sky-500/10 blur-3xl" />
-
-        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-20 pt-14 sm:px-6 sm:pt-20 lg:grid-cols-2 lg:gap-8 lg:pb-28 lg:pt-28">
+      <section className="relative overflow-hidden">
+        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
-              Yetkili servis yönetim sistemi
-            </span>
-            <h1 className="mt-5 font-heading text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl lg:text-6xl">
-              Motosiklet servisinizi{" "}
-              <span className="bg-gradient-to-r from-brand-300 to-brand-500 bg-clip-text text-transparent">her detayıyla</span>{" "}
-              yönetin
+            {c.hero.badge && (
+              <span className="inline-block rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-700">
+                {c.hero.badge}
+              </span>
+            )}
+            <h1 className="font-heading mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-slate-900 sm:text-6xl">
+              {c.hero.title}
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-300 sm:text-lg">
-              Müşteri ve motosiklet kayıtları, servis emirleri, teklifler, muayene formları, ödemeler ve hatırlatmalar
-              tek panelde. Sahada ve ofiste aynı anda.
-            </p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="w-full sm:w-auto">
-                <Link to="/login">
-                  Giriş Yap <ArrowRight />
-                </Link>
-              </Button>
-              <a
-                href="#fiyatlar"
-                className={cn(
-                  buttonVariants({ variant: "outline", size: "lg" }),
-                  "w-full border-white/15 bg-white/5 text-white hover:bg-white/10 hover:text-white sm:w-auto"
-                )}
-              >
-                Fiyat Listesi
+            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">{c.hero.description}</p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <a href={demo} target="_blank" rel="noreferrer"
+                 className="inline-flex h-12 items-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
+                <MessageCircle className="h-4 w-4" /> WhatsApp ile Demo İste
               </a>
+              <Link to="/login" className="inline-flex h-12 items-center rounded-lg border border-slate-300 px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">
+                Zaten Hesabım Var
+              </Link>
             </div>
-
-            <ul className="mt-12 grid gap-4 sm:grid-cols-3">
-              {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (
-                <li key={title} className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500/15 text-brand-300">
-                    <Icon className="h-4 w-4" />
-                  </span>
-                  <p className="mt-3 text-sm font-semibold text-white">{title}</p>
-                  <p className="mt-1 text-xs leading-relaxed text-slate-400">{text}</p>
-                </li>
-              ))}
-            </ul>
+            {c.phone && (
+              <p className="mt-6 flex items-center gap-2 text-sm text-slate-500">
+                <Phone className="h-4 w-4" /> {c.phone}
+              </p>
+            )}
           </div>
-
           <HeroStage />
         </div>
       </section>
 
-      {/* Paketler */}
-      <section id="paketler" className="scroll-mt-24 mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-24">
-        <SectionHeading
-          eyebrow="Paketler"
-          title="İhtiyacınıza uygun paket"
-          description="Servisinizin büyüklüğüne göre hazır paketlerden birini seçin."
-        />
-        <div className="mt-12">
-          {status === "loading" && (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="h-72 animate-pulse rounded-2xl border border-slate-200 bg-white" />
-              ))}
-            </div>
-          )}
-          {status === "error" && <LoadError onRetry={loadPricing} />}
-          {status === "ready" && pricing.packages.length === 0 && (
-            <EmptyState icon={FileText} title="Paket bilgisi henüz eklenmedi" description="Lütfen daha sonra tekrar kontrol edin." />
-          )}
-          {status === "ready" && pricing.packages.length > 0 && (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-              {pricing.packages.map((pkg, i) => (
-                <PackageCard key={pkg.id ?? `${pkg.name}-${i}`} pkg={pkg} />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Fiyat listesi */}
-      <section id="fiyatlar" className="scroll-mt-24 border-t border-slate-200 bg-white">
-        <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 sm:py-24">
-          <SectionHeading
-            eyebrow="Fiyat Listesi"
-            title="Hizmet ve parça fiyatları"
-            description="Aradığınız kalemi adıyla ya da açıklamasıyla hızlıca bulun."
-          />
-
-          <div className="mt-12">
-            {status === "loading" && (
-              <div className="space-y-3">
-                {[0, 1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 animate-pulse rounded-xl bg-slate-100" />
-                ))}
-              </div>
-            )}
-
-            {status === "error" && <LoadError onRetry={loadPricing} />}
-
-            {status === "ready" && pricing.items.length === 0 && (
-              <EmptyState icon={FileText} title="Fiyat listesi henüz eklenmedi" description="Lütfen daha sonra tekrar kontrol edin." />
-            )}
-
-            {status === "ready" && pricing.items.length > 0 && (
-              <>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    type="search"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="Kalem adı veya açıklama ara…"
-                    aria-label="Fiyat listesinde ara"
-                    className="h-11 rounded-xl pl-9"
-                  />
-                </div>
-
-                {visibleItems.length === 0 ? (
-                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50">
-                    <EmptyState icon={Search} title="Sonuç bulunamadı" description={`"${query.trim()}" ile eşleşen kalem yok.`} />
+      <section id="features" className="scroll-mt-20 border-t border-slate-200 bg-slate-50/70 py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading {...c.features_heading} />
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {c.features.map((f) => {
+              const Icon = ICONS[f.icon] || Wrench;
+              return (
+                <Tilt key={f.title} className="h-full">
+                  <div className="h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <h3 className="font-heading mt-5 text-base font-semibold text-slate-900">{f.title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-500">{f.text}</p>
                   </div>
-                ) : (
-                  <ul className="mt-4 divide-y divide-slate-100 overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-                    {visibleItems.map((it, i) => (
-                      <li key={`${it.name}-${i}`} className="flex items-start justify-between gap-4 px-4 py-4 sm:px-6">
-                        <div className="min-w-0">
-                          <p className="break-words font-medium text-slate-900">{it.name}</p>
-                          {it.description && <p className="mt-0.5 break-words text-sm text-slate-500">{it.description}</p>}
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <p className="whitespace-nowrap font-semibold tabular-nums text-slate-900">{fmtMoney(it.price)}</p>
-                          {it.unit && <p className="text-xs text-slate-500">{it.unit}</p>}
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-
-                <p className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
-                  <span>
-                    {visibleItems.length} / {pricing.items.length} kalem gösteriliyor
-                  </span>
-                  {pricing.updated_at && <span>Son güncelleme: {fmtDateShort(pricing.updated_at)}</span>}
-                </p>
-              </>
-            )}
+                </Tilt>
+              );
+            })}
           </div>
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-slate-950 text-slate-400">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-4 py-8 text-sm sm:flex-row sm:px-6">
-          <span>
-            © E-Moto Tamir · {year}
-          </span>
-          <Link to="/login" className="font-medium text-slate-200 transition hover:text-brand-300">
-            Giriş Yap
-          </Link>
+      <section id="pricing" className="scroll-mt-20 py-20">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <SectionHeading {...c.pricing_heading} />
+          <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {c.plans.map((p) => <PlanCard key={p.id} plan={p} wa={wa} />)}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden bg-slate-900 py-20 text-center">
+        <div className="absolute inset-0 opacity-40" aria-hidden="true"
+             style={{ background: "radial-gradient(circle at 50% 0%, rgba(249,115,22,0.35), transparent 60%)" }} />
+        <div className="relative mx-auto max-w-2xl px-4">
+          <h2 className="font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl">{c.cta.title}</h2>
+          <p className="mt-4 text-slate-300">{c.cta.text}</p>
+          <a href={demo} target="_blank" rel="noreferrer"
+             className="mt-8 inline-flex h-12 items-center gap-2 rounded-lg bg-emerald-600 px-6 text-sm font-semibold text-white hover:bg-emerald-500">
+            <MessageCircle className="h-4 w-4" /> WhatsApp ile Demo İste
+          </a>
+          {c.phone && <p className="mt-6 text-xs tracking-wider text-slate-400">{c.phone}</p>}
+        </div>
+      </section>
+
+      <footer className="border-t border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+          <p>©{year} E-Moto Tamir · Tüm hakları saklıdır.</p>
+          <div className="flex gap-5">
+            <a href={demo} target="_blank" rel="noreferrer" className="hover:text-slate-900">İletişim</a>
+            <Link to="/login" className="hover:text-slate-900">Giriş Yap</Link>
+          </div>
         </div>
       </footer>
     </div>
