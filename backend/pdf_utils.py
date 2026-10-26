@@ -13,6 +13,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 import os
 
+from totals import compute_document_totals, line_amounts
+
 FONT_NAME = "Helvetica"
 FONT_BOLD = "Helvetica-Bold"
 _TR_FONTS_REGISTERED = False
@@ -50,7 +52,8 @@ STATUS_LABELS = {
 
 
 def _fmt_money(v):
-    return f"{float(v or 0):,.2f} ₺".replace(",", "X").replace(".", ",").replace("X", ".")
+    # Gömülü yazı tipleri (Liberation/DejaVu) ₺ glifini içermeyebilir; PDF'lerde "TL" kullanılır.
+    return f"{float(v or 0):,.2f} TL".replace(",", "X").replace(".", ",").replace("X", ".")
 
 
 def _fmt_date(iso):
@@ -151,18 +154,29 @@ def build_service_pdf(order: dict, kind: str = "kabul", tenant: dict = None, log
 
     # ---------- ITEMS TABLE ----------
     items = order.get("items") or []
+    # Tüm tutarlar totals.py ile hesaplanır (kalem bazlı KDV dahil/hariç, oran bazlı KDV).
+    T = compute_document_totals(
+        items,
+        labor_total=order.get("labor_total", 0),
+        labor_price_mode=order.get("labor_price_mode"),
+        labor_vat=order.get("labor_vat"),
+        discount=order.get("discount", 0),
+    )
     rows = [["NO", "YAPILAN İŞ FORMU", "MİKTAR", "FİYAT", "TUTAR"]]
     for idx, it in enumerate(items, 1):
+        amt = line_amounts(it)  # KDV dahil brüt tutar
+        qty = float(it.get("qty", 0) or 0)
+        unit_gross = amt["gross"] / qty if qty else amt["gross"]
         rows.append([
             str(idx),
             it.get("name", ""),
-            f"{float(it.get('qty', 0)):g}",
-            _fmt_money(it.get("unit_price", 0)),
-            _fmt_money(float(it.get("qty", 0)) * float(it.get("unit_price", 0))),
+            f"{qty:g}",
+            _fmt_money(unit_gross),
+            _fmt_money(amt["gross"]),
         ])
-    # Add labor as a separate line item if present
-    if order.get("labor_total"):
-        rows.append([str(len(rows)), "İŞÇİLİK", "1", _fmt_money(order.get("labor_total",0)), _fmt_money(order.get("labor_total",0))])
+    # İşçilik de ayrı bir satır olarak KDV dahil brüt tutarla gösterilir
+    if T["labor_gross"]:
+        rows.append([str(len(rows)), "İŞÇİLİK", "1", _fmt_money(T["labor_gross"]), _fmt_money(T["labor_gross"])])
     # Ensure at least 15 rows for the classic form look
     while len(rows) - 1 < 15:
         rows.append(["", "", "", "", ""])
@@ -187,36 +201,33 @@ def build_service_pdf(order: dict, kind: str = "kabul", tenant: dict = None, log
 
     # ---------- Explanation + Totals ----------
     aciklama = Paragraph(f"<b>AÇIKLAMA:</b><br/>{(order.get('diagnosis') or order.get('operations') or order.get('notes') or '-').replace(chr(10), '<br/>')}", p_normal)
-    parts_total = sum(float(i.get("qty",0))*float(i.get("unit_price",0)) for i in items if i.get("kind") == "part")
-    services_total = sum(float(i.get("qty",0))*float(i.get("unit_price",0)) for i in items if i.get("kind") == "service")
-    subtotal = parts_total + services_total + float(order.get("labor_total",0))
-    discount = float(order.get("discount",0))
-    subtotal_after_disc = subtotal - discount
-    kdv = subtotal_after_disc * 0.20 / 1.20  # inclusive KDV extracted
-    grand = order.get("grand_total", subtotal_after_disc)
-
     totals_data = [
-        ["TOPLAM", _fmt_money(subtotal_after_disc / 1.20)],
-        ["20% KDV", _fmt_money(kdv)],
-        ["GENEL TOPLAM", _fmt_money(grand)],
+        ["PARÇA TOPLAMI", _fmt_money(T["parts_total"])],
+        ["HİZMET TOPLAMI", _fmt_money(T["services_total"])],
+        ["İŞÇİLİK", _fmt_money(T["labor_gross"])],
+        ["ARA TOPLAM (KDV DAHİL)", _fmt_money(T["subtotal"])],
     ]
-    if order.get("discount"):
-        totals_data.insert(0, ["İSKONTO", "- " + _fmt_money(discount)])
-    if order.get("paid_total"):
-        totals_data.append(["TAHSİL EDİLEN", _fmt_money(order.get("paid_total"))])
-        remaining = max(0, grand - order.get("paid_total",0))
-        totals_data.append(["KALAN", _fmt_money(remaining)])
+    if T["discount"]:
+        totals_data.append(["İSKONTO", "- " + _fmt_money(T["discount"])])
+    totals_data.append(["KDV TOPLAMI", _fmt_money(T["vat_total"])])
+    totals_data.append(["KDV HARİÇ TUTAR", _fmt_money(T["net_total"])])
+    totals_data.append(["GENEL TOPLAM", _fmt_money(T["grand_total"])])
+    paid = float(order.get("paid_total") or 0)
+    if paid:
+        totals_data.append(["TAHSİL EDİLEN", _fmt_money(paid)])
+        totals_data.append(["KALAN", _fmt_money(max(0, T["grand_total"] - paid))])
 
-    ttbl = Table(totals_data, colWidths=[3.5*cm, 3.5*cm])
+    gen_idx = [i for i, r in enumerate(totals_data) if r[0] == "GENEL TOPLAM"][0]
+    ttbl = Table(totals_data, colWidths=[4.7*cm, 2.3*cm])
     ttbl.setStyle(TableStyle([
         ("FONTNAME", (0,0), (-1,-1), FONT_NAME),
         ("FONTSIZE", (0,0), (-1,-1), 9),
         ("ALIGN", (1,0), (1,-1), "RIGHT"),
         ("GRID", (0,0), (-1,-1), 0.4, colors.HexColor("#CBD5E1")),
         ("BACKGROUND", (0,0), (0,-1), colors.HexColor("#F1F5F9")),
-        ("FONTNAME", (0,len(totals_data)-1 if not order.get("paid_total") else 2), (-1,len(totals_data)-1 if not order.get("paid_total") else 2), FONT_BOLD),
-        ("BACKGROUND", (0,2), (-1,2), primary if not order.get("paid_total") else colors.HexColor("#FFF7ED")),
-        ("TEXTCOLOR", (0,2), (-1,2), colors.white if not order.get("paid_total") else primary),
+        ("FONTNAME", (0,gen_idx), (-1,gen_idx), FONT_BOLD),
+        ("BACKGROUND", (0,gen_idx), (-1,gen_idx), primary if not paid else colors.HexColor("#FFF7ED")),
+        ("TEXTCOLOR", (0,gen_idx), (-1,gen_idx), colors.white if not paid else primary),
         ("TOPPADDING", (0,0), (-1,-1), 5),
         ("BOTTOMPADDING", (0,0), (-1,-1), 5),
     ]))
@@ -319,8 +330,23 @@ def _fit_image(data: bytes, max_w: float, max_h: float):
     return Image(io.BytesIO(data), width=iw * scale, height=ih * scale)
 
 
+def _info_card(label, value, width, bar=True):
+    """Turuncu sol çubuklu bilgi kartı (etiket + değer)."""
+    card = Table([[_p(label.upper(), 7, color=MUTED)], [_p(value or "-", 10, bold=True)]], colWidths=[width])
+    style = [
+        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+        ("LEFTPADDING", (0, 0), (-1, -1), 9), ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 2), ("BOTTOMPADDING", (0, 0), (-1, -1), 2),
+    ]
+    if bar:
+        style.append(("LINEBEFORE", (0, 0), (0, -1), 2.5, BRAND_ORANGE))
+    card.setStyle(TableStyle(style))
+    return card
+
+
 def build_inspection_pdf(doc: dict, tenant: dict = None, photo_bytes: dict = None, logo_bytes: bytes = None) -> bytes:
-    """Ekspertiz raporu: başlık, araç bilgileri, kontrol listesi, notlar, imzalar ve fotoğraflar."""
+    """Ekspertiz raporu (önceki tasarım): 1. sayfa başlık, araç kartları, kontrol listesi ve notlar;
+    2. sayfa detay listesi ve imza kartları; ardından fotoğraflar."""
     _register_fonts()
     tenant = tenant or {}
     photo_bytes = photo_bytes or {}
@@ -332,52 +358,50 @@ def build_inspection_pdf(doc: dict, tenant: dict = None, photo_bytes: dict = Non
     W = A4[0] - 30 * mm
     story = []
 
-    # Başlık
-    left = [_p(tenant.get("name") or "Servis", 14, bold=True)]
-    for key in ("address", "phone"):
-        if tenant.get(key):
-            left.append(_p(tenant[key], 8, color=MUTED))
+    # ---------- Başlık: logo + marka + slogan + telefon | turuncu rapor no kartı ----------
+    left = [_p(tenant.get("name") or "Servis", 15, bold=True)]
+    if tenant.get("slogan"):
+        left.append(_p(tenant["slogan"], 8, color=MUTED))
+    if tenant.get("phone"):
+        left.append(_p(f"Tel: {tenant['phone']}", 8, color=MUTED))
     logo_cell = ""
     if logo_bytes:
         try:
             logo_cell = Image(io.BytesIO(logo_bytes), width=18 * mm, height=18 * mm, kind="proportional")
         except Exception:
             logo_cell = ""
-    right = [
-        _p("EKSPERTİZ RAPORU", 13, bold=True, color=BRAND_ORANGE, align="right"),
-        _p(f"Rapor No: {doc.get('report_no', '-')}", 9, align="right"),
-        _p(f"Tarih: {_fmt_date(doc.get('inspection_date'))}", 9, color=MUTED, align="right"),
-    ]
-    head = Table([[logo_cell, left, right]], colWidths=[22 * mm, W * 0.45, W * 0.55 - 22 * mm])
+    report_card = Table(
+        [[_p("RAPOR NO", 7, bold=True, color=colors.white, align="center")],
+         [_p(doc.get("report_no", "-"), 13, bold=True, color=colors.white, align="center")],
+         [_p(f"Tarih: {_fmt_date(doc.get('inspection_date'))}", 8, color=colors.white, align="center")]],
+        colWidths=[W * 0.34],
+    )
+    report_card.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, -1), BRAND_ORANGE),
+        ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+    ]))
+    head = Table([[logo_cell, left, report_card]], colWidths=[22 * mm, W - 22 * mm - W * 0.34, W * 0.34])
     head.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "TOP"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
         ("LINEBELOW", (0, 0), (-1, -1), 1.5, BRAND_ORANGE), ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
     ]))
     story.append(head)
 
-    # Araç ve sahip bilgileri (2 çift sütun)
-    info = [
-        ("Araç Sahibi", doc.get("owner_name")), ("Telefon", doc.get("customer_phone")),
-        ("Plaka", doc.get("plate")), ("Marka / Model", doc.get("make_model")),
-        ("Model Yılı", doc.get("year")), ("Kilometre", doc.get("km")),
-        ("Şase No", doc.get("chassis_no")),
+    # ---------- Araç kartları (4 adet) ----------
+    quarter = W / 4
+    cards = [
+        _info_card("Plaka", doc.get("plate"), quarter - 3 * mm),
+        _info_card("Model Yılı", doc.get("year"), quarter - 3 * mm),
+        _info_card("Marka / Model", doc.get("make_model"), quarter - 3 * mm),
+        _info_card("Kilometre", doc.get("km"), quarter - 3 * mm),
     ]
-    rows = []
-    for i in range(0, len(info), 2):
-        row = []
-        for label, val in info[i:i + 2]:
-            row += [_p(label.upper(), 7, color=MUTED), _p(val or "-", 9, bold=True)]
-        row += [""] * (4 - len(row))
-        rows.append(row)
-    grid = Table(rows, colWidths=[W * 0.16, W * 0.34, W * 0.16, W * 0.34])
-    grid.setStyle(TableStyle([
-        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"), ("LEFTPADDING", (0, 0), (-1, -1), 0),
-        ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
-    ]))
+    cards_row = Table([cards], colWidths=[quarter] * 4)
+    cards_row.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                                   ("VALIGN", (0, 0), (-1, -1), "TOP")]))
     story.append(Spacer(1, 4 * mm))
-    story.append(grid)
+    story.append(cards_row)
 
-    # Kontrol listesi (gruplu)
+    # ---------- Kontrol listesi (durum hapları) ----------
     story += _section("KONTROL LİSTESİ")
     groups: dict = {}
     for it in doc.get("items", []):
@@ -410,7 +434,7 @@ def build_inspection_pdf(doc: dict, tenant: dict = None, photo_bytes: dict = Non
     else:
         story.append(_p("Kontrol maddesi girilmedi.", 9, color=MUTED))
 
-    # Notlar
+    # ---------- Notlar (turuncu callout) ----------
     if doc.get("notes"):
         story += _section("NOTLAR VE GÖZLEMLER")
         box = Table([[_p(doc["notes"], 9)]], colWidths=[W])
@@ -422,18 +446,46 @@ def build_inspection_pdf(doc: dict, tenant: dict = None, photo_bytes: dict = Non
         ]))
         story.append(box)
 
-    # İmzalar
-    story.append(Spacer(1, 10 * mm))
-    sig = Table(
-        [[_p("Teknisyen", 8, color=MUTED), _p("Teslim Alan", 8, color=MUTED)],
-         ["", ""],
-         [_p(doc.get("technician_name") or " ", 10, bold=True), _p(doc.get("receiver_name") or " ", 10, bold=True)]],
-        colWidths=[W / 2, W / 2], rowHeights=[None, 16 * mm, None],
-    )
-    sig.setStyle(TableStyle([("LINEABOVE", (0, 2), (-1, 2), 0.5, MUTED), ("TOPPADDING", (0, 2), (-1, 2), 4)]))
-    story.append(sig)
+    # ---------- 2. sayfa: detay listesi + imza kartları ----------
+    story.append(PageBreak())
+    story += _section("EKSPERTİZ FORMU — DETAY")
+    detail = [
+        ("Araç Sahibi", doc.get("owner_name")), ("Telefon", doc.get("customer_phone")),
+        ("Plaka No", doc.get("plate")), ("Marka / Model", doc.get("make_model")),
+        ("Model Yılı", doc.get("year")), ("Kilometre", doc.get("km")),
+        ("Şase No", doc.get("chassis_no")), ("Muayene Tarihi", _fmt_date(doc.get("inspection_date"))),
+    ]
+    half = W / 2
+    drows = []
+    for i in range(0, len(detail), 2):
+        pair = [_info_card(lbl, val, half - 3 * mm) for lbl, val in detail[i:i + 2]]
+        drows.append(pair + [""] * (2 - len(pair)))
+    dgrid = Table(drows, colWidths=[half, half])
+    dgrid.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                               ("TOPPADDING", (0, 0), (-1, -1), 3), ("BOTTOMPADDING", (0, 0), (-1, -1), 3)]))
+    story.append(dgrid)
 
-    # Fotoğraflar (2 sütunlu ızgara)
+    story.append(Spacer(1, 10 * mm))
+
+    def sig_card(role, name):
+        card = Table([[_p(role.upper(), 7, color=MUTED)], [Spacer(1, 16 * mm)], [_p(name or " ", 10, bold=True)]],
+                     colWidths=[half - 5 * mm])
+        card.setStyle(TableStyle([
+            ("BOX", (0, 0), (-1, -1), 0.5, LINE),
+            ("LEFTPADDING", (0, 0), (-1, -1), 10), ("TOPPADDING", (0, 0), (-1, -1), 6),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+            ("LINEABOVE", (0, 2), (-1, 2), 0.6, MUTED, None, (3, 2)),
+        ]))
+        return card
+
+    sigs = Table([[sig_card("Teknisyen İmza", doc.get("technician_name")),
+                   sig_card("Teslim Alan İmza", doc.get("receiver_name"))]],
+                 colWidths=[half, half])
+    sigs.setStyle(TableStyle([("LEFTPADDING", (0, 0), (-1, -1), 0), ("RIGHTPADDING", (0, 0), (-1, -1), 0),
+                              ("VALIGN", (0, 0), (-1, -1), "TOP")]))
+    story.append(sigs)
+
+    # ---------- Fotoğraflar (2 sütunlu ızgara) ----------
     photos = [p for p in doc.get("photos", []) if p.get("id") in photo_bytes]
     if photos:
         story.append(PageBreak())
@@ -456,7 +508,7 @@ def build_inspection_pdf(doc: dict, tenant: dict = None, photo_bytes: dict = Non
         canv.saveState()
         canv.setFont(FONT_NAME, 7.5)
         canv.setFillColor(MUTED)
-        canv.drawString(15 * mm, 9 * mm, f"{tenant.get('name', '')} · Ekspertiz {doc.get('report_no', '')}")
+        canv.drawString(15 * mm, 9 * mm, f"{tenant.get('name', '')} · Rapor No {doc.get('report_no', '')} · {_fmt_date(doc.get('inspection_date'))}")
         canv.drawRightString(A4[0] - 15 * mm, 9 * mm, f"Sayfa {canv.getPageNumber()}")
         canv.restoreState()
 

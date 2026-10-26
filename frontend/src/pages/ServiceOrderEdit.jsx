@@ -11,6 +11,9 @@ import { Trash2, Save } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import { toast } from "sonner";
 import FaultDiagram from "../components/FaultDiagram";
+import { documentTotals, lineAmounts, DEFAULT_VAT } from "../lib/pricing";
+import { PriceModeSelect, VatSelect } from "../components/PriceControls";
+import DocumentTotals from "../components/DocumentTotals";
 
 const ACCESSORY_OPTS = ["Kask", "Telefon Tutucu", "Çanta", "Topcase", "Yan Çanta", "Navigasyon"];
 const FUEL_OPTS = ["Boş", "1/4", "1/2", "3/4", "Dolu"];
@@ -36,18 +39,19 @@ export default function ServiceOrderEdit() {
 
   const update = (patch) => setOrder({ ...order, ...patch });
 
-  const addPart = (p) => update({ items: [...order.items, { id: crypto.randomUUID(), kind: "part", ref_id: p.id, name: p.name, qty: 1, unit_price: p.sale_price, vat: p.vat || 20 }] });
-  const addService = (s) => update({ items: [...order.items, { id: crypto.randomUUID(), kind: "service", ref_id: s.id, name: s.name, qty: 1, unit_price: s.price, vat: s.vat || 20 }] });
+  const addPart = (p) => update({ items: [...order.items, { id: crypto.randomUUID(), kind: "part", ref_id: p.id, name: p.name, qty: 1, unit_price: p.sale_price, vat: p.vat ?? DEFAULT_VAT, price_mode: p.price_mode || "incl" }] });
+  const addService = (s) => update({ items: [...order.items, { id: crypto.randomUUID(), kind: "service", ref_id: s.id, name: s.name, qty: 1, unit_price: s.price, vat: s.vat ?? DEFAULT_VAT, price_mode: s.price_mode || "incl" }] });
   const updItem = (idx, patch) => update({ items: order.items.map((i, x) => x === idx ? { ...i, ...patch } : i) });
   const rmItem = (idx) => update({ items: order.items.filter((_, x) => x !== idx) });
 
   const totals = useMemo(() => {
-    if (!order) return { parts: 0, svcs: 0, grand: 0 };
-    const parts = order.items.filter(i=>i.kind==="part").reduce((s,i)=>s+i.qty*i.unit_price,0);
-    const svcs = order.items.filter(i=>i.kind==="service").reduce((s,i)=>s+i.qty*i.unit_price,0);
-    const grand = parts + svcs + Number(order.labor_total||0) - Number(order.discount||0);
-    return { parts, svcs, grand };
+    if (!order) return null;
+    return documentTotals({
+      items: order.items, labor_total: order.labor_total,
+      labor_price_mode: order.labor_price_mode || "incl", labor_vat: order.labor_vat ?? DEFAULT_VAT, discount: order.discount,
+    });
   }, [order]);
+
 
   const toggleAcc = (a) => update({ accessories: order.accessories.includes(a) ? order.accessories.filter(x=>x!==a) : [...order.accessories, a] });
   const toggleFault = (k) => update({ fault_zones: order.fault_zones.includes(k) ? order.fault_zones.filter(x=>x!==k) : [...order.fault_zones, k] });
@@ -63,7 +67,8 @@ export default function ServiceOrderEdit() {
         accessories: order.accessories, fault_zones: order.fault_zones,
         complaint: order.complaint, diagnosis: order.diagnosis, operations: order.operations,
         notes: order.notes, items: order.items,
-        labor_total: Number(order.labor_total) || 0, discount: Number(order.discount) || 0,
+        labor_total: Number(order.labor_total) || 0, labor_price_mode: order.labor_price_mode || "incl",
+        labor_vat: Number(order.labor_vat ?? DEFAULT_VAT), discount: Number(order.discount) || 0,
       });
       if (order.status !== initialStatus) {
         await api.post(`/service-orders/${id}/status`, { status: order.status });
@@ -146,7 +151,7 @@ export default function ServiceOrderEdit() {
         <CardContent className="p-0">
           <table className="min-w-full text-sm">
             <thead className="bg-slate-50 text-xs uppercase text-slate-500">
-              <tr><th className="text-left px-4 py-2">Tür</th><th className="text-left px-4 py-2">Ad</th><th className="text-right px-4 py-2 w-24">Adet</th><th className="text-right px-4 py-2 w-32">Birim ₺</th><th className="text-right px-4 py-2 w-32">Toplam</th><th className="w-10"></th></tr>
+              <tr><th className="text-left px-4 py-2">Tür</th><th className="text-left px-4 py-2">Ad</th><th className="text-right px-4 py-2 w-24">Adet</th><th className="text-right px-4 py-2 w-32">Birim ₺</th><th className="text-right px-4 py-2 w-40">Fiyat tipi</th><th className="text-right px-4 py-2 w-24">KDV</th><th className="text-right px-4 py-2 w-32">Toplam (KDV dahil)</th><th className="w-10"></th></tr>
             </thead>
             <tbody>
               {order.items.map((it, idx) => (
@@ -155,11 +160,13 @@ export default function ServiceOrderEdit() {
                   <td className="px-4 py-2"><Input value={it.name} onChange={(e)=>updItem(idx,{name:e.target.value})} className="h-8" data-testid={`item-name-${idx}`} /></td>
                   <td className="px-4 py-2"><Input type="number" value={it.qty} onChange={(e)=>updItem(idx,{qty:Number(e.target.value)||0})} className="h-8 text-right" data-testid={`item-qty-${idx}`} /></td>
                   <td className="px-4 py-2"><Input type="number" value={it.unit_price} onChange={(e)=>updItem(idx,{unit_price:Number(e.target.value)||0})} className="h-8 text-right" data-testid={`item-price-${idx}`} /></td>
-                  <td className="px-4 py-2 text-right font-medium">{fmtMoney(it.qty*it.unit_price)}</td>
+                  <td className="px-4 py-2"><PriceModeSelect value={it.price_mode} onChange={(v)=>updItem(idx,{price_mode:v})} /></td>
+                  <td className="px-4 py-2"><VatSelect value={it.vat} onChange={(v)=>updItem(idx,{vat:v})} /></td>
+                  <td className="px-4 py-2 text-right font-medium">{fmtMoney(lineAmounts(it).gross)}</td>
                   <td className="px-4 py-2"><button onClick={()=>rmItem(idx)} className="text-red-500 hover:text-red-700" data-testid={`item-del-${idx}`}><Trash2 className="h-4 w-4" /></button></td>
                 </tr>
               ))}
-              {order.items.length === 0 && <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">Kalem yok</td></tr>}
+              {order.items.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500">Kalem yok</td></tr>}
             </tbody>
           </table>
         </CardContent>
@@ -168,16 +175,12 @@ export default function ServiceOrderEdit() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-slate-200"><CardContent className="p-5 grid grid-cols-2 gap-4">
           <div><Label>Ek İşçilik (₺)</Label><Input type="number" value={order.labor_total || 0} onChange={(e)=>update({ labor_total: e.target.value })} /></div>
+          <div><Label>İşçilik fiyat tipi</Label><PriceModeSelect value={order.labor_price_mode || "incl"} onChange={(v)=>update({ labor_price_mode: v })} /></div>
+          <div><Label>İşçilik KDV</Label><VatSelect value={order.labor_vat ?? DEFAULT_VAT} onChange={(v)=>update({ labor_vat: v })} /></div>
           <div><Label>İskonto (₺)</Label><Input type="number" value={order.discount || 0} onChange={(e)=>update({ discount: e.target.value })} /></div>
         </CardContent></Card>
         <Card className="border-slate-200"><CardContent className="p-5">
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between"><span className="text-slate-500">Parçalar</span><span>{fmtMoney(totals.parts)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">Hizmet</span><span>{fmtMoney(totals.svcs)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">İşçilik</span><span>{fmtMoney(order.labor_total)}</span></div>
-            <div className="flex justify-between"><span className="text-slate-500">İskonto</span><span className="text-red-600">-{fmtMoney(order.discount)}</span></div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t"><span>Genel Toplam</span><span>{fmtMoney(totals.grand)}</span></div>
-          </div>
+          <DocumentTotals t={totals} />
           <Button onClick={save} disabled={saving} className="w-full mt-4 h-11 bg-brand-500 hover:bg-brand-600 font-semibold"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
         </CardContent></Card>
       </div>

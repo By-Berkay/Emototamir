@@ -14,6 +14,8 @@ import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import SignaturePad from "../components/SignaturePad";
 import PhotoUploader from "../components/PhotoUploader";
+import { documentTotals, lineAmounts, DEFAULT_VAT } from "../lib/pricing";
+import DocumentTotals from "../components/DocumentTotals";
 import { toast } from "sonner";
 import { FileDown, MessageCircle, Pencil, Trash2, Copy } from "lucide-react";
 
@@ -238,13 +240,13 @@ export default function ServiceOrderDetail() {
                     <td className="px-4 py-2"><span className={`text-xs px-2 py-0.5 rounded ${it.kind==="part"?"bg-blue-50 text-blue-700":"bg-emerald-50 text-emerald-700"}`}>{it.kind==="part"?"Parça":"Hizmet"}</span></td>
                     <td className="px-4 py-2">{it.name}</td>
                     <td className="px-4 py-2 text-right">{it.qty}</td>
-                    <td className="px-4 py-2 text-right">{fmtMoney(it.unit_price)}</td>
-                    <td className="px-4 py-2 text-right font-medium">{fmtMoney(it.qty*it.unit_price)}</td>
+                    <td className="px-4 py-2 text-right">{fmtMoney(it.unit_price)}<div className="text-[11px] text-slate-400">{it.price_mode === "excl" ? "KDV hariç" : "KDV dahil"} · %{it.vat ?? DEFAULT_VAT}</div></td>
+                    <td className="px-4 py-2 text-right font-medium">{fmtMoney(lineAmounts(it).gross)}</td>
                   </tr>
                 ))}
-                <tr className="border-t bg-slate-50"><td colSpan={4} className="text-right px-4 py-2 font-semibold">İşçilik</td><td className="text-right px-4 py-2">{fmtMoney(o.labor_total)}</td></tr>
-                <tr className="bg-slate-50"><td colSpan={4} className="text-right px-4 py-2 font-semibold">İskonto</td><td className="text-right px-4 py-2 text-red-600">-{fmtMoney(o.discount)}</td></tr>
-                <tr className="bg-slate-100"><td colSpan={4} className="text-right px-4 py-3 font-bold text-lg">Genel Toplam</td><td className="text-right px-4 py-3 font-bold text-lg">{fmtMoney(o.grand_total)}</td></tr>
+                <tr className="border-t bg-slate-50"><td colSpan={5} className="px-4 py-3">
+                  <div className="ml-auto max-w-sm"><DocumentTotals paid={o.paid_total} t={documentTotals({ items: o.items, labor_total: o.labor_total, labor_price_mode: o.labor_price_mode || "incl", labor_vat: o.labor_vat ?? DEFAULT_VAT, discount: o.discount })} /></div>
+                </td></tr>
               </tbody>
             </table>
             </div>

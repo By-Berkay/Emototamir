@@ -9,6 +9,9 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
+import { documentTotals, lineAmounts, DEFAULT_VAT } from "../lib/pricing";
+import { PriceModeSelect, VatSelect } from "../components/PriceControls";
+import DocumentTotals from "../components/DocumentTotals";
 import { Save, Trash2, ArrowLeft, Copy, ExternalLink, FileText } from "lucide-react";
 
 const STATUS_LABEL = {
@@ -29,6 +32,8 @@ export default function QuoteEdit() {
   const [items, setItems] = useState([]);
   const [labor, setLabor] = useState(0);
   const [discount, setDiscount] = useState(0);
+  const [laborMode, setLaborMode] = useState("incl");
+  const [laborVat, setLaborVat] = useState(DEFAULT_VAT);
   const [notes, setNotes] = useState("");
   const [validUntil, setValidUntil] = useState("");
   const [quote, setQuote] = useState(null);
@@ -44,6 +49,7 @@ export default function QuoteEdit() {
       const q = r.data; setQuote(q);
       setCustomerId(q.customer_id); setMotoId(q.motorcycle_id);
       setItems(q.items || []); setLabor(q.labor_total || 0); setDiscount(q.discount || 0);
+      setLaborMode(q.labor_price_mode || "incl"); setLaborVat(q.labor_vat ?? DEFAULT_VAT);
       setNotes(q.notes || ""); setValidUntil((q.valid_until || "").slice(0,10));
     }).catch(() => toast.error("Teklif yüklenemedi"));
   }, [id]);
@@ -56,23 +62,17 @@ export default function QuoteEdit() {
     });
   }, [customerId, isNew]);
 
-  const addPart = (p) => setItems([...items, { id: crypto.randomUUID(), kind:"part", ref_id: p.id, name: p.name, qty:1, unit_price: p.sale_price, vat: p.vat ?? 20 }]);
-  const addService = (s) => setItems([...items, { id: crypto.randomUUID(), kind:"service", ref_id: s.id, name: s.name, qty:1, unit_price: s.price, vat: s.vat ?? 20 }]);
+  const addPart = (p) => setItems([...items, { id: crypto.randomUUID(), kind:"part", ref_id: p.id, name: p.name, qty:1, unit_price: p.sale_price, vat: p.vat ?? DEFAULT_VAT, price_mode: p.price_mode || "incl" }]);
+  const addService = (s) => setItems([...items, { id: crypto.randomUUID(), kind:"service", ref_id: s.id, name: s.name, qty:1, unit_price: s.price, vat: s.vat ?? DEFAULT_VAT, price_mode: s.price_mode || "incl" }]);
   const updateItem = (i, patch) => setItems(items.map((it, idx) => idx === i ? { ...it, ...patch } : it));
   const removeItem = (i) => setItems(items.filter((_, idx) => idx !== i));
 
-  // Birim fiyatlar KDV dahildir: genel toplam = ara toplam + işçilik - iskonto (KDV ayrıca eklenmez).
-  // KDV satırı yalnızca bilgilendirme amaçlıdır ve brüt tutarın içinden ayrıştırılır.
-  const totals = useMemo(() => {
-    const subtotal = items.reduce((s, it) => s + (Number(it.qty) || 0) * (Number(it.unit_price) || 0), 0);
-    const vat = items.reduce((s, it) => {
-      const gross = (Number(it.qty) || 0) * (Number(it.unit_price) || 0);
-      const rate = Number(it.vat) || 0;
-      return s + gross * rate / (100 + rate);
-    }, 0);
-    const grand = subtotal + Number(labor||0) - Number(discount||0);
-    return { subtotal, vat, grand };
-  }, [items, labor, discount]);
+  // Kalem ve işçilik fiyatları KDV dahil / hariç seçimine göre hesaplanır (pricing.js; backend ile aynı kural).
+  const totals = useMemo(
+    () => documentTotals({ items, labor_total: labor, labor_price_mode: laborMode, labor_vat: laborVat, discount }),
+    [items, labor, laborMode, laborVat, discount]
+  );
+
 
   const save = async () => {
     if (!customerId || !motoId) return toast.error("Müşteri ve motosiklet seçin");
@@ -80,7 +80,8 @@ export default function QuoteEdit() {
     if (saving) return;
     const payload = {
       customer_id: customerId, motorcycle_id: motoId, items,
-      labor_total: Number(labor||0), discount: Number(discount||0),
+      labor_total: Number(labor||0), labor_price_mode: laborMode, labor_vat: Number(laborVat),
+      discount: Number(discount||0),
       notes, valid_until: validUntil ? new Date(validUntil + "T23:59:59+03:00").toISOString() : null,
     };
     setSaving(true);
@@ -174,7 +175,7 @@ export default function QuoteEdit() {
                 <th className="text-left px-3 py-2">Ad</th>
                 <th className="text-right px-3 py-2 w-20">Adet</th>
                 <th className="text-right px-3 py-2 w-32">Birim Fiyat</th>
-                <th className="text-right px-3 py-2 w-20">KDV%</th>
+                <th className="text-right px-3 py-2 w-40">Fiyat tipi</th><th className="text-right px-3 py-2 w-24">KDV%</th>
                 <th className="text-right px-3 py-2 w-32">Tutar</th>
                 <th className="w-10"></th>
               </tr>
@@ -186,12 +187,13 @@ export default function QuoteEdit() {
                   <td className="px-3 py-2">{it.name}</td>
                   <td className="px-3 py-2"><Input type="number" step="any" value={it.qty} min={0} onChange={(e)=>updateItem(i,{qty:Number(e.target.value)})} disabled={!editable} className="text-right" /></td>
                   <td className="px-3 py-2"><Input type="number" step="0.01" value={it.unit_price} onChange={(e)=>updateItem(i,{unit_price:Number(e.target.value)})} disabled={!editable} className="text-right" /></td>
-                  <td className="px-3 py-2"><Input type="number" value={it.vat} onChange={(e)=>updateItem(i,{vat:Number(e.target.value)})} disabled={!editable} className="text-right" /></td>
-                  <td className="px-3 py-2 text-right font-medium">{fmtMoney((Number(it.qty)||0) * (Number(it.unit_price)||0))}</td>
+                  <td className="px-3 py-2"><PriceModeSelect value={it.price_mode} onChange={(v)=>updateItem(i,{price_mode:v})} disabled={!editable} /></td>
+                  <td className="px-3 py-2"><VatSelect value={it.vat} onChange={(v)=>updateItem(i,{vat:v})} disabled={!editable} /></td>
+                  <td className="px-3 py-2 text-right font-medium">{fmtMoney(lineAmounts(it).gross)}</td>
                   <td className="px-3 py-2 text-right">{editable && <button onClick={()=>removeItem(i)} className="text-red-500"><Trash2 className="h-4 w-4" /></button>}</td>
                 </tr>
               ))}
-              {items.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-slate-500">Henüz kalem eklenmedi.</td></tr>}
+              {items.length === 0 && <tr><td colSpan={8} className="text-center py-6 text-slate-500">Henüz kalem eklenmedi.</td></tr>}
             </tbody>
           </table>
         </CardContent>
@@ -200,15 +202,11 @@ export default function QuoteEdit() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card><CardContent className="p-5 grid grid-cols-2 gap-3">
           <div><Label>İşçilik (TL)</Label><Input type="number" value={labor} onChange={(e)=>setLabor(Number(e.target.value))} disabled={!editable} data-testid="q-labor" /></div>
+          <div><Label>İşçilik fiyat tipi</Label><PriceModeSelect value={laborMode} onChange={setLaborMode} disabled={!editable} /></div>
+          <div><Label>İşçilik KDV</Label><VatSelect value={laborVat} onChange={setLaborVat} disabled={!editable} /></div>
           <div><Label>İskonto (TL)</Label><Input type="number" value={discount} onChange={(e)=>setDiscount(Number(e.target.value))} disabled={!editable} data-testid="q-discount" /></div>
         </CardContent></Card>
-        <Card><CardContent className="p-5 space-y-2">
-          <div className="flex justify-between text-sm"><span>Ara Toplam</span><span>{fmtMoney(totals.subtotal)}</span></div>
-          <div className="flex justify-between text-sm"><span>KDV</span><span>{fmtMoney(totals.vat)}</span></div>
-          <div className="flex justify-between text-sm"><span>İşçilik</span><span>{fmtMoney(labor)}</span></div>
-          <div className="flex justify-between text-sm text-red-600"><span>İskonto</span><span>-{fmtMoney(discount)}</span></div>
-          <div className="border-t pt-2 flex justify-between font-heading text-xl font-bold"><span>Genel Toplam</span><span>{fmtMoney(totals.grand)}</span></div>
-        </CardContent></Card>
+        <Card><CardContent className="p-5"><DocumentTotals t={totals} paid={quote?.paid_total} /></CardContent></Card>
       </div>
 
       <div className="flex justify-end gap-2">

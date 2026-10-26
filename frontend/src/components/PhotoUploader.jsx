@@ -45,7 +45,7 @@ export default function PhotoUploader({ serviceOrderId, photos = [], onChange })
         const form = new FormData();
         form.append("file", file);
         form.append("caption", caption);
-        const res = await api.post(`/service-orders/${serviceOrderId}/photos`, form, { headers: { "Content-Type": "multipart/form-data" } });
+        const res = await api.post(`/service-orders/${serviceOrderId}/photos`, form);
         uploaded.push(res.data);
       }
       toast.success(`${uploaded.length} fotoğraf yüklendi`);

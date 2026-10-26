@@ -133,9 +133,8 @@ export function ItemPhotos({ inspectionId, itemKey, itemLabel, photos, onAdded, 
         const form = new FormData();
         form.append("file", file);
         form.append("item_key", itemKey);
-        const { data } = await api.post(`/inspections/${inspectionId}/photos`, form, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
+        // Content-Type elle verilmez: tarayıcı sınır (boundary) değeriyle birlikte multipart ayarlar.
+        const { data } = await api.post(`/inspections/${inspectionId}/photos`, form);
         added.push(data);
       }
       onAdded(added);

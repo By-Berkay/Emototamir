@@ -76,7 +76,7 @@ export default function AdminTenantEdit() {
     const file = e.target.files?.[0]; if (!file) return;
     const fd = new FormData(); fd.append("file", file);
     try {
-      const { data } = await api.post(`/admin/tenants/${id}/logo`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      const { data } = await api.post(`/admin/tenants/${id}/logo`, fd);
       upd({ logo_path: data.logo_path });
       toast.success("Logo yüklendi");
     } catch { toast.error("Yükleme başarısız"); }
@@ -86,7 +86,7 @@ export default function AdminTenantEdit() {
     if (!file) return;
     const fd = new FormData(); fd.append("file", file);
     try {
-      const { data } = await api.post(`/admin/tenants/${id}/moto-image/${encodeURIComponent(type)}`, fd, { headers: { "Content-Type": "multipart/form-data" } });
+      const { data } = await api.post(`/admin/tenants/${id}/moto-image/${encodeURIComponent(type)}`, fd);
       upd({ custom_moto_images: { ...(t.custom_moto_images||{}), [type]: data.path } });
       toast.success(`${type} güncellendi`);
     } catch { toast.error("Yükleme başarısız"); }

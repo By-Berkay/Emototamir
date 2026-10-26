@@ -10,7 +10,7 @@ import logging
 import bcrypt
 import jwt
 from datetime import datetime, timezone, timedelta
-from typing import List, Optional, Any, Dict, Union
+from typing import List, Optional, Any, Dict, Union, Literal
 from fastapi import FastAPI, APIRouter, HTTPException, Depends, Request, Response, Query, UploadFile, File, Form, Header
 from fastapi.responses import StreamingResponse
 from starlette.middleware.cors import CORSMiddleware
@@ -354,7 +354,8 @@ class ProductIn(BaseModel):
     stock: float = 0
     min_stock: float = 0
     unit: str = "Adet"
-    vat: float = 20
+    vat: float = Field(default=DEFAULT_VAT, ge=0, le=100)
+    price_mode: Literal["incl", "excl"] = DEFAULT_PRICE_MODE  # KDV dahil (varsayılan) | KDV hariç
     description: Optional[str] = ""
 
 class ServiceCatalogIn(BaseModel):
@@ -363,7 +364,8 @@ class ServiceCatalogIn(BaseModel):
     name: str
     description: Optional[str] = ""
     price: float = 0
-    vat: float = 20
+    vat: float = Field(default=DEFAULT_VAT, ge=0, le=100)
+    price_mode: Literal["incl", "excl"] = DEFAULT_PRICE_MODE  # KDV dahil (varsayılan) | KDV hariç
 
 # ---------- Auth Endpoints ----------
 @api.post("/auth/login")
@@ -1478,6 +1480,40 @@ async def update_product(pid: str, inp: ProductIn, user=Depends(get_current_user
 async def delete_product(pid: str, user=Depends(require_role("admin"))):
     await db.products.delete_one(tf(user, {"id": pid}))
     return {"ok": True}
+
+# ---------- Toplu KDV (katalog) ----------
+class VatBulkIn(BaseModel):
+    scope: Literal["all", "part", "service"] = "all"
+    from_vat: Optional[float] = None  # yalnızca bu orana sahip kalemler (boşsa hepsi)
+    vat: float = Field(ge=0, le=100)
+    price_mode: Optional[Literal["incl", "excl"]] = None  # boşsa fiyat modu değişmez
+
+@api.post("/catalog/vat-bulk")
+async def bulk_change_vat(inp: VatBulkIn, user=Depends(require_role("admin"))):
+    """Parça ve hizmet kataloğundaki KDV oranını toplu değiştirir (vergi oranı değişirse).
+    Mevcut iş emri ve tekliflerdeki kalemler kendi KDV oranını korur; yalnızca bundan sonra
+    katalogdan eklenen kalemleri etkiler. Geçmiş belgelerin tutarları değişmez."""
+    tid = tenant_id_of(user)
+    cond: Dict[str, Any] = {"tenant_id": tid}
+    if inp.from_vat is not None:
+        cond["vat"] = inp.from_vat
+    setter: Dict[str, Any] = {"vat": inp.vat}
+    if inp.price_mode:
+        setter["price_mode"] = inp.price_mode
+    result = {"parts": 0, "services": 0}
+    if inp.scope in ("all", "part"):
+        r = await db.products.update_many(cond, {"$set": setter})
+        result["parts"] = r.modified_count
+    if inp.scope in ("all", "service"):
+        r = await db.service_catalog.update_many(cond, {"$set": setter})
+        result["services"] = r.modified_count
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": tid, "user": user["email"],
+        "action": "catalog.vat_bulk", "entity_id": inp.scope,
+        "detail": {"vat": inp.vat, "from_vat": inp.from_vat, "price_mode": inp.price_mode, **result},
+        "at": now_iso(),
+    })
+    return {"ok": True, **result}
 
 # ---------- Services Catalog ----------
 @api.get("/service-catalog")
