@@ -12,6 +12,18 @@ const CSS = `
   0% { transform: rotateX(-6deg) rotateY(-32deg); }
   100% { transform: rotateX(-6deg) rotateY(32deg); }
 }
+.dh-orbit {
+  transform: rotateX(67deg);
+  border: 1px solid rgb(var(--brand-rgb) / 0.35);
+  box-shadow: 0 0 30px rgb(var(--brand-rgb) / 0.16), inset 0 0 30px rgb(var(--brand-rgb) / 0.1);
+}
+.dh-hud-grid {
+  background-image: linear-gradient(rgba(148,163,184,.12) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(148,163,184,.12) 1px,transparent 1px);
+  background-size: 23px 23px;
+  -webkit-mask-image: radial-gradient(ellipse at center,#000 10%,transparent 78%);
+  mask-image: radial-gradient(ellipse at center,#000 10%,transparent 78%);
+}
 .dh-floor {
   transform: rotateX(68deg);
   background:
@@ -25,7 +37,7 @@ const CSS = `
 `;
 
 /** Motosikletin SVG parçalarla çizilmiş sade hali (tekerlekler, gövde, marka turuncusu aksanı). */
-function MotorcycleSvg() {
+export function MotorcycleSvg() {
   return (
     <svg viewBox="0 0 240 150" className="h-full w-full overflow-visible drop-shadow-[0_12px_18px_rgba(0,0,0,0.45)]" aria-hidden="true">
       <defs>
@@ -109,7 +121,11 @@ export default function DashboardHero({ kpi, tenantName, userName }) {
           <h2 className="font-heading mt-1 text-2xl font-bold tracking-tight sm:text-3xl" data-testid="hero-greeting">
             Merhaba{userName ? `, ${userName}` : ""}
           </h2>
-          <p className="mt-1 text-sm text-slate-300">Servis operasyonunuzun bugünkü durumu.</p>
+          <p className="mt-1 text-sm text-slate-300">Motosiklet servisinizin bugünkü operasyon özeti.</p>
+          <p className="mt-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.15em] text-slate-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-brand-400" />
+            İki tekerlek · Tek platform
+          </p>
 
           <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
             <Chip label="Açık servis" testId="hero-open">{dash(kpi?.open_services)}</Chip>
@@ -121,6 +137,12 @@ export default function DashboardHero({ kpi, tenantName, userName }) {
         </div>
 
         <div className="dh-stage relative h-56 w-full max-w-xs shrink-0 sm:h-64 md:h-72 md:w-80 md:max-w-none" aria-hidden="true">
+          {/* Motosiklet servisine özel 3B görsel sahne */}
+          <div className="dh-hud-grid absolute inset-x-0 bottom-0 h-44 opacity-80" />
+          <div className="dh-orbit absolute inset-x-[3%] bottom-3 h-36 rounded-full" />
+          <div className="absolute right-0 top-1 rounded-lg border border-white/10 bg-slate-950/50 px-3 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-brand-300 backdrop-blur-sm">
+            Moto / Service
+          </div>
           {/* 3D zemin */}
           <div className="dh-floor absolute bottom-6 left-1/2 h-24 w-[85%] -translate-x-1/2 rounded-[50%] border border-white/10" />
           {/* dönen motosiklet */}
