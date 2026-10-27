@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Bike, Building2, Check, ClipboardList, FileText, MessageCircle, Phone, ShieldCheck, Users,
@@ -6,6 +6,8 @@ import {
 } from "lucide-react";
 import api from "../lib/api";
 import { cn } from "../lib/utils";
+import Tilt3D from "../components/Tilt3D";
+import HoloMotorcycle from "../components/HoloMotorcycle";
 
 const ICONS = { ClipboardList, Bike, Users, BellRing, FileText, BarChart3, Building2, ShieldCheck, Wrench };
 
@@ -39,131 +41,58 @@ const FALLBACK = {
   cta: { title: "Servisinizi bugün dijitalleştirin.", text: "14 gün ücretsiz deneme + kurulum ve eğitim sizin için biz yapıyoruz." },
 };
 
-const FLOAT_CSS = `
-@keyframes emt-float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-12px); }
-}
-.emt-float { animation: emt-float 6s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) {
-  .emt-float { animation: none; }
-}
-`;
-
 const waLink = (wa, text) =>
   wa ? `https://wa.me/${wa}?text=${encodeURIComponent(text)}` : "/login";
-
-/** Fareyle 3D eğilen kart. Azaltılmış hareket tercihinde devre dışı. */
-function Tilt({ children, className = "" }) {
-  const ref = useRef(null);
-  const onMove = (e) => {
-    if (!ref.current || window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
-    const r = ref.current.getBoundingClientRect();
-    const x = (e.clientX - r.left) / r.width - 0.5;
-    const y = (e.clientY - r.top) / r.height - 0.5;
-    ref.current.style.transform = `perspective(900px) rotateX(${(-y * 8).toFixed(2)}deg) rotateY(${(x * 10).toFixed(2)}deg) translateY(-4px)`;
-  };
-  const onLeave = () => { if (ref.current) ref.current.style.transform = ""; };
-  return (
-    <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave}
-         className={cn("transition-transform duration-300 will-change-transform", className)}>
-      {children}
-    </div>
-  );
-}
-
-function HeroStage() {
-  const card = "absolute left-1/2 top-1/2 h-44 w-56 rounded-2xl p-5 sm:h-48 sm:w-64";
-  return (
-    <div aria-hidden="true" className="relative mx-auto h-72 w-full max-w-md sm:h-96" style={{ perspective: "1100px" }}>
-      <div className="absolute inset-0" style={{ transform: "rotateX(14deg) rotateY(-18deg)", transformStyle: "preserve-3d" }}>
-        <div className="emt-float absolute inset-0" style={{ transformStyle: "preserve-3d" }}>
-          {/* Arka kart: karanlık, bildirim */}
-          <div
-            className={cn(card, "bg-gradient-to-br from-slate-700 to-slate-900 shadow-2xl ring-1 ring-white/10")}
-            style={{ transform: "translate(-50%, -50%) translate3d(-70px, -70px, -120px)" }}
-          >
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400">Hatırlatma</p>
-            <p className="mt-2 font-heading text-base font-semibold text-white">Periyodik bakım zamanı</p>
-            <div className="mt-8 h-2 rounded-full bg-white/10">
-              <div className="h-2 w-2/3 rounded-full bg-brand-400" />
-            </div>
-          </div>
-
-          {/* Orta kart: beyaz, grafik */}
-          <div
-            className={cn(card, "border border-slate-200 bg-white shadow-2xl")}
-            style={{ transform: "translate(-50%, -50%) translate3d(0px, 10px, -30px)" }}
-          >
-            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-500">Bu hafta</p>
-            <p className="mt-2 font-heading text-base font-semibold text-slate-900">Servis yoğunluğu</p>
-            <div className="mt-6 flex h-20 items-end gap-2">
-              {[40, 65, 50, 85, 60, 95, 75].map((h, i) => (
-                <div
-                  key={i}
-                  className={cn("flex-1 rounded-t-md", i === 5 ? "bg-brand-500" : "bg-slate-200")}
-                  style={{ height: `${h}%` }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Ön kart: marka rengi, servis emri */}
-          <div
-            className={cn(card, "bg-gradient-to-br from-brand-400 to-brand-600 text-white shadow-2xl shadow-brand-600/40")}
-            style={{ transform: "translate(-50%, -50%) translate3d(70px, 80px, 70px)" }}
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-white/80">Servis emri</p>
-              <span className="rounded-full bg-white/20 px-2 py-0.5 text-[11px] font-medium">Tamirde</span>
-            </div>
-            <p className="mt-2 font-heading text-2xl font-bold tracking-tight">#1042</p>
-            <p className="text-sm text-white/85">Motosiklet kaydı açık</p>
-            <div className="mt-6 flex gap-1.5">
-              {[0, 1, 2, 3].map((i) => (
-                <span key={i} className={cn("h-1.5 flex-1 rounded-full", i < 3 ? "bg-white" : "bg-white/35")} />
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 function SectionHeading({ eyebrow, title, description }) {
   return (
     <div className="mx-auto max-w-2xl text-center">
-      {eyebrow && <p className="text-xs font-semibold uppercase tracking-wider text-brand-600">{eyebrow}</p>}
-      <h2 className="font-heading mt-3 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">{title}</h2>
-      {description && <p className="mt-4 text-base text-slate-500">{description}</p>}
+      {eyebrow && (
+        <p className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">
+          <span aria-hidden="true" className="h-px w-6 bg-cyan-300/70" />{eyebrow}<span aria-hidden="true" className="h-px w-6 bg-cyan-300/70" />
+        </p>
+      )}
+      <h2 className="font-heading mt-4 text-3xl font-bold tracking-tight text-white sm:text-5xl">{title}</h2>
+      {description && <p className="mt-4 text-base leading-relaxed text-slate-400">{description}</p>}
     </div>
+  );
+}
+
+function FeatureCard({ f }) {
+  const Icon = ICONS[f.icon] || Wrench;
+  return (
+    <Tilt3D max={8} lift={6} className="emt-glass-dark group h-full rounded-2xl p-6 transition-shadow duration-300 hover:shadow-[0_0_40px_-10px_rgba(34,211,238,0.45)]">
+      <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg shadow-orange-600/30">
+        <Icon className="h-5 w-5" />
+      </span>
+      <h3 className="font-heading mt-5 text-base font-semibold text-white">{f.title}</h3>
+      <p className="mt-2 text-sm leading-relaxed text-slate-400">{f.text}</p>
+    </Tilt3D>
   );
 }
 
 function PlanCard({ plan, wa }) {
   const hl = plan.highlight;
   return (
-    <Tilt className={cn("relative h-full", hl && "lg:-mt-4 lg:mb-4")}>
+    <Tilt3D max={6} lift={6} className={cn("relative h-full", hl && "lg:-mt-4 lg:mb-4")}>
       <div className={cn(
-        "flex h-full flex-col rounded-2xl border p-6 shadow-card",
-        hl ? "border-brand-400 bg-gradient-to-b from-brand-50 to-white ring-2 ring-brand-400/40" : "border-slate-200 bg-white",
+        "flex h-full flex-col rounded-2xl p-6",
+        hl ? "emt-holo !overflow-visible border-cyan-300/50" : "emt-glass-dark",
       )}>
         {hl && (
-          <span className="absolute -top-3 left-6 rounded-full bg-brand-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow">
+          <span className="absolute -top-3 left-6 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-lg shadow-orange-600/40">
             En popüler
           </span>
         )}
-        <p className="text-sm font-semibold text-slate-700">{plan.name}</p>
+        <p className="text-sm font-semibold text-slate-300">{plan.name}</p>
         <p className="mt-3 flex items-baseline gap-1.5">
-          <span className="font-heading text-3xl font-bold tracking-tight text-slate-900">{plan.price_text}</span>
-          {plan.period && <span className="text-xs text-slate-500">{plan.period}</span>}
+          <span className="font-heading text-3xl font-bold tracking-tight text-white">{plan.price_text}</span>
+          {plan.period && <span className="text-xs text-slate-400">{plan.period}</span>}
         </p>
         <ul className="mt-6 flex-1 space-y-2.5">
           {plan.features.map((f) => (
-            <li key={f} className="flex items-start gap-2 text-sm text-slate-600">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+            <li key={f} className="flex items-start gap-2 text-sm text-slate-300">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-cyan-300" />
               <span>{f}</span>
             </li>
           ))}
@@ -172,14 +101,16 @@ function PlanCard({ plan, wa }) {
           href={waLink(wa, `Merhaba, ${plan.name} planı hakkında bilgi almak istiyorum.`)}
           target="_blank" rel="noreferrer"
           className={cn(
-            "mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-colors",
-            hl ? "bg-brand-600 text-white hover:bg-brand-700" : "bg-slate-900 text-white hover:bg-slate-800",
+            "mt-8 inline-flex h-11 items-center justify-center gap-2 rounded-lg text-sm font-semibold transition-all duration-200",
+            hl
+              ? "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-600/30 hover:brightness-110"
+              : "border border-white/15 bg-white/5 text-white hover:border-cyan-300/50 hover:bg-white/10",
           )}
         >
           İletişime Geç <span aria-hidden>›</span>
         </a>
       </div>
-    </Tilt>
+    </Tilt3D>
   );
 }
 
@@ -194,94 +125,80 @@ export default function Landing() {
     return () => { cancelled = true; };
   }, []);
 
-  if (!c) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
+  if (!c) return <div className="emt-night flex min-h-screen items-center justify-center text-slate-400">Yükleniyor…</div>;
 
   const wa = c.whatsapp;
   const demo = waLink(wa, "Merhaba, E-Moto Tamir demo talep ediyorum.");
   const year = new Date().getFullYear();
 
   return (
-    <div className="min-h-screen bg-white text-slate-900">
-      <style>{FLOAT_CSS}</style>
-
-      <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur">
+    <div className="emt-night min-h-screen">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-[#05070c]/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 text-white">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 text-white shadow-lg shadow-orange-600/30">
               <Wrench className="h-5 w-5" />
             </span>
             <span className="min-w-0">
-              <span className="font-heading block text-sm font-bold leading-tight">E-MOTO TAMİR</span>
-              <span className="block truncate text-[10px] uppercase tracking-wider text-slate-500">Servis yönetim sistemi</span>
+              <span className="font-heading block text-sm font-bold leading-tight text-white">E-MOTO TAMİR</span>
+              <span className="block truncate text-[10px] uppercase tracking-[0.18em] text-slate-400">Servis yönetim sistemi</span>
             </span>
           </Link>
           <nav className="flex items-center gap-1 text-sm sm:gap-4">
-            <a href="#features" className="hidden rounded-md px-2 py-1.5 text-slate-600 hover:text-slate-900 sm:inline">Özellikler</a>
-            <a href="#pricing" className="hidden rounded-md px-2 py-1.5 text-slate-600 hover:text-slate-900 sm:inline">Fiyat</a>
-            <a href={demo} target="_blank" rel="noreferrer" className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-slate-600 hover:text-slate-900 md:inline-flex">
+            <a href="#features" className="hidden rounded-md px-2 py-1.5 text-slate-300 hover:text-white sm:inline">Özellikler</a>
+            <a href="#pricing" className="hidden rounded-md px-2 py-1.5 text-slate-300 hover:text-white sm:inline">Fiyat</a>
+            <a href={demo} target="_blank" rel="noreferrer" className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-slate-300 hover:text-white md:inline-flex">
               <MessageCircle className="h-4 w-4" /> İletişim
             </a>
-            <Link to="/login" className="rounded-lg border border-slate-300 px-3.5 py-1.5 font-medium text-slate-800 hover:bg-slate-50">
+            <Link to="/login" className="rounded-lg border border-white/15 bg-white/5 px-3.5 py-1.5 font-medium text-white transition-colors hover:border-cyan-300/50 hover:bg-white/10">
               Giriş Yap
             </Link>
           </nav>
         </div>
       </header>
 
-      <section className="relative overflow-hidden">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:py-24">
+      <section className="relative">
+        <div className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-16 sm:px-6 lg:grid-cols-2 lg:gap-8 lg:py-24">
           <div>
             {c.hero.badge && (
-              <span className="inline-block rounded-full bg-brand-50 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-brand-700">
+              <span className="inline-flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/5 px-3 py-1 text-xs font-semibold uppercase tracking-[0.15em] text-cyan-200">
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_#67e8f9]" />
                 {c.hero.badge}
               </span>
             )}
-            <h1 className="font-heading mt-5 text-4xl font-bold leading-[1.05] tracking-tight text-slate-900 sm:text-6xl">
+            <h1 className="font-heading mt-6 text-4xl font-extrabold leading-[1.02] tracking-tight text-white sm:text-6xl">
               {c.hero.title}
             </h1>
-            <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">{c.hero.description}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-slate-400 sm:text-lg">{c.hero.description}</p>
+            <div className="mt-9 flex flex-wrap gap-3">
               <a href={demo} target="_blank" rel="noreferrer"
-                 className="inline-flex h-12 items-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
+                 className="inline-flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 text-sm font-semibold text-white shadow-lg shadow-orange-600/35 transition-all hover:brightness-110">
                 <MessageCircle className="h-4 w-4" /> WhatsApp ile Demo İste
               </a>
-              <Link to="/login" className="inline-flex h-12 items-center rounded-lg border border-slate-300 px-5 text-sm font-semibold text-slate-800 hover:bg-slate-50">
+              <Link to="/login" className="inline-flex h-12 items-center rounded-lg border border-white/15 bg-white/5 px-6 text-sm font-semibold text-white transition-colors hover:border-cyan-300/50 hover:bg-white/10">
                 Zaten Hesabım Var
               </Link>
             </div>
             {c.phone && (
-              <p className="mt-6 flex items-center gap-2 text-sm text-slate-500">
-                <Phone className="h-4 w-4" /> {c.phone}
+              <p className="mt-7 flex items-center gap-2 text-sm text-slate-400">
+                <Phone className="h-4 w-4 text-cyan-300" /> {c.phone}
               </p>
             )}
           </div>
-          <HeroStage />
+          <HoloMotorcycle />
         </div>
       </section>
 
-      <section id="features" className="scroll-mt-20 border-t border-slate-200 bg-slate-50/70 py-20">
+      <section id="features" className="scroll-mt-20 border-t border-white/10 py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading {...c.features_heading} />
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {c.features.map((f) => {
-              const Icon = ICONS[f.icon] || Wrench;
-              return (
-                <Tilt key={f.title} className="h-full">
-                  <div className="h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                      <Icon className="h-5 w-5" />
-                    </span>
-                    <h3 className="font-heading mt-5 text-base font-semibold text-slate-900">{f.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500">{f.text}</p>
-                  </div>
-                </Tilt>
-              );
-            })}
+            {c.features.map((f) => <FeatureCard key={f.title} f={f} />)}
           </div>
         </div>
       </section>
 
-      <section id="pricing" className="scroll-mt-20 py-20">
+      <section id="pricing" className="scroll-mt-20 py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading {...c.pricing_heading} />
           <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -290,26 +207,25 @@ export default function Landing() {
         </div>
       </section>
 
-      <section className="relative overflow-hidden bg-slate-900 py-20 text-center">
-        <div className="absolute inset-0 opacity-40" aria-hidden="true"
-             style={{ background: "radial-gradient(circle at 50% 0%, rgba(249,115,22,0.35), transparent 60%)" }} />
-        <div className="relative mx-auto max-w-2xl px-4">
-          <h2 className="font-heading text-3xl font-bold tracking-tight text-white sm:text-4xl">{c.cta.title}</h2>
-          <p className="mt-4 text-slate-300">{c.cta.text}</p>
+      <section className="relative overflow-hidden py-24">
+        <div className="emt-glass-dark relative mx-auto max-w-3xl rounded-3xl px-6 py-14 text-center sm:px-12">
+          <div aria-hidden="true" className="pointer-events-none absolute -top-24 left-1/2 h-48 w-[80%] -translate-x-1/2 rounded-full bg-orange-500/30 blur-3xl" />
+          <h2 className="font-heading relative text-3xl font-bold tracking-tight text-white sm:text-4xl">{c.cta.title}</h2>
+          <p className="relative mt-4 text-slate-300">{c.cta.text}</p>
           <a href={demo} target="_blank" rel="noreferrer"
-             className="mt-8 inline-flex h-12 items-center gap-2 rounded-lg bg-emerald-600 px-6 text-sm font-semibold text-white hover:bg-emerald-500">
+             className="relative mt-8 inline-flex h-12 items-center gap-2 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-7 text-sm font-semibold text-white shadow-lg shadow-orange-600/35 transition-all hover:brightness-110">
             <MessageCircle className="h-4 w-4" /> WhatsApp ile Demo İste
           </a>
-          {c.phone && <p className="mt-6 text-xs tracking-wider text-slate-400">{c.phone}</p>}
+          {c.phone && <p className="relative mt-6 text-xs tracking-wider text-slate-400">{c.phone}</p>}
         </div>
       </section>
 
-      <footer className="border-t border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+      <footer className="border-t border-white/10">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-slate-400 sm:flex-row sm:items-center sm:justify-between sm:px-6">
           <p>©{year} E-Moto Tamir · Tüm hakları saklıdır.</p>
           <div className="flex gap-5">
-            <a href={demo} target="_blank" rel="noreferrer" className="hover:text-slate-900">İletişim</a>
-            <Link to="/login" className="hover:text-slate-900">Giriş Yap</Link>
+            <a href={demo} target="_blank" rel="noreferrer" className="hover:text-white">İletişim</a>
+            <Link to="/login" className="hover:text-white">Giriş Yap</Link>
           </div>
         </div>
       </footer>

@@ -152,3 +152,127 @@ main div:has(> table) {
   max-width: 100%;
   -webkit-overflow-scrolling: touch;
 }
+
+/* ==========================================================================
+   Gece teması: ana sayfa ve giriş ekranı (koyu zemin, marka ışıkları)
+   ========================================================================== */
+@keyframes emt-night-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-2%, 2%, 0) scale(1.06); }
+}
+@keyframes emt-scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  15% { opacity: 0.8; }
+  85% { opacity: 0.8; }
+  100% { transform: translateY(420%); opacity: 0; }
+}
+.emt-night {
+  position: relative;
+  isolation: isolate;
+  background-color: #05070c;
+  color: #e2e8f0;
+  overflow-x: hidden;
+}
+.emt-night::before {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 38% at 14% 8%, rgba(249, 115, 22, 0.22), transparent 70%),
+    radial-gradient(40% 36% at 92% 14%, rgba(34, 211, 238, 0.16), transparent 70%),
+    radial-gradient(50% 40% at 50% 110%, rgba(249, 115, 22, 0.14), transparent 70%);
+  animation: emt-night-drift 22s ease-in-out infinite;
+}
+.emt-night::after {
+  /* İnce ızgara: HUD / mühendislik hissi */
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, black 30%, transparent 75%);
+}
+
+/* Cam panel (koyu): üstte ince ışık çizgisi, derin gölge */
+.emt-glass-dark {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.02));
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 40px 80px -40px rgba(0, 0, 0, 0.85);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+}
+
+/* HUD paneli: cyan çerçeve, hafif tarama çizgisi */
+.emt-holo {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(160deg, rgba(8, 47, 73, 0.55), rgba(2, 6, 23, 0.72));
+  border: 1px solid rgba(34, 211, 238, 0.32);
+  box-shadow:
+    inset 0 0 28px rgba(34, 211, 238, 0.08),
+    0 0 40px -12px rgba(34, 211, 238, 0.55);
+  -webkit-backdrop-filter: blur(12px) saturate(150%);
+  backdrop-filter: blur(12px) saturate(150%);
+}
+.emt-holo::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 36px;
+  background: linear-gradient(180deg, transparent, rgba(34, 211, 238, 0.14), transparent);
+  animation: emt-scan 6s linear infinite;
+  pointer-events: none;
+}
+
+/* Odak: marka rengiyle aydınlanan alan */
+.emt-field {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+}
+.emt-field:focus,
+.emt-field:focus-visible {
+  outline: none;
+  border-color: rgb(var(--brand-rgb));
+  box-shadow: 0 0 0 1px rgb(var(--brand-rgb)), 0 0 22px -2px rgb(var(--brand-rgb) / 0.55);
+}
+
+/* Etkileşimli tablo satırı vurgusu */
+main table tbody tr {
+  transition: background-color 0.15s ease;
+}
+main table tbody tr:hover {
+  background-color: rgb(var(--brand-rgb) / 0.06);
+}
+
+/* Yazdırma: 3B ve parıltı efektleri devre dışı */
+@media print {
+  .emt-night, .emt-night::before, .emt-night::after,
+  .emt-glass-dark, .emt-holo, .emt-float, .emt-tilt {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: none !important;
+    animation: none !important;
+    transform: none !important;
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .emt-glare, .emt-holo::after { display: none !important; }
+}
+
+/* Hareket azaltma tercihi: tüm sürekli animasyonlar durur */
+@media (prefers-reduced-motion: reduce) {
+  .emt-night::before, .emt-holo::after, .emt-float, .emt-scan { animation: none !important; }
+  .emt-tilt { transform: none !important; transition: none !important; }
+  main table tbody tr { transition: none; }
+}
