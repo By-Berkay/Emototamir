@@ -5,6 +5,7 @@ import {
   BellRing, BarChart3, Wrench,
 } from "lucide-react";
 import api from "../lib/api";
+import { MotorcycleSvg } from "../components/DashboardHero";
 import { cn } from "../lib/utils";
 
 const ICONS = { ClipboardList, Bike, Users, BellRing, FileText, BarChart3, Building2, ShieldCheck, Wrench };
@@ -21,19 +22,19 @@ const FALLBACK = {
   features_heading: { eyebrow: "NELER YAPABİLİRSİNİZ?", title: "Servisin tamamı, tek yerde.", description: "Her modülü gerçek servis ihtiyacına göre — kağıt formlarınızı ve WhatsApp mesajlarınızı akıllı hale getirerek seçebilirsiniz." },
   features: [
     { icon: "ClipboardList", title: "İş Emri ve Kabul Formu", text: "Kabul-Teslim PDF, imzalı, tek tıklamayla WhatsApp'tan oluşur." },
-    { icon: "Bike", title: "Mürettebat Kartı", text: "Marka, model, plaka, KM, arıza haritaları, servis geçmişi hepsi bir arada." },
+    { icon: "Bike", title: "Motosiklet Kartı", text: "Motosiklet tipi, marka, model, plaka, KM, arıza haritaları ve servis geçmişi bir arada." },
     { icon: "Users", title: "Müşteri Cari", text: "VIP/Borçlu/Sorunlu etiketleri, notlar, tahsilat ve bakiye takibi." },
     { icon: "BellRing", title: "Otomatik Hatırlatma", text: "Her sabah saat 09:00'da vadesi dolan bakımları WhatsApp bağlantısıyla." },
     { icon: "FileText", title: "Fiyat Teklifi", text: "Müşteri linki onaylansın, teklifler otomatik iş emrine dönüşsün." },
     { icon: "BarChart3", title: "Tahsilat ve Rapor", text: "Ciro, alacak, borçlu servis raporları — anlık kontrol paneli." },
     { icon: "Building2", title: "Çok Firmalı SaaS", text: "Süper Admin panelinden tema, PDF şablonu, içerik yönetimi." },
-    { icon: "ShieldCheck", title: "Denetim ve Silme", text: "Kim ne zaman değiştirilmez + 30 gün çöp kutusu geri yükleme." },
+    { icon: "ShieldCheck", title: "Denetim ve Silme", text: "Değişiklik geçmişi ve 30 günlük çöp kutusundan geri yükleme." },
   ],
   pricing_heading: { eyebrow: "FİYATLANDIRMA", title: "Servisiniz için uygun planı seçin.", description: "14 gün ücretsiz deneme, iptal etmeniz kolay — kredi kartı gerektirmez." },
   plans: [
     { id: "deneme", name: "Deneme", price_text: "Ücretsiz", period: "14 gün", highlight: false, features: ["Tüm özellikler", "1 kullanıcı", "50 kayıt"] },
     { id: "temel", name: "Temel", price_text: "₺ 2.499", period: "/ ay", highlight: false, features: ["3 kullanıcı", "Sınırsız müşteri/motosiklet", "PDF + WhatsApp", "Kontrol Paneli"] },
-    { id: "profesyonel", name: "Profesyonel", price_text: "₺ 3.999", period: "/ ay", highlight: true, features: ["10 kullanıcı", "Fiyat Teklifi + Onay bağlantısı", "Cronotou", "Öncelikli destek"] },
+    { id: "profesyonel", name: "Profesyonel", price_text: "₺ 3.999", period: "/ ay", highlight: true, features: ["10 kullanıcı", "Fiyat Teklifi + Onay bağlantısı", "Otomatik bakım hatırlatmaları", "Öncelikli destek"] },
     { id: "kurumsal", name: "Kurumsal", price_text: "Teklif", period: "/ yıllık", highlight: false, features: ["Sınırsız kullanıcı", "Çoklu firma", "SLA + eğitim", "API'ler"] },
   ],
   cta: { title: "Servisinizi bugün dijitalleştirin.", text: "14 gün ücretsiz deneme + kurulum ve eğitim sizin için biz yapıyoruz." },
@@ -127,6 +128,9 @@ function HeroStage() {
           </div>
         </div>
       </div>
+      <div className="pointer-events-none absolute -bottom-3 -left-2 z-10 h-32 w-48 drop-shadow-[0_18px_22px_rgba(15,23,42,0.25)] sm:-left-5 sm:h-40 sm:w-60">
+        <MotorcycleSvg />
+      </div>
     </div>
   );
 }
@@ -212,7 +216,7 @@ export default function Landing() {
             </span>
             <span className="min-w-0">
               <span className="font-heading block text-sm font-bold leading-tight">E-MOTO TAMİR</span>
-              <span className="block truncate text-[10px] uppercase tracking-wider text-slate-500">Servis yönetim sistemi</span>
+              <span className="block truncate text-[10px] uppercase tracking-wider text-slate-500">Motosiklet servis yönetimi</span>
             </span>
           </Link>
           <nav className="flex items-center gap-1 text-sm sm:gap-4">
@@ -240,6 +244,9 @@ export default function Landing() {
               {c.hero.title}
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">{c.hero.description}</p>
+            <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700">
+              <Bike className="h-4 w-4" aria-hidden="true" /> Yalnızca motosiklet, scooter ve iki tekerlekli servisler için
+            </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href={demo} target="_blank" rel="noreferrer"
                  className="inline-flex h-12 items-center gap-2 rounded-lg bg-emerald-600 px-5 text-sm font-semibold text-white shadow-lg shadow-emerald-600/25 hover:bg-emerald-700">
