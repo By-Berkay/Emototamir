@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { NavLink, Outlet, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import {
-  LayoutDashboard, Users, Bike, Wrench, ClipboardList, ClipboardCheck, Wallet, Receipt,
+  LayoutDashboard, Users, Wrench, ClipboardList, ClipboardCheck, Wallet, Receipt,
   BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText,
   Trash2, KeyRound, Plus, UserRound,
 } from "lucide-react";
 import { Input } from "./ui/input";
+import MotoMark from "./MotoMark";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Lock, LockOpen } from "lucide-react";
 
@@ -26,7 +27,7 @@ const NAV_TENANT = [
     items: [
       { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard, end: true },
       { to: "/customers", label: "Müşteriler", icon: Users },
-      { to: "/motorcycles", label: "Motosikletler", icon: Bike },
+      { to: "/motorcycles", label: "Motosikletler", icon: MotoMark },
     ],
   },
   {
@@ -189,7 +190,7 @@ export default function Layout() {
         </nav>
 
         <div className="mx-3 mb-1 hidden items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-r from-brand-500/15 to-transparent px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300 lg:flex">
-          <Bike className="h-4 w-4 text-brand-400" aria-hidden="true" />
+          <MotoMark className="h-4 w-4 text-brand-400" />
           Sadece motosiklet servisi
         </div>
         <div className="m-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
