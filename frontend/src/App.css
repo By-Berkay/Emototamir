@@ -18,3 +18,61 @@ table td,
 table th {
   vertical-align: middle;
 }
+
+/* E-Moto dimensional interface — progressive enhancement, no external 3D assets. */
+:root { --emt-surface-shadow: 0 16px 40px -24px rgba(15,23,42,.38); }
+.emt-aurora { position: relative; isolation: isolate; }
+.emt-aurora::before {
+  content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+  background: radial-gradient(circle at 88% 14%, rgb(var(--brand-rgb) / .10), transparent 28%),
+              radial-gradient(circle at 24% 78%, rgba(56,189,248,.09), transparent 35%);
+}
+.emt-aurora main { perspective: 1400px; }
+.emt-aurora main [class*="rounded-xl"].border,
+.emt-aurora main [class*="rounded-2xl"].border {
+  position: relative;
+  box-shadow: var(--emt-surface-shadow), inset 0 1px 0 rgba(255,255,255,.82);
+  transition: transform .24s ease, box-shadow .24s ease, border-color .24s ease;
+  transform: translateZ(0);
+}
+@media (hover: hover) and (pointer: fine) {
+  .emt-aurora main [class*="rounded-xl"].border:hover,
+  .emt-aurora main [class*="rounded-2xl"].border:hover {
+    transform: translate3d(0,-3px,12px);
+    box-shadow: 0 24px 54px -28px rgba(15,23,42,.4), 0 0 0 1px rgb(var(--brand-rgb) / .12);
+  }
+}
+.emt-aurora main h1, .emt-aurora main h2 {
+  letter-spacing: -.035em;
+  text-wrap: balance;
+}
+.emt-aurora main button, .emt-aurora main a {
+  -webkit-tap-highlight-color: transparent;
+}
+.emt-aurora main button:active:not(:disabled) { transform: translateY(1px); }
+.emt-aurora main table { font-variant-numeric: tabular-nums; }
+.emt-aurora main thead { background: rgba(241,245,249,.65); }
+.emt-aurora main tbody tr { transition: background-color .18s ease; }
+.emt-aurora main tbody tr:hover { background-color: rgb(var(--brand-rgb) / .045); }
+.emt-aurora main input:not([type="checkbox"]):not([type="radio"]),
+.emt-aurora main textarea,
+.emt-aurora main select {
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+}
+.emt-aurora main input:focus-visible,
+.emt-aurora main textarea:focus-visible,
+.emt-aurora main select:focus-visible {
+  box-shadow: 0 0 0 3px rgb(var(--brand-rgb) / .13);
+}
+@media (prefers-reduced-motion: reduce) {
+  .emt-aurora main [class*="rounded-xl"].border,
+  .emt-aurora main [class*="rounded-2xl"].border,
+  .emt-aurora main tbody tr { transition: none; }
+  .emt-aurora main [class*="rounded-xl"].border:hover,
+  .emt-aurora main [class*="rounded-2xl"].border:hover { transform: none; }
+}
+@media print {
+  .emt-aurora::before { display: none; }
+  .emt-aurora main [class*="rounded-xl"].border,
+  .emt-aurora main [class*="rounded-2xl"].border { box-shadow: none !important; transform: none !important; }
+}
