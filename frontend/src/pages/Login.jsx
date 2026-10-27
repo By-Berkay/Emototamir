@@ -5,6 +5,7 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Wrench, ClipboardCheck, Wallet, MessageCircle } from "lucide-react";
+import { MotorcycleSvg } from "../components/DashboardHero";
 import { toast } from "sonner";
 
 const WHATSAPP_URL = `https://wa.me/447378552959?text=${encodeURIComponent(
@@ -69,24 +70,31 @@ export default function Login() {
   return (
     <div className="emt-aurora min-h-screen lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       {/* Marka paneli (yalnızca masaüstü) */}
-      <aside className="hidden flex-col justify-between bg-slate-900 p-12 text-white lg:flex" data-testid="login-brand-panel">
+      <aside className="relative hidden flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-slate-800 p-10 text-white lg:flex xl:p-12" data-testid="login-brand-panel">
         <div className="flex items-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-brand-500">
             <Wrench className="h-5 w-5 text-white" />
           </span>
           <div>
             <div className="font-heading text-lg font-bold tracking-tight">E-MOTO TAMİR</div>
-            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Servis yönetim sistemi</div>
+            <div className="text-[11px] uppercase tracking-[0.2em] text-slate-400">Motosiklet servis yazılımı</div>
           </div>
         </div>
 
-        <div className="max-w-lg">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">Motosiklet servisleri için</p>
+        <div className="relative z-10 max-w-lg">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-brand-400">Yalnızca motosiklet servisleri için</p>
           <h1 className="mt-4 font-heading text-4xl font-bold leading-[1.1] tracking-tight xl:text-5xl">
-            Servis operasyonunuzu <span className="text-brand-400">tek ekrandan</span> yönetin.
+            Motosiklet servisinizi <span className="text-brand-400">tek ekrandan</span> yönetin.
           </h1>
 
-          <ul className="mt-10 space-y-6">
+          <div className="relative mt-5 h-40 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-r from-white/[0.04] to-brand-500/10" aria-hidden="true">
+            <div className="absolute inset-x-12 bottom-1 h-12 rounded-[50%] border border-brand-400/25 bg-brand-500/10 blur-sm" />
+            <div className="emt-float absolute inset-x-10 bottom-0 top-0">
+              <MotorcycleSvg />
+            </div>
+            <span className="absolute right-4 top-4 rounded-full border border-white/10 bg-black/20 px-3 py-1 text-[10px] font-semibold tracking-[0.18em] text-slate-300">MOTO / 3D</span>
+          </div>
+          <ul className="mt-6 space-y-5">
             {FEATURES.map(({ icon: Icon, title, text }) => (
               <li key={title} className="flex gap-4">
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white/5 ring-1 ring-white/10">
@@ -125,7 +133,7 @@ export default function Login() {
             </span>
             <div>
               <div className="font-heading font-bold tracking-tight text-slate-900">E-MOTO TAMİR</div>
-              <div className="text-xs text-slate-500">Servis yönetim sistemi</div>
+              <div className="text-xs text-slate-500">Motosiklet servis yazılımı</div>
             </div>
           </div>
 
@@ -133,7 +141,7 @@ export default function Login() {
           <span aria-hidden="true" className="absolute inset-x-0 top-0 h-1 bg-brand-500" />
           <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-brand-600">Hoş geldiniz</p>
           <h2 className="font-heading text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">Giriş Yap</h2>
-          <p className="mt-1 text-sm text-slate-500">Hesabınıza erişmek için bilgilerinizi girin.</p>
+          <p className="mt-1 text-sm text-slate-500">Motosiklet servis yönetim panelinize güvenle giriş yapın.</p>
 
           <form onSubmit={submit} className="mt-8 space-y-5">
             <div className="space-y-1.5">
