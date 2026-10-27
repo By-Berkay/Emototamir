@@ -30,6 +30,7 @@ import QuoteEdit from "./pages/QuoteEdit";
 import QuotePublic from "./pages/QuotePublic";
 import Trash from "./pages/Trash";
 import ChangePassword from "./pages/ChangePassword";
+import Profile from "./pages/Profile";
 import Inspections from "./pages/Inspections";
 import InspectionEdit from "./pages/InspectionEdit";
 import InspectionDetail from "./pages/InspectionDetail";
@@ -93,6 +94,7 @@ export default function App() {
             <Route path="/reminders" element={<Reminders />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/account/password" element={<ChangePassword />} />
+            <Route path="/profil" element={<Profile />} />
             <Route path="/inspections" element={<Inspections />} />
             <Route path="/inspections/new" element={<InspectionEdit />} />
             <Route path="/inspections/:id" element={<InspectionDetail />} />

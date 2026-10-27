@@ -35,6 +35,7 @@ export default function Settings() {
   const { user, refresh } = useAuth();
   const isAdmin = user?.role === "admin";
   const [tenant, setTenant] = useState(null);
+  const [profile, setProfile] = useState(null);
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
   const [services, setServices] = useState([]);
@@ -61,6 +62,8 @@ export default function Settings() {
     ]);
     setTenant(t.data); setUsers(u.data); setProducts(p.data); setServices(s.data);
     setFaultZones(t.data.custom_fault_zones || []);
+    // Kişisel profildeki firma bağlantıları firma alanlarını kilitler
+    api.get("/profile").then(({ data }) => setProfile(data)).catch(() => setProfile(null));
   };
   useEffect(() => { load().catch(() => toast.error("Ayarlar yüklenemedi")); /* eslint-disable-next-line */ }, [user]);
 
@@ -160,6 +163,18 @@ export default function Settings() {
         </TabsList>
 
         <TabsContent value="firma">
+          {(profile?.link_phone || profile?.link_email || profile?.link_address) && (
+            <div className="mb-4 flex flex-col gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 sm:flex-row sm:items-center sm:justify-between" role="note" data-testid="firm-lock-warning">
+              <p>
+                Bazı firma bilgileri kişisel profilinizle bağlı ve kilitli:{" "}
+                <span className="font-medium">
+                  {[profile.link_phone && "telefon", profile.link_email && "e-posta", profile.link_address && "adres"].filter(Boolean).join(", ")}
+                </span>
+                . Değiştirmek için önce bağlantıyı kaldırın.
+              </p>
+              <Link to="/profil" className="shrink-0 font-medium text-amber-900 underline">Profilime git</Link>
+            </div>
+          )}
           <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2 flex items-center gap-4 pb-4 border-b">
               {tenant.logo_path ? <AuthedImage path={tenant.logo_path} alt="logo" className="h-16 w-16 object-contain border rounded p-1" /> :
@@ -169,11 +184,11 @@ export default function Settings() {
             </div>
             <div><Label>Firma Adı *</Label><Input value={tenant.name || ""} onChange={(e)=>setTenant({...tenant, name:e.target.value})} disabled={!isAdmin} /></div>
             <div><Label>Alt Başlık</Label><Input value={tenant.subtitle || ""} onChange={(e)=>setTenant({...tenant, subtitle:e.target.value})} disabled={!isAdmin} /></div>
-            <div className="md:col-span-2"><Label>Adres</Label><Textarea rows={2} value={tenant.address || ""} onChange={(e)=>setTenant({...tenant, address:e.target.value})} disabled={!isAdmin} /></div>
-            <div><Label>İl</Label><Input value={tenant.city || ""} onChange={(e)=>setTenant({...tenant, city:e.target.value})} disabled={!isAdmin} /></div>
-            <div><Label>İlçe</Label><Input value={tenant.district || ""} onChange={(e)=>setTenant({...tenant, district:e.target.value})} disabled={!isAdmin} /></div>
-            <div><Label>GSM/Telefon</Label><Input value={tenant.phone || ""} onChange={(e)=>setTenant({...tenant, phone:e.target.value})} disabled={!isAdmin} /></div>
-            <div><Label>E-posta</Label><Input value={tenant.email || ""} onChange={(e)=>setTenant({...tenant, email:e.target.value})} disabled={!isAdmin} /></div>
+            <div className="md:col-span-2"><Label>Adres {profile?.link_address && <span className="ml-1 text-xs text-amber-700">(profilinizle bağlı)</span>}</Label><Textarea rows={2} value={tenant.address || ""} onChange={(e)=>setTenant({...tenant, address:e.target.value})} disabled={!isAdmin || !!profile?.link_address} /></div>
+            <div><Label>İl</Label><Input value={tenant.city || ""} onChange={(e)=>setTenant({...tenant, city:e.target.value})} disabled={!isAdmin || !!profile?.link_address} /></div>
+            <div><Label>İlçe</Label><Input value={tenant.district || ""} onChange={(e)=>setTenant({...tenant, district:e.target.value})} disabled={!isAdmin || !!profile?.link_address} /></div>
+            <div><Label>GSM/Telefon {profile?.link_phone && <span className="ml-1 text-xs text-amber-700">(profilinizle bağlı)</span>}</Label><Input value={tenant.phone || ""} onChange={(e)=>setTenant({...tenant, phone:e.target.value})} disabled={!isAdmin || !!profile?.link_phone} /></div>
+            <div><Label>E-posta {profile?.link_email && <span className="ml-1 text-xs text-amber-700">(profilinizle bağlı)</span>}</Label><Input value={tenant.email || ""} onChange={(e)=>setTenant({...tenant, email:e.target.value})} disabled={!isAdmin || !!profile?.link_email} /></div>
             <div><Label>Vergi No</Label><Input value={tenant.tax_no || ""} onChange={(e)=>setTenant({...tenant, tax_no:e.target.value})} disabled={!isAdmin} /></div>
             <div className="md:col-span-2 pt-4 border-t"><Label className="text-slate-500 text-sm uppercase mb-2 block">Banka Bilgileri</Label></div>
             <div><Label>Banka</Label><Input value={tenant.bank_name || ""} onChange={(e)=>setTenant({...tenant, bank_name:e.target.value})} disabled={!isAdmin} /></div>

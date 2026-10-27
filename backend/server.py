@@ -267,6 +267,26 @@ class ChangePasswordIn(BaseModel):
     current_password: str
     new_password: str
 
+class ProfileIn(BaseModel):
+    name: str
+    phone: Optional[str] = ""
+    contact_email: Optional[str] = ""
+    address: Optional[str] = ""
+    city: Optional[str] = ""
+    district: Optional[str] = ""
+    # Firma bilgisiyle bağlantı: işaretliyse ilgili alan firma kaydından okunur ve firma alanı kilitlenir
+    link_phone: bool = False
+    link_email: bool = False
+    link_address: bool = False
+
+# Kişisel bağlantı anahtarı → (kişisel alanlar, firma alanları)
+PROFILE_LINKS = {
+    "phone": (["phone"], ["phone"]),
+    "email": (["contact_email"], ["email"]),
+    "address": (["address", "city", "district"], ["address", "city", "district"]),
+}
+PROFILE_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
 class GlobalApplyIn(BaseModel):
     fields: Dict[str, Any]  # subset of tenant fields
     tenant_ids: Optional[List[str]] = None  # None = all
@@ -508,6 +528,108 @@ async def change_password(inp: ChangePasswordIn, user=Depends(get_current_user))
         "action": "user.password_change", "entity_id": user["id"], "at": now_iso(),
     })
     return {"ok": True}
+
+# ---------- Kişisel profil ----------
+def _profile_view(doc: Dict[str, Any], tenant: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+    """Profil yanıtı. Firma ile bağlı alanlar firma kaydındaki güncel değerden okunur."""
+    view = {
+        "id": doc["id"], "name": doc.get("name", ""), "email": doc.get("email", ""),
+        "role": doc.get("role"), "is_super": doc.get("role") == "super_admin",
+        "has_firm": bool(tenant) and doc.get("role") != "super_admin",
+        "phone": doc.get("phone", "") or "", "contact_email": doc.get("contact_email", "") or "",
+        "address": doc.get("address", "") or "", "city": doc.get("city", "") or "",
+        "district": doc.get("district", "") or "",
+    }
+    for key in PROFILE_LINKS:
+        view[f"link_{key}"] = bool(doc.get(f"link_{key}")) and view["has_firm"]
+    if view["has_firm"]:
+        for key, (personal, firm) in PROFILE_LINKS.items():
+            if view[f"link_{key}"]:
+                for p, f in zip(personal, firm):
+                    view[p] = tenant.get(f, "") or ""
+        view["firm"] = {
+            "phone": tenant.get("phone", "") or "", "email": tenant.get("email", "") or "",
+            "address": tenant.get("address", "") or "", "city": tenant.get("city", "") or "",
+            "district": tenant.get("district", "") or "",
+        }
+    return view
+
+async def _tenant_of(doc: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    if doc.get("role") == "super_admin" or not doc.get("tenant_id"):
+        return None
+    return await db.tenants.find_one({"id": doc["tenant_id"]}, {"_id": 0})
+
+@api.get("/profile")
+async def get_profile(user=Depends(get_current_user)):
+    doc = await db.users.find_one({"id": user["id"]}, {"password_hash": 0, "_id": 0})
+    if not doc:
+        raise HTTPException(404, "Kullanıcı bulunamadı")
+    return _profile_view(doc, await _tenant_of(doc))
+
+@api.put("/profile")
+async def update_profile(inp: ProfileIn, user=Depends(get_current_user)):
+    doc = await db.users.find_one({"id": user["id"]}, {"password_hash": 0, "_id": 0})
+    if not doc:
+        raise HTTPException(404, "Kullanıcı bulunamadı")
+    name = (inp.name or "").strip()
+    if len(name) < 2 or len(name) > 100:
+        raise HTTPException(400, "Ad soyad 2-100 karakter olmalıdır")
+    contact_email = (inp.contact_email or "").strip().lower()
+    if contact_email and not PROFILE_EMAIL_RE.match(contact_email):
+        raise HTTPException(400, "İletişim e-postası geçersiz")
+    values = {
+        "phone": (inp.phone or "").strip()[:30],
+        "contact_email": contact_email,
+        "address": (inp.address or "").strip()[:300],
+        "city": (inp.city or "").strip()[:80],
+        "district": (inp.district or "").strip()[:80],
+    }
+    updates: Dict[str, Any] = {"name": name}
+    tenant = await _tenant_of(doc)
+    flags = {f"link_{k}": bool(getattr(inp, f"link_{k}")) for k in PROFILE_LINKS}
+
+    if doc.get("role") == "super_admin" or tenant is None:
+        # Süper Admin ve firmasız hesaplar firma bağlantısı kuramaz
+        updates.update({k: v for k, v in values.items()})
+        updates.update({f: False for f in flags})
+    else:
+        firm_updates: Dict[str, Any] = {}
+        for key, (personal, firm) in PROFILE_LINKS.items():
+            linked = flags[f"link_{key}"]
+            was_linked = bool(doc.get(f"link_{key}"))
+            input_vals = {p: values[p] for p in personal}
+            firm_vals = {f: tenant.get(f, "") or "" for f in firm}
+            if linked and not was_linked and any(input_vals.values()):
+                # Yeni bağlantı: yazılan değer firma kaydına işlenir
+                differs = any(input_vals[p] != firm_vals[f] for p, f in zip(personal, firm))
+                if differs:
+                    if doc.get("role") != "admin":
+                        raise HTTPException(403, "Firma bilgisini yalnızca firma yöneticisi değiştirebilir")
+                    for p, f in zip(personal, firm):
+                        firm_updates[f] = input_vals[p]
+                    firm_vals = {f: input_vals[p] for p, f in zip(personal, firm)}
+                # Kişisel alanlar firma değerini izler
+                for p, f in zip(personal, firm):
+                    updates[p] = firm_vals[f]
+            elif linked:
+                # Bağlı alan her zaman firma değerini tutar; istemci değeri yok sayılır
+                for p, f in zip(personal, firm):
+                    updates[p] = firm_vals[f]
+            else:
+                # Bağlantı yok: kişisel değer serbestçe düzenlenir
+                for p in personal:
+                    updates[p] = values[p]
+        if firm_updates:
+            await db.tenants.update_one({"id": tenant["id"]}, {"$set": firm_updates})
+        updates.update(flags)
+
+    await db.users.update_one({"id": user["id"]}, {"$set": updates})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": user.get("tenant_id"), "user": user["email"],
+        "action": "profile.update", "entity_id": user["id"], "at": now_iso(),
+    })
+    fresh = await db.users.find_one({"id": user["id"]}, {"password_hash": 0, "_id": 0})
+    return _profile_view(fresh, await _tenant_of(fresh))
 
 # ---------- Users (admin) ----------
 @api.get("/users")
@@ -894,6 +1016,20 @@ async def update_tenant_me(inp: TenantIn, user=Depends(require_role("admin"))):
     # Plan/abonelik/aktiflik alanları yalnızca Süper Admin tarafından değiştirilebilir
     for k in RESTRICTED_TENANT_FIELDS:
         data.pop(k, None)
+    # Kullanıcının kişisel profilinde firma bilgisiyle bağlı olan alanlar kilitlidir;
+    # değiştirmek için önce Profilim sayfasından bağlantı kaldırılmalıdır.
+    current = await db.tenants.find_one({"id": tid}, {"_id": 0}) or {}
+    for key, (_personal, firm) in PROFILE_LINKS.items():
+        if not user.get(f"link_{key}"):
+            continue
+        for f in firm:
+            if f in data and (data[f] or "") != (current.get(f) or ""):
+                raise HTTPException(
+                    409,
+                    "Bu alan kişisel profilinizle firma bilgisi olarak bağlı. "
+                    "Değiştirmek için önce Profilim sayfasından bağlantıyı kaldırın.",
+                )
+            data.pop(f, None)
     if not data:
         return await db.tenants.find_one({"id": tid}, {"_id": 0})
     r = await db.tenants.update_one({"id": tid}, {"$set": data})

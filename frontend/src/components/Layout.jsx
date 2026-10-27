@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList, ClipboardCheck, Wallet, Receipt,
   BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText,
-  Trash2, KeyRound, Plus,
+  Trash2, KeyRound, Plus, UserRound,
 } from "lucide-react";
 import { Input } from "./ui/input";
 import { usePrivacy } from "../context/PrivacyContext";
@@ -54,6 +54,7 @@ const NAV_TENANT = [
     title: "Sistem",
     items: [
       { to: "/trash", label: "Çöp Kutusu", icon: Trash2, adminOnly: true },
+      { to: "/profil", label: "Profilim", icon: UserRound },
       { to: "/settings", label: "Ayarlar", icon: Settings },
       { to: "/account/password", label: "Şifre Değiştir", icon: KeyRound },
     ],
@@ -68,13 +69,14 @@ const NAV_SUPER = [
       { to: "/admin/report", label: "3D Rapor", icon: BarChart3 },
       { to: "/admin/pricing", label: "Vitrin & Fiyatlar", icon: Receipt },
       { to: "/admin/audit-logs", label: "Denetim Kayıtları", icon: History },
+      { to: "/profil", label: "Profilim", icon: UserRound },
       { to: "/account/password", label: "Şifre Değiştir", icon: KeyRound },
     ],
   },
 ];
 
 // Süper Admin firma verisine erişemez (backend 403 döner); yalnızca bu sayfalara girebilir
-const SUPER_ADMIN_ALLOWED = ["/settings", "/account/password"];
+const SUPER_ADMIN_ALLOWED = ["/settings", "/account/password", "/profil"];
 
 function initials(name) {
   return (name || "?")
@@ -192,7 +194,7 @@ export default function Layout() {
               {initials(user?.name)}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="truncate text-sm font-medium text-white">{user?.name}</div>
+              <Link to="/profil" className="block truncate text-sm font-medium text-white hover:underline">{user?.name}</Link>
               <div className="truncate text-xs text-slate-400">{user?.email}</div>
             </div>
           </div>
