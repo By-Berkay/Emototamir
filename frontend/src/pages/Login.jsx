@@ -67,7 +67,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+    <div className="emt-aurora min-h-screen lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       {/* Marka paneli (yalnızca masaüstü) */}
       <aside className="hidden flex-col justify-between bg-slate-900 p-12 text-white lg:flex" data-testid="login-brand-panel">
         <div className="flex items-center gap-3">

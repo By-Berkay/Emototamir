@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
 import { API, fmtMoney } from "../lib/api";
+import { documentTotals, lineAmounts } from "../lib/pricing";
+import DocumentTotals from "../components/DocumentTotals";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
@@ -79,8 +81,8 @@ export default function PublicApproval() {
                       <tr key={i} className="border-t border-slate-100">
                         <td className="py-1.5">{it.name} <span className="text-xs text-slate-400">({it.kind === "part" ? "Parça" : "Hizmet"})</span></td>
                         <td className="text-right py-1.5">{it.qty}</td>
-                        <td className="text-right py-1.5">{fmtMoney(it.unit_price)}</td>
-                        <td className="text-right py-1.5 font-medium">{fmtMoney(it.qty * it.unit_price)}</td>
+                        <td className="text-right py-1.5">{fmtMoney(it.qty ? lineAmounts(it).gross / it.qty : it.unit_price)}</td>
+                        <td className="text-right py-1.5 font-medium">{fmtMoney(lineAmounts(it).gross)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -88,12 +90,8 @@ export default function PublicApproval() {
               </div>
             )}
 
-            <div className="bg-slate-50 rounded-md p-4 space-y-1 text-sm">
-              <div className="flex justify-between"><span>İşçilik</span><span>{fmtMoney(data.labor_total)}</span></div>
-              <div className="flex justify-between"><span>İskonto</span><span className="text-red-600">-{fmtMoney(data.discount)}</span></div>
-              <div className="flex justify-between text-xl font-bold pt-2 border-t border-slate-200 mt-2">
-                <span>Genel Toplam</span><span className="text-brand-600">{fmtMoney(data.grand_total)}</span>
-              </div>
+            <div className="bg-slate-50 rounded-md p-4">
+              <DocumentTotals t={documentTotals({ items: data.items || [], labor_total: data.labor_total, labor_price_mode: data.labor_price_mode || "incl", labor_vat: data.labor_vat ?? 20, discount: data.discount })} />
             </div>
 
             {decided ? (

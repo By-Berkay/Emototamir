@@ -106,7 +106,7 @@ export default function Layout() {
   const visible = (item) => !item.adminOnly || user?.role === "admin" || isSuper;
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="emt-aurora flex min-h-screen">
       {/* Kenar çubuğu */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-slate-900 text-slate-300 transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${
@@ -215,6 +215,7 @@ export default function Layout() {
           >
             <Menu className="h-5 w-5" />
           </button>
+          {!isSuper ? (
           <form onSubmit={onSearch} className="max-w-xl flex-1" role="search">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -228,8 +229,11 @@ export default function Layout() {
               />
             </div>
           </form>
+          ) : (
+            <div className="flex-1" />
+          )}
           <div className="ml-auto flex items-center gap-3">
-            {(user?.role === "admin" || user?.role === "super_admin") && <AdminLockButton />}
+            {user?.role === "admin" && <AdminLockButton />}
             {!isSuper && (
               <Link
                 to="/service-orders/new"

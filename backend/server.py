@@ -30,7 +30,11 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-app = FastAPI(title="Motosiklet Servis Yönetim Sistemi")
+# Üretimde API dokümantasyonu kapalıdır (ENABLE_API_DOCS=1 ile açılabilir).
+app = FastAPI(title="Motosiklet Servis Yönetim Sistemi",
+              docs_url="/api/docs" if os.environ.get("ENABLE_API_DOCS") == "1" else None,
+              redoc_url=None,
+              openapi_url="/api/openapi.json" if os.environ.get("ENABLE_API_DOCS") == "1" else None)
 api = APIRouter(prefix="/api")
 
 logging.basicConfig(level=logging.INFO)
@@ -2180,10 +2184,11 @@ async def save_signature(sid: str, inp: SignatureIn, user=Depends(get_current_us
 
 # ---------- PDF ----------
 @api.get("/service-orders/{sid}/pdf/{kind}")
-async def service_pdf(sid: str, kind: str, request: Request, auth: str = Query(None)):
+async def service_pdf(sid: str, kind: str, request: Request):
+    # Token yalnızca başlık (Bearer) veya çerez ile kabul edilir; URL parametresi güvenlik açığıdır (loglarda sızar).
     if kind not in {"kabul", "teslim"}:
         raise HTTPException(400, "Geçersiz form türü")
-    token = auth or request.cookies.get("access_token")
+    token = request.cookies.get("access_token")
     if not token:
         h = request.headers.get("Authorization", "")
         if h.startswith("Bearer "):
@@ -2271,6 +2276,10 @@ async def public_get_approval(token: str):
         "brand": so.get("brand"), "model": so.get("model"), "plate": so.get("plate"),
         "complaint": so.get("complaint"), "diagnosis": so.get("diagnosis"),
         "items": so.get("items", []), "labor_total": so.get("labor_total", 0),
+        "labor_price_mode": so.get("labor_price_mode", DEFAULT_PRICE_MODE), "labor_vat": so.get("labor_vat", DEFAULT_VAT),
+        "labor_gross": so.get("labor_gross", 0), "parts_total": so.get("parts_total", 0),
+        "services_total": so.get("services_total", 0), "subtotal": so.get("subtotal", 0),
+        "vat_total": so.get("vat_total", 0), "net_total": so.get("net_total", 0),
         "discount": so.get("discount", 0), "grand_total": so.get("grand_total", 0),
         "approval_status": so.get("approval_status", "pending"),
         "approval_at": so.get("approval_at"),

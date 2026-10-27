@@ -7,6 +7,9 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Textarea } from "../components/ui/textarea";
 import { CheckCircle2, XCircle, Wrench, MapPin, Phone } from "lucide-react";
+import { lineAmounts } from "../lib/pricing";
+
+const STATUS_TR = { draft: "taslak", sent: "gönderilmiş", approved: "onaylanmış", rejected: "reddedilmiş", converted: "siparişe dönüştürülmüş", expired: "süresi dolmuş" };
 import { toast } from "sonner";
 
 const API = process.env.REACT_APP_BACKEND_URL;
@@ -111,8 +114,8 @@ export default function QuotePublic() {
                   <tr>
                     <th className="text-left px-4 py-2">Kalem</th>
                     <th className="text-right px-4 py-2">Adet</th>
-                    <th className="text-right px-4 py-2">Birim</th>
-                    <th className="text-right px-4 py-2">KDV%</th>
+                    <th className="text-right px-4 py-2 hidden sm:table-cell">Birim</th>
+                    <th className="text-right px-4 py-2 hidden sm:table-cell">KDV%</th>
                     <th className="text-right px-4 py-2">Tutar</th>
                   </tr>
                 </thead>
@@ -121,9 +124,9 @@ export default function QuotePublic() {
                     <tr key={it.id} className="border-t">
                       <td className="px-4 py-2">{it.name} <span className="text-xs text-slate-400">({it.kind==="part"?"Parça":"Hizmet"})</span></td>
                       <td className="px-4 py-2 text-right">{it.qty}</td>
-                      <td className="px-4 py-2 text-right">{fmt(it.unit_price)}</td>
-                      <td className="px-4 py-2 text-right">{it.vat}%</td>
-                      <td className="px-4 py-2 text-right font-medium">{fmt(it.qty * it.unit_price)}</td>
+                      <td className="px-4 py-2 text-right hidden sm:table-cell">{fmt(it.unit_price)}</td>
+                      <td className="px-4 py-2 text-right hidden sm:table-cell">{it.vat}%</td>
+                      <td className="px-4 py-2 text-right font-medium">{fmt(lineAmounts(it).gross)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -163,7 +166,7 @@ export default function QuotePublic() {
           <Card><CardContent className="p-6 text-center text-slate-500">
             {expiredByDate && !decided
               ? <>Bu teklifin geçerlilik süresi dolmuş — üzerinde işlem yapılamaz.</>
-              : <>Bu teklif <b>{q.status}</b> durumunda — üzerinde işlem yapılamaz.</>}
+              : <>Bu teklif <b>{STATUS_TR[q.status] || q.status}</b> durumunda — üzerinde işlem yapılamaz.</>}
           </CardContent></Card>
         ) : (
           <Card>

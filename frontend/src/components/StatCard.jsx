@@ -1,4 +1,5 @@
 import React from "react";
+import Tilt3D from "./Tilt3D";
 
 const TONES = {
   brand: "bg-brand-50 text-brand-600",
@@ -12,8 +13,8 @@ const TONES = {
 /** KPI kartı: etiket, büyük değer, isteğe bağlı açıklama ve ikon. */
 export default function StatCard({ label, value, hint, icon: Icon, tone = "brand", testId }) {
   return (
-    <div
-      className="flex items-start justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-5 shadow-card"
+    <Tilt3D
+      className="emt-depth flex h-full items-start justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-5"
       data-testid={testId}
     >
       <div className="min-w-0">
@@ -26,6 +27,6 @@ export default function StatCard({ label, value, hint, icon: Icon, tone = "brand
           <Icon className="h-5 w-5" />
         </span>
       )}
-    </div>
+    </Tilt3D>
   );
 }

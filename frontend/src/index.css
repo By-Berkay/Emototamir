@@ -91,3 +91,57 @@
   aside, header, .no-print { display: none !important; }
   main { padding: 0 !important; }
 }
+
+/* ---------- 3B / cam yüzey katmanı ---------- */
+@keyframes emt-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -10px, 0); }
+}
+.emt-float { animation: emt-float 6s ease-in-out infinite; }
+
+@keyframes emt-aurora-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+/* Sayfa arka planı: yumuşakça hareket eden turuncu/mavi ışık lekeleri */
+.emt-aurora {
+  background-color: #f8fafc;
+  background-image:
+    radial-gradient(900px 480px at 8% -8%, rgba(249, 115, 22, 0.10), transparent 60%),
+    radial-gradient(820px 520px at 100% 0%, rgba(59, 130, 246, 0.07), transparent 60%),
+    radial-gradient(700px 500px at 50% 110%, rgba(16, 185, 129, 0.05), transparent 60%);
+  background-size: 140% 140%, 140% 140%, 140% 140%;
+  animation: emt-aurora-shift 28s ease-in-out infinite;
+}
+
+/* Cam yüzey: bulanık arka plan + iç ışık */
+.emt-glass {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  backdrop-filter: blur(16px) saturate(140%);
+}
+
+/* Derinlik gölgesi: üstte iç parlama, altta yumuşak düşen gölge */
+.emt-depth {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 14px 30px -14px rgba(15, 23, 42, 0.22);
+}
+
+/* Tilt yüzeyinin üzerindeki parlama izi */
+.emt-glare {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  background: radial-gradient(360px circle at var(--gx, 50%) var(--gy, 50%), rgba(255, 255, 255, 0.45), transparent 45%);
+}
+.emt-tilt:hover .emt-glare { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .emt-float, .emt-aurora { animation: none; }
+}
