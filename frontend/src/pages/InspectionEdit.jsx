@@ -378,7 +378,7 @@ export default function InspectionEdit() {
         description={
           isEdit
             ? "Kontrol maddelerini güncelleyin, fotoğraf ekleyin ve kaydedin."
-            : "Araç bilgilerini girin, kontrol maddelerini işaretleyin ve raporu kaydedin. Fotoğraflar kayıttan sonra eklenir."
+            : "Motosiklet bilgilerini girin, kontrol maddelerini işaretleyin ve raporu kaydedin. Fotoğraflar kayıttan sonra eklenir."
         }
         actions={
           <>
@@ -392,7 +392,7 @@ export default function InspectionEdit() {
         }
       />
 
-      {/* Müşteri ve araç sahibi */}
+      {/* Müşteri ve motosiklet sahibi */}
       <Card>
         <CardHeader>
           <CardTitle>Müşteri ve araç sahibi</CardTitle>
