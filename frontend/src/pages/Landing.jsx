@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Bike, Building2, Check, ClipboardList, FileText, MessageCircle, Phone, ShieldCheck, Users,
+  Building2, Check, ClipboardList, FileText, MessageCircle, Phone, ShieldCheck, Users,
   BellRing, BarChart3, Wrench,
 } from "lucide-react";
 import api from "../lib/api";
 import { MotorcycleSvg } from "../components/DashboardHero";
+import MotoMark from "../components/MotoMark";
 import { cn } from "../lib/utils";
 
-const ICONS = { ClipboardList, Bike, Users, BellRing, FileText, BarChart3, Building2, ShieldCheck, Wrench };
+const ICONS = { ClipboardList, Bike: MotoMark, Users, BellRing, FileText, BarChart3, Building2, ShieldCheck, Wrench };
 
 // Sunucuya ulaşılamazsa gösterilen yedek içerik (sunucudaki varsayılanla aynı).
 const FALLBACK = {
@@ -245,7 +246,7 @@ export default function Landing() {
             </h1>
             <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">{c.hero.description}</p>
             <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-xs font-semibold text-brand-700">
-              <Bike className="h-4 w-4" aria-hidden="true" /> Yalnızca motosiklet, scooter ve iki tekerlekli servisler için
+              <MotoMark className="h-4 w-4" /> Yalnızca motosiklet, scooter ve iki tekerlekli servisler için
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <a href={demo} target="_blank" rel="noreferrer"
