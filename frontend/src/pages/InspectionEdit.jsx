@@ -395,7 +395,7 @@ export default function InspectionEdit() {
       {/* Müşteri ve motosiklet sahibi */}
       <Card>
         <CardHeader>
-          <CardTitle>Müşteri ve araç sahibi</CardTitle>
+          <CardTitle>Müşteri ve motosiklet sahibi</CardTitle>
           <CardDescription>Kayıtlı müşteri seçerseniz ad, telefon ve motosiklet bilgileri otomatik dolar.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -439,10 +439,10 @@ export default function InspectionEdit() {
         </CardContent>
       </Card>
 
-      {/* Araç bilgileri */}
+      {/* Motosiklet bilgileri */}
       <Card>
         <CardHeader>
-          <CardTitle>Araç bilgileri</CardTitle>
+          <CardTitle>Motosiklet bilgileri</CardTitle>
           <CardDescription>Motosiklet kaydı seçilirse plaka, marka-model, yıl, km ve şasi bilgisi kayıttan alınır.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
