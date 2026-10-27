@@ -3629,7 +3629,7 @@ DEFAULT_LANDING: Dict[str, Any] = {
     },
     "features": [
         {"icon": "ClipboardList", "title": "İş Emri ve Kabul Formu", "text": "Kabul-Teslim PDF, imzalı, tek tıklamayla WhatsApp'tan oluşur."},
-        {"icon": "Bike", "title": "Mürettebat Kartı", "text": "Marka, model, plaka, KM, arıza haritaları, servis geçmişi hepsi bir arada."},
+        {"icon": "Bike", "title": "Motosiklet Kartı", "text": "Motosiklet tipi, marka, model, plaka, KM, arıza haritaları ve servis geçmişi bir arada."},
         {"icon": "Users", "title": "Müşteri Cari", "text": "VIP/Borçlu/Sorunlu etiketleri, notlar, tahsilat ve bakiye takibi."},
         {"icon": "BellRing", "title": "Otomatik Hatırlatma", "text": "Her sabah saat 09:00'da vadesi dolan bakımları WhatsApp bağlantısıyla."},
         {"icon": "FileText", "title": "Fiyat Teklifi", "text": "Müşteri linki onaylansın, teklifler otomatik iş emrine dönüşsün."},
