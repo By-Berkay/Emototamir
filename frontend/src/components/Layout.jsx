@@ -127,7 +127,7 @@ export default function Layout() {
             <div className="font-heading truncate text-[15px] font-bold leading-tight text-white">
               {tenant?.name || "E-Moto Tamir"}
             </div>
-            <div className="truncate text-xs text-slate-400">{isSuper ? "Platform yönetimi" : "Servis yönetimi"}</div>
+            <div className="truncate text-xs text-slate-400">{isSuper ? "Motosiklet platform yönetimi" : "Motosiklet servis yönetimi"}</div>
           </div>
           <button
             className="rounded-md p-1 text-slate-400 hover:bg-white/5 hover:text-white lg:hidden"
@@ -188,6 +188,10 @@ export default function Layout() {
           })}
         </nav>
 
+        <div className="mx-3 mb-1 hidden items-center gap-2 rounded-xl border border-white/10 bg-gradient-to-r from-brand-500/15 to-transparent px-3 py-2 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-300 lg:flex">
+          <Bike className="h-4 w-4 text-brand-400" aria-hidden="true" />
+          Sadece motosiklet servisi
+        </div>
         <div className="m-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-semibold text-white">
@@ -224,7 +228,7 @@ export default function Layout() {
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder="Plaka, şasi, müşteri veya servis no ara…"
+                placeholder="Motosiklet plakası, şasi, müşteri veya servis no ara…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
                 className="h-10 border-transparent bg-slate-100/80 pl-9 hover:border-transparent focus-visible:bg-white"
