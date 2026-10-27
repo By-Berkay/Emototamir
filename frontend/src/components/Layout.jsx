@@ -109,14 +109,14 @@ export default function Layout() {
     <div className="emt-aurora flex min-h-screen">
       {/* Kenar çubuğu */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-slate-900 text-slate-300 transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-300 shadow-2xl shadow-black/30 transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         data-testid="sidebar"
       >
         <div className="flex h-16 items-center gap-3 border-b border-white/5 px-5">
           <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-white shadow-sm"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.45)]"
             aria-hidden="true"
           >
             <Wrench className="h-[18px] w-[18px]" />
@@ -157,7 +157,7 @@ export default function Layout() {
                           const active = n.match ? n.match(pathname) : isActive;
                           return `group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-[background-color,color] duration-150 ${
                             active
-                              ? "bg-white/10 font-medium text-white"
+                              ? "bg-gradient-to-r from-brand-500/20 to-transparent font-medium text-white ring-1 ring-brand-500/20"
                               : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
                           }`;
                         }}
@@ -170,7 +170,9 @@ export default function Layout() {
                               {active && (
                                 <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-brand-500" aria-hidden="true" />
                               )}
-                              <n.icon className={`h-[18px] w-[18px] shrink-0 ${active ? "text-brand-400" : ""}`} />
+                              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-150 ${active ? "bg-brand-500 text-white shadow-[0_0_14px_rgba(249,115,22,0.5)]" : "bg-white/5 text-slate-400 group-hover:text-white"}`}>
+                                <n.icon className="h-4 w-4" />
+                              </span>
                               <span className="truncate">{n.label}</span>
                             </>
                           );
@@ -184,7 +186,7 @@ export default function Layout() {
           })}
         </nav>
 
-        <div className="border-t border-white/5 p-4">
+        <div className="m-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-semibold text-white">
               {initials(user?.name)}

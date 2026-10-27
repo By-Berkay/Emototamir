@@ -145,3 +145,10 @@
 @media (prefers-reduced-motion: reduce) {
   .emt-float, .emt-aurora { animation: none; }
 }
+
+/* Mobilde geniş tablolar: tablonun üst kapsayıcısı kendi yatay kaydırmasını alır (içerik kesilmez) */
+main div:has(> table) {
+  overflow-x: auto;
+  max-width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
