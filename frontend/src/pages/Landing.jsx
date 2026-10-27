@@ -273,14 +273,16 @@ export default function Landing() {
           <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {c.features.map((f) => {
               const Icon = ICONS[f.icon] || Wrench;
+              const title = f.title === "Mürettebat Kartı" ? "Motosiklet Kartı" : f.title;
+              const description = f.title === "Mürettebat Kartı" ? "Motosiklet tipi, marka, model, plaka, kilometre, arıza haritası ve servis geçmişi." : f.text;
               return (
                 <Tilt key={f.title} className="h-full">
                   <div className="h-full rounded-2xl border border-slate-200 bg-white p-6 shadow-card">
                     <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <h3 className="font-heading mt-5 text-base font-semibold text-slate-900">{f.title}</h3>
-                    <p className="mt-2 text-sm leading-relaxed text-slate-500">{f.text}</p>
+                    <h3 className="font-heading mt-5 text-base font-semibold text-slate-900">{title}</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-slate-500">{description}</p>
                   </div>
                 </Tilt>
               );
