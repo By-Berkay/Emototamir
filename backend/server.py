@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict
 import io
 import re
 import secrets
+from pymongo.errors import DuplicateKeyError
 
 from storage_utils import put_object, get_object, init_storage, APP_NAME
 from pdf_utils import build_service_pdf, build_inspection_pdf
@@ -3352,6 +3353,8 @@ async def seed_admin_and_indexes():
     await db.service_orders.create_index([("tenant_id", 1), ("service_no", 1)])
     await db.service_orders.create_index([("tenant_id", 1), ("customer_id", 1)])
     await db.service_orders.create_index([("tenant_id", 1), ("motorcycle_id", 1)])
+    # Bir personel için ayda en fazla bir maaş ödemesi (yarışmaya karşı veritabanı seviyesinde)
+    await db.salary_payments.create_index([("tenant_id", 1), ("employee_id", 1), ("month", 1)], unique=True)
 
     # Süper Admin: yalnızca hesap yoksa oluşturulur. Mevcut hesabın şifresi açılışta ASLA sıfırlanmaz.
     # Şifre ortam değişkeninden alınır; varsayılan/sabit bir şifre kullanılmaz.
@@ -3995,7 +3998,7 @@ async def list_finance_entries(month: Optional[str] = None, type: Optional[str] 
     tid = _finance_tenant(user)
     f: Dict[str, Any] = {"tenant_id": tid}
     if month:
-        f["date"] = {"$regex": f"^{month}"}
+        f["date"] = {"$regex": f"^{re.escape(month)}"}
     if type in ("income", "expense"):
         f["type"] = type
     if category:
@@ -4100,16 +4103,24 @@ async def pay_salary(emp_id: str, inp: SalaryPaymentIn, user=Depends(require_rol
         raise HTTPException(400, "Maaş tutarı sıfırdan büyük olmalı")
     pay_id = uid()
     entry_id = uid()
-    await db.finance_entries.insert_one({
-        "id": entry_id, "tenant_id": tid, "type": "expense", "category": SALARY_CATEGORY,
-        "amount": amount, "date": inp.paid_on, "description": f"{inp.month} maaşı — {emp['name']}",
-        "payee": emp["name"], "payment_method": inp.payment_method,
-        "salary_payment_id": pay_id, "created_by": user["email"], "created_at": now_iso(),
-    })
     doc = {"id": pay_id, "tenant_id": tid, "employee_id": emp_id, "month": inp.month, "amount": amount,
            "paid_on": inp.paid_on, "payment_method": inp.payment_method, "note": inp.note or "",
            "entry_id": entry_id, "created_by": user["email"], "created_at": now_iso()}
-    await db.salary_payments.insert_one(doc)
+    # Önce benzersiz ödeme kaydı yazılır: aynı ay için eşzamanlı istekte ikincisi burada düşer
+    try:
+        await db.salary_payments.insert_one(dict(doc))
+    except DuplicateKeyError:
+        raise HTTPException(409, "Bu ayın maaşı zaten ödenmiş")
+    try:
+        await db.finance_entries.insert_one({
+            "id": entry_id, "tenant_id": tid, "type": "expense", "category": SALARY_CATEGORY,
+            "amount": amount, "date": inp.paid_on, "description": f"{inp.month} maaşı — {emp['name']}",
+            "payee": emp["name"], "payment_method": inp.payment_method,
+            "salary_payment_id": pay_id, "created_by": user["email"], "created_at": now_iso(),
+        })
+    except Exception:
+        await db.salary_payments.delete_one({"id": pay_id, "tenant_id": tid})
+        raise
     doc.pop("_id", None)
     return doc
 
