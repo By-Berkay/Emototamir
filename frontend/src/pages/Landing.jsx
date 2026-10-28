@@ -8,7 +8,6 @@ import api from "../lib/api";
 import { cn } from "../lib/utils";
 import Tilt3D from "../components/Tilt3D";
 import HoloMotorcycle from "../components/HoloMotorcycle";
-import MotoIllustration, { MOTO_ZONES } from "../components/MotoIllustration";
 
 const ICONS = { ClipboardList, Bike, Users, BellRing, FileText, BarChart3, Building2, ShieldCheck, Wrench };
 
@@ -270,16 +269,14 @@ export default function Landing() {
       <section className="py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="emt-glass-dark relative overflow-hidden rounded-3xl">
-            <div className="flex flex-col items-center gap-6 px-6 pb-4 pt-10 sm:px-10">
-              <MotoIllustration zones={MOTO_ZONES} className="h-auto w-full max-w-2xl" />
-              <ul className="grid w-full max-w-2xl grid-cols-2 gap-2 text-xs text-slate-300 sm:grid-cols-5">
-                {MOTO_ZONES.map((z) => (
-                  <li key={z.id} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-3 py-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-orange-400 shadow-[0_0_8px_#fb923c]" />{z.label}
-                  </li>
-                ))}
-              </ul>
-            </div>
+            <img
+              src="/visuals/moto-systems.jpg"
+              alt="Motosiklet sistemleri: motor, şasi, fren, şanzıman ve elektrik bölgeleri"
+              width="1179"
+              height="468"
+              decoding="async"
+              className="block h-auto w-full object-cover"
+            />
             <div className="px-6 pb-8 sm:px-10">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">EKSPERTİZ VE ARIZA BÖLGELERİ</p>
               <p className="font-heading mt-2 max-w-xl text-xl font-bold text-white sm:text-3xl">Her arıza bölgesi, kayıtlı motosikletin üzerinde işaretlenir.</p>

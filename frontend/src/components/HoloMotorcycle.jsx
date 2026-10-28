@@ -1,9 +1,8 @@
 import React from "react";
 import Tilt3D from "./Tilt3D";
-import MotoIllustration from "./MotoIllustration";
 
 /**
- * Ana sayfa sahnesi: orijinal motosiklet çizimi, cam HUD panelleri ve modül etiketleri.
+ * Ana sayfa sahnesi: holografik motosiklet görseli ve cam modül etiketleri.
  * Etiket değerleri yoktur; yalnızca modül adları gösterilir. Dekoratiftir.
  */
 const MODULES = [
@@ -19,11 +18,17 @@ export default function HoloMotorcycle({ className = "" }) {
       <div aria-hidden="true" className="absolute inset-x-[8%] -bottom-4 h-16 rounded-[50%] bg-orange-500/25 blur-2xl" />
       <div aria-hidden="true" className="absolute -inset-6 rounded-[2rem] bg-gradient-to-br from-cyan-400/15 via-transparent to-orange-500/20 blur-2xl" />
 
-      <Tilt3D max={5} lift={6} className="emt-glass-dark relative overflow-hidden rounded-2xl px-4 pb-6 pt-8 sm:px-8">
+      <Tilt3D max={5} lift={6} className="emt-glass-dark relative overflow-hidden rounded-2xl p-1.5">
         <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.06] to-transparent" />
-        <div className="emt-float">
-          <MotoIllustration className="relative z-[1] h-auto w-full drop-shadow-[0_0_24px_rgba(34,211,238,0.3)]" />
-        </div>
+        <img
+          src="/visuals/moto-hud.jpg"
+          alt="Motosiklet servis analiz arayüzü: holografik gösterge panelleri"
+          width="1179"
+          height="792"
+          decoding="async"
+          fetchPriority="high"
+          className="emt-float relative z-[1] block h-auto w-full rounded-xl"
+        />
       </Tilt3D>
 
       {MODULES.map((m, i) => (

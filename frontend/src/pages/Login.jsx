@@ -7,7 +7,6 @@ import { Label } from "../components/ui/label";
 import { Wrench, ClipboardCheck, Wallet, MessageCircle, ArrowLeft, ShieldCheck, Eye, EyeOff, Bike, BarChart3, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
-import MotoIllustration from "../components/MotoIllustration";
 
 const WHATSAPP_URL = `https://wa.me/447378552959?text=${encodeURIComponent(
   "Merhaba E-Moto Tamir uygulaması için bilgi istiyorum."
@@ -64,8 +63,16 @@ export default function Login() {
     <div className="emt-night min-h-screen lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       {/* Marka paneli (yalnızca masaüstü) */}
       <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-white/10 p-12 text-white lg:flex" data-testid="login-brand-panel">
-        {/* Dekoratif motosiklet çizimi: sol panelin altında, düşük opaklıkta */}
-        <MotoIllustration className="pointer-events-none absolute -bottom-6 left-1/2 w-[120%] max-w-none -translate-x-1/2 opacity-40 drop-shadow-[0_0_30px_rgba(34,211,238,0.35)]" />
+        {/* Dekoratif motosiklet görseli: sol panelin altında, düşük opaklıkta */}
+        <img
+          aria-hidden="true"
+          alt=""
+          src="/visuals/moto-hud.jpg"
+          width="1179"
+          height="792"
+          decoding="async"
+          className="pointer-events-none absolute -bottom-10 left-1/2 w-[130%] max-w-none -translate-x-1/2 opacity-35 mix-blend-screen"
+        />
         <div aria-hidden="true" className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#05070c] via-[#05070c]/60 to-transparent" />
         <Link to="/" className="inline-flex w-fit items-center gap-2 text-xs font-medium text-slate-400 transition-colors hover:text-white">
           <ArrowLeft className="h-3.5 w-3.5" /> Ana sayfaya dön
