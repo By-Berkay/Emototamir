@@ -7,6 +7,7 @@ import { Label } from "../components/ui/label";
 import { Wrench, ClipboardCheck, Wallet, MessageCircle, ArrowLeft, ShieldCheck, Eye, EyeOff, Bike, BarChart3, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
+import { APP_VERSION } from "../version";
 
 const WHATSAPP_URL = `https://wa.me/447378552959?text=${encodeURIComponent(
   "Merhaba E-Moto Tamir uygulaması için bilgi istiyorum."
@@ -110,7 +111,7 @@ export default function Login() {
         </div>
 
         <div className="relative z-10 flex items-center justify-between text-xs text-slate-500">
-          <span>© E-Moto Tamir · v1.0</span>
+          <span>© E-Moto Tamir · v{APP_VERSION}</span>
           <a
             href={WHATSAPP_URL}
             target="_blank"
