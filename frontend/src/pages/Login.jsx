@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Wrench, ClipboardCheck, Wallet, MessageCircle, ArrowLeft, ShieldCheck } from "lucide-react";
+import { Wrench, ClipboardCheck, Wallet, MessageCircle, ArrowLeft, ShieldCheck, Eye, EyeOff, Bike, BarChart3, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "../lib/utils";
 
@@ -13,9 +13,9 @@ const WHATSAPP_URL = `https://wa.me/447378552959?text=${encodeURIComponent(
 )}`;
 
 const FEATURES = [
-  { icon: Wrench, title: "İş emri ve servis takibi", text: "Arıza tespitinden teslimata kadar her aşama tek kayıtta izlenir." },
-  { icon: ClipboardCheck, title: "Fiyat teklifi ve onay", text: "Müşteriye bağlantıyla teklif gönderin, onayını kayda alın." },
-  { icon: Wallet, title: "Tahsilat ve cari hesap", text: "Borç, ödeme ve bakiye hareketleri müşteri bazında takip edilir." },
+  { icon: ClipboardList, title: "Servis ve İş Emirleri", text: "Kabulden teslimata her aşama tek kayıtta izlenir; teklifler onaylanır." },
+  { icon: Bike, title: "Motosiklet ve Müşteri Yönetimi", text: "Motosiklet geçmişi, plaka, KM ve müşteri bilgileri tek yerde." },
+  { icon: BarChart3, title: "Tahsilat ve Raporlama", text: "Tahsilat, cari hesap ve borç takibi; anlık rapor ve kontrol paneli." },
 ];
 
 // Kutu içi alanlar: koyu zeminde marka rengiyle aydınlanan odak
@@ -37,6 +37,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -79,7 +80,7 @@ export default function Login() {
         <div className="relative z-10 max-w-lg">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">Motosiklet servisleri için</p>
           <h1 className="font-heading mt-4 text-4xl font-extrabold leading-[1.08] tracking-tight xl:text-5xl">
-            Servis operasyonunuzu <span className="bg-gradient-to-r from-orange-300 to-orange-500 bg-clip-text text-transparent">tek ekrandan</span> yönetin.
+            Atölyenin tüm gücü, <span className="bg-gradient-to-r from-orange-300 to-orange-500 bg-clip-text text-transparent">tek ekranda.</span>
           </h1>
 
           <ul className="mt-10 space-y-5">
@@ -153,17 +154,29 @@ export default function Login() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="password" className="text-slate-300">Şifre</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className={fieldCls}
-                  data-testid="login-password"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className={cn(fieldCls, "pr-11")}
+                    data-testid="login-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
+                    aria-pressed={showPassword}
+                    className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-slate-400 transition-colors hover:bg-white/10 hover:text-white"
+                    data-testid="btn-toggle-password"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
 
               <Button
@@ -180,10 +193,17 @@ export default function Login() {
               </Button>
             </form>
 
-            <p className="mt-8 flex items-start gap-2 border-t border-white/10 pt-5 text-xs leading-relaxed text-slate-400">
-              <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
-              Demo hesap ile giriş yapmak için bizimle iletişime geçin.
-            </p>
+            <div className="mt-8 flex flex-col gap-3 border-t border-white/10 pt-5 text-sm">
+              <a href={WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
+                 className="inline-flex items-center gap-2 font-medium text-cyan-300 transition-colors hover:text-cyan-200"
+                 data-testid="link-demo-request">
+                <MessageCircle className="h-4 w-4" /> Demo Talep Et
+              </a>
+              <p className="flex items-start gap-2 text-xs leading-relaxed text-slate-400">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-cyan-300" />
+                Demo hesap ile giriş yapmak için bizimle iletişime geçin.
+              </p>
+            </div>
           </div>
 
           {/* Mobil WhatsApp bağlantısı */}

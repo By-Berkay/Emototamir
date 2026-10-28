@@ -62,27 +62,27 @@ export default function HoloMotorcycle() {
         <circle cx="440" cy="168" r="10" fill="#ecfeff" />
       </svg>
 
-      {/* HUD panelleri (yalnızca geniş ekranlarda üst üste binmeden tam görünür) */}
-      <Tilt3D max={6} lift={6} className="emt-holo absolute left-0 top-[4%] w-[44%] rounded-xl p-3 emt-float sm:p-4">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">Servis sağlığı</p>
-        <p className="font-heading mt-1 text-2xl font-bold text-white sm:text-3xl">%92</p>
-        <div className="mt-3 flex h-10 items-end gap-1">
+      {/* HUD panelleri: modül adları. Gösterge değerleri temsilidir, gerçek veri değildir. */}
+      <Tilt3D max={6} lift={6} className="emt-holo absolute left-0 top-[4%] w-[46%] rounded-xl p-3 emt-float sm:p-4">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">İş Emri Yönetimi</p>
+        <div className="mt-3 flex h-12 items-end gap-1">
           {[40, 62, 48, 80, 66, 90, 74].map((h, i) => (
             <span key={i} className={`flex-1 rounded-sm ${i === 5 ? "bg-cyan-300" : "bg-cyan-400/35"}`} style={{ height: `${h}%` }} />
           ))}
         </div>
+        <p className="mt-2 text-[9px] uppercase tracking-wider text-slate-500">Temsili gösterge</p>
       </Tilt3D>
 
-      <Tilt3D max={6} lift={6} className="emt-holo absolute right-0 top-[0%] w-[40%] rounded-xl p-3 sm:p-4" style={{ animationDelay: "-2s" }}>
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">Sıradaki bakım</p>
-        <p className="font-heading mt-1 text-xl font-bold text-white sm:text-2xl">12 gün</p>
+      <Tilt3D max={6} lift={6} className="emt-holo absolute right-0 top-[0%] w-[42%] rounded-xl p-3 sm:p-4" style={{ animationDelay: "-2s" }}>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-300/90">Periyodik Bakım</p>
         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
           <div className="h-full w-[68%] rounded-full bg-gradient-to-r from-cyan-400 to-orange-400" />
         </div>
+        <p className="mt-2 text-[9px] uppercase tracking-wider text-slate-500">Temsili gösterge</p>
       </Tilt3D>
 
       <Tilt3D max={5} lift={6} className="emt-glass-dark absolute bottom-[2%] right-[2%] hidden w-[40%] rounded-xl p-4 sm:block">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-300/90">Bu ay</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-orange-300/90">Tahsilat ve Cari Hesap</p>
         <svg viewBox="0 0 160 56" className="mt-2 h-14 w-full">
           <path d="M0 44 C20 30 32 40 50 26 S84 18 100 24 S134 6 160 12" fill="none" stroke="#fb923c" strokeWidth="3" strokeLinecap="round" />
           <path d="M0 44 C20 30 32 40 50 26 S84 18 100 24 S134 6 160 12 V56 H0Z" fill="#f97316" opacity="0.15" />
@@ -90,8 +90,7 @@ export default function HoloMotorcycle() {
       </Tilt3D>
 
       <Tilt3D max={5} lift={6} className="emt-glass-dark absolute bottom-[10%] left-[4%] hidden w-[38%] rounded-xl p-4 md:block">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">İş emri</p>
-        <p className="font-heading mt-1 text-lg font-bold text-white">#1042 · Tamirde</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-300">Stok ve Yedek Parça</p>
         <div className="mt-3 flex gap-1.5">
           {[0, 1, 2, 3].map((i) => (
             <span key={i} className={`h-1.5 flex-1 rounded-full ${i < 3 ? "bg-orange-400" : "bg-white/20"}`} />

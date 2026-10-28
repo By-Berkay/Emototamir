@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Bike, Building2, Check, ClipboardList, FileText, MessageCircle, Phone, ShieldCheck, Users,
-  BellRing, BarChart3, Wrench,
+  BellRing, BarChart3, Wrench, Search, Truck, ChevronDown,
 } from "lucide-react";
 import api from "../lib/api";
 import { cn } from "../lib/utils";
@@ -55,6 +55,73 @@ function SectionHeading({ eyebrow, title, description }) {
       <h2 className="font-heading mt-4 text-3xl font-bold tracking-tight text-white sm:text-5xl">{title}</h2>
       {description && <p className="mt-4 text-base leading-relaxed text-slate-400">{description}</p>}
     </div>
+  );
+}
+
+const WORKFLOW = [
+  { icon: ClipboardList, title: "Kabul", text: "Motosiklet, plaka ve müşteri kaydı açılır." },
+  { icon: Search, title: "Arıza Tespiti", text: "Arıza bölgeleri ve kontrol listesi işaretlenir." },
+  { icon: FileText, title: "Fiyat Teklifi", text: "Parça ve işçilik teklifi KDV dahil ya da hariç hazırlanır." },
+  { icon: ShieldCheck, title: "Onay", text: "Müşteri teklifi WhatsApp bağlantısından onaylar." },
+  { icon: Wrench, title: "Tamir", text: "İş emri ilerler, parça ve işçilik kayda geçer." },
+  { icon: Truck, title: "Teslimat", text: "Tahsilat alınır, bakım hatırlatması otomatik planlanır." },
+];
+
+function WorkflowSection() {
+  return (
+    <section id="workflow" className="scroll-mt-20 border-t border-white/10 py-24">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        <SectionHeading eyebrow="İŞ AKIŞI" title="Bir motosiklet, altı adımda." description="Atölyenizdeki her servis aynı akışla izlenir; hiçbir aşama kaybolmaz." />
+        <ol className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-6">
+          {WORKFLOW.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <li key={step.title} className="relative">
+                <Tilt3D max={6} lift={5} className="emt-glass-dark h-full rounded-2xl p-5">
+                  <span className="flex items-center justify-between">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300/20 to-cyan-500/10 text-cyan-200 ring-1 ring-cyan-300/30">
+                      <Icon className="h-5 w-5" />
+                    </span>
+                    <span className="font-heading text-xs font-semibold text-slate-500">0{i + 1}</span>
+                  </span>
+                  <h3 className="font-heading mt-4 text-sm font-semibold text-white">{step.title}</h3>
+                  <p className="mt-2 text-xs leading-relaxed text-slate-400">{step.text}</p>
+                </Tilt3D>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+const FAQ = [
+  { q: "Deneme süresi ne kadar ve kredi kartı gerekiyor mu?", a: "14 gün ücretsiz deneme sunuyoruz. Kredi kartı gerekmez." },
+  { q: "Müşteriler fiyat teklifini nasıl onaylar?", a: "Teklif, müşterinize bir bağlantı olarak gönderilir. Müşteri bağlantıdan onaylar ya da reddeder; karar kayda geçer." },
+  { q: "KDV hesabı nasıl yapılıyor?", a: "Her kalem için KDV dahil ya da hariç seçimi yapılır. Oran değişirse toplu KDV güncellemesi tek adımda uygulanır." },
+  { q: "Verilerim diğer firmalarla karışır mı?", a: "Hayır. Her firmanın verisi ayrı tutulur. Önemli işlemler denetim kaydında izlenir ve silinen kayıtlar 30 gün çöp kutusunda kalır." },
+  { q: "Kurulum ve eğitim var mı?", a: "Evet. Kurulum ve kullanım eğitimini ekibimiz sizin için yapar." },
+];
+
+function FaqSection() {
+  return (
+    <section id="faq" className="scroll-mt-20 py-24">
+      <div className="mx-auto max-w-3xl px-4 sm:px-6">
+        <SectionHeading eyebrow="SSS" title="Merak edilenler" />
+        <div className="mt-12 space-y-3">
+          {FAQ.map((item) => (
+            <details key={item.q} className="emt-glass-dark group rounded-xl px-5 py-4 open:border-cyan-300/30">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-left text-sm font-semibold text-white">
+                {item.q}
+                <ChevronDown className="h-4 w-4 shrink-0 text-cyan-300 transition-transform duration-200 group-open:rotate-180" />
+              </summary>
+              <p className="mt-3 text-sm leading-relaxed text-slate-400">{item.a}</p>
+            </details>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -146,6 +213,7 @@ export default function Landing() {
           </Link>
           <nav className="flex items-center gap-1 text-sm sm:gap-4">
             <a href="#features" className="hidden rounded-md px-2 py-1.5 text-slate-300 hover:text-white sm:inline">Özellikler</a>
+            <a href="#workflow" className="hidden rounded-md px-2 py-1.5 text-slate-300 hover:text-white lg:inline">İş akışı</a>
             <a href="#pricing" className="hidden rounded-md px-2 py-1.5 text-slate-300 hover:text-white sm:inline">Fiyat</a>
             <a href={demo} target="_blank" rel="noreferrer" className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-slate-300 hover:text-white md:inline-flex">
               <MessageCircle className="h-4 w-4" /> İletişim
@@ -198,6 +266,8 @@ export default function Landing() {
         </div>
       </section>
 
+      <WorkflowSection />
+
       <section id="pricing" className="scroll-mt-20 py-24">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <SectionHeading {...c.pricing_heading} />
@@ -206,6 +276,8 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <FaqSection />
 
       <section className="relative overflow-hidden py-24">
         <div className="emt-glass-dark relative mx-auto max-w-3xl rounded-3xl px-6 py-14 text-center sm:px-12">
