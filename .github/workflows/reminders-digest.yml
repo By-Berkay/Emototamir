@@ -1,5 +1,5 @@
 # Günlük bakım hatırlatma özeti + çöp kutusu temizliği.
-# Emergent cron'unun yerini alır. 09:00 Europe/Istanbul = 06:00 UTC (Türkiye'de DST yok).
+# Günlük hatırlatma özeti için zamanlanmış görev. 09:00 Europe/Istanbul = 06:00 UTC (Türkiye'de DST yok).
 # Gerekli ayarlar (GitHub > Settings > Secrets and variables > Actions):
 #   Variable: API_URL          -> https://api.emototamir.com
 #   Secret:   WEBHOOK_CRON_SECRET -> backend'deki WEBHOOK_CRON_SECRET ile aynı değer

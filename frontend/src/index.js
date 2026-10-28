@@ -3,6 +3,10 @@ import ReactDOM from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import "@/index.css";
 import App from "@/App";
+import { applyTheme, getTheme } from "@/lib/theme";
+
+// Sayfa çizilmeden tema uygulanır: yanlış renk anı (flash) oluşmaz
+applyTheme(getTheme());
 
 // Suppress benign ResizeObserver loop errors from webpack-dev-server overlay
 const RO_MSGS = ["ResizeObserver loop", "ResizeObserver loop limit exceeded"];
