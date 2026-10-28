@@ -3352,6 +3352,7 @@ async def seed_admin_and_indexes():
     await db.service_orders.create_index([("tenant_id", 1), ("service_no", 1)])
     await db.service_orders.create_index([("tenant_id", 1), ("customer_id", 1)])
     await db.service_orders.create_index([("tenant_id", 1), ("motorcycle_id", 1)])
+    await db.salary_payments.create_index([("tenant_id", 1), ("employee_id", 1), ("month", 1)])
 
     # Süper Admin: yalnızca hesap yoksa oluşturulur. Mevcut hesabın şifresi açılışta ASLA sıfırlanmaz.
     # Şifre ortam değişkeninden alınır; varsayılan/sabit bir şifre kullanılmaz.
@@ -3910,6 +3911,234 @@ async def shutdown_db_client():
     client.close()
 
 # Include routes
+# ---------- Gelir / Gider, personel ve maaş ----------
+FINANCE_ROLES = ("accountant",)  # admin ve muhasebe; süper admin firma verisine erişemez
+INCOME_CATEGORIES = ["Servis Geliri", "Parça Satışı", "Diğer Gelir"]
+EXPENSE_CATEGORIES = [
+    "Kira", "Elektrik / Su / Doğalgaz", "Yakıt / Ulaşım", "Malzeme & Yedek Parça",
+    "Vergi & Harç", "Bakım & Onarım", "Yemek & Konaklama", "Kırtasiye & Ofis",
+    "Telefon & İnternet", "Personel Maaşı", "Diğer Gider",
+]
+PAYMENT_METHODS = ["nakit", "kart", "havale", "çek", "diğer"]
+SALARY_CATEGORY = "Personel Maaşı"
+
+class FinanceEntryIn(BaseModel):
+    type: Literal["income", "expense"]
+    category: str = Field(min_length=1, max_length=80)
+    amount: float = Field(gt=0, le=100_000_000)
+    date: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    description: Optional[str] = Field(default="", max_length=300)
+    payee: Optional[str] = Field(default="", max_length=120)
+    payment_method: Literal["nakit", "kart", "havale", "çek", "diğer"] = "nakit"
+
+class EmployeeIn(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    role: Optional[str] = Field(default="", max_length=80)
+    phone: Optional[str] = Field(default="", max_length=30)
+    monthly_salary: float = Field(ge=0, le=100_000_000)
+    start_date: Optional[str] = Field(default="", max_length=10)
+    active: bool = True
+
+class SalaryPaymentIn(BaseModel):
+    month: str = Field(pattern=r"^\d{4}-\d{2}$")
+    amount: Optional[float] = Field(default=None, gt=0, le=100_000_000)
+    paid_on: str = Field(pattern=r"^\d{4}-\d{2}-\d{2}$")
+    payment_method: Literal["nakit", "kart", "havale", "çek", "diğer"] = "havale"
+    note: Optional[str] = Field(default="", max_length=200)
+
+def _finance_tenant(user) -> str:
+    if user.get("role") == "super_admin" or not user.get("tenant_id"):
+        raise HTTPException(403, "Bu alan yalnızca firma kullanıcılarına açıktır")
+    return user["tenant_id"]
+
+def _money(v: float) -> float:
+    return round(float(v) + 1e-9, 2)
+
+@api.get("/finance/meta")
+async def finance_meta(user=Depends(require_role(*FINANCE_ROLES))):
+    _finance_tenant(user)
+    return {"income_categories": INCOME_CATEGORIES, "expense_categories": EXPENSE_CATEGORIES,
+            "payment_methods": PAYMENT_METHODS}
+
+@api.get("/finance/summary")
+async def finance_summary(month: Optional[str] = None, user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    month = month or local_month_now()
+    if not re.match(r"^\d{4}-\d{2}$", month):
+        raise HTTPException(400, "Geçersiz ay")
+    entries = await db.finance_entries.find(
+        {"tenant_id": tid, "date": {"$regex": f"^{month}"}}, {"_id": 0}
+    ).to_list(5000)
+    income = sum(e["amount"] for e in entries if e["type"] == "income")
+    expense = sum(e["amount"] for e in entries if e["type"] == "expense")
+    by_cat: Dict[str, float] = {}
+    for e in entries:
+        key = f"{e['type']}:{e['category']}"
+        by_cat[key] = by_cat.get(key, 0) + e["amount"]
+    employees = await db.employees.find({"tenant_id": tid, "active": True}, {"_id": 0}).to_list(500)
+    paid_by_emp: Dict[str, float] = {}
+    for p in await db.salary_payments.find({"tenant_id": tid, "month": month}, {"_id": 0, "employee_id": 1, "amount": 1}).to_list(2000):
+        paid_by_emp[p["employee_id"]] = paid_by_emp.get(p["employee_id"], 0.0) + float(p.get("amount") or 0)
+    payroll_total = sum(float(e.get("monthly_salary") or 0) for e in employees)
+    remaining = {e["id"]: max(0.0, float(e.get("monthly_salary") or 0) - paid_by_emp.get(e["id"], 0.0)) for e in employees}
+    payroll_due = sum(remaining.values())
+    fully_paid = [e for e in employees if remaining[e["id"]] <= 0 and float(e.get("monthly_salary") or 0) > 0]
+    return {
+        "month": month,
+        "income": _money(income), "expense": _money(expense), "net": _money(income - expense),
+        "by_category": [{"key": k, "type": k.split(":")[0], "category": k.split(":", 1)[1], "amount": _money(v)}
+                        for k, v in sorted(by_cat.items(), key=lambda kv: -kv[1])],
+        "payroll_total": _money(payroll_total), "payroll_due": _money(payroll_due),
+        "employees_active": len(employees), "employees_paid": len(fully_paid),
+    }
+
+@api.get("/finance/entries")
+async def list_finance_entries(month: Optional[str] = None, type: Optional[str] = None,
+                               category: Optional[str] = None, q: Optional[str] = None,
+                               user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    f: Dict[str, Any] = {"tenant_id": tid}
+    if month:
+        f["date"] = {"$regex": f"^{re.escape(month)}"}
+    if type in ("income", "expense"):
+        f["type"] = type
+    if category:
+        f["category"] = category
+    docs = await db.finance_entries.find(f, {"_id": 0}).sort([("date", -1), ("created_at", -1)]).to_list(2000)
+    if q:
+        ql = q.lower()
+        docs = [d for d in docs if any(ql in (d.get(k) or "").lower() for k in ("description", "payee", "category"))]
+    return docs
+
+@api.post("/finance/entries")
+async def create_finance_entry(inp: FinanceEntryIn, user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    allowed = INCOME_CATEGORIES if inp.type == "income" else EXPENSE_CATEGORIES
+    if inp.category not in allowed:
+        raise HTTPException(400, "Geçersiz kategori")
+    if inp.type == "expense" and inp.category == SALARY_CATEGORY:
+        raise HTTPException(400, "Maaş ödemeleri Personel ekranından kaydedilir")
+    doc = {"id": uid(), "tenant_id": tid, **inp.model_dump(), "amount": _money(inp.amount),
+           "created_by": user["email"], "created_at": now_iso()}
+    await db.finance_entries.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api.put("/finance/entries/{eid}")
+async def update_finance_entry(eid: str, inp: FinanceEntryIn, user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    old = await db.finance_entries.find_one({"id": eid, "tenant_id": tid}, {"_id": 0})
+    if not old:
+        raise HTTPException(404, "Kayıt bulunamadı")
+    if old.get("salary_payment_id"):
+        raise HTTPException(400, "Maaş kaydı Personel ekranından düzenlenir")
+    allowed = INCOME_CATEGORIES if inp.type == "income" else EXPENSE_CATEGORIES
+    if inp.category not in allowed or (inp.type == "expense" and inp.category == SALARY_CATEGORY):
+        raise HTTPException(400, "Geçersiz kategori")
+    data = {**inp.model_dump(), "amount": _money(inp.amount)}
+    await db.finance_entries.update_one({"id": eid, "tenant_id": tid}, {"$set": data})
+    await db.audit_logs.insert_one({"id": uid(), "tenant_id": tid, "user": user["email"],
+                                    "action": "finance.update", "entity_id": eid, "at": now_iso()})
+    return await db.finance_entries.find_one({"id": eid, "tenant_id": tid}, {"_id": 0})
+
+@api.delete("/finance/entries/{eid}")
+async def delete_finance_entry(eid: str, user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    old = await db.finance_entries.find_one({"id": eid, "tenant_id": tid}, {"_id": 0})
+    if not old:
+        raise HTTPException(404, "Kayıt bulunamadı")
+    if old.get("salary_payment_id"):
+        raise HTTPException(400, "Maaş kaydı Personel ekranından silinir")
+    await db.finance_entries.delete_one({"id": eid, "tenant_id": tid})
+    await db.audit_logs.insert_one({"id": uid(), "tenant_id": tid, "user": user["email"],
+                                    "action": "finance.delete", "entity_id": eid, "at": now_iso()})
+    return {"ok": True}
+
+@api.get("/finance/employees")
+async def list_employees(user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    return await db.employees.find({"tenant_id": tid}, {"_id": 0}).sort("name", 1).to_list(500)
+
+@api.post("/finance/employees")
+async def create_employee(inp: EmployeeIn, user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    doc = {"id": uid(), "tenant_id": tid, **inp.model_dump(), "monthly_salary": _money(inp.monthly_salary),
+           "created_at": now_iso()}
+    await db.employees.insert_one(doc)
+    doc.pop("_id", None)
+    return doc
+
+@api.put("/finance/employees/{emp_id}")
+async def update_employee(emp_id: str, inp: EmployeeIn, user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    if not await db.employees.find_one({"id": emp_id, "tenant_id": tid}):
+        raise HTTPException(404, "Personel bulunamadı")
+    data = {**inp.model_dump(), "monthly_salary": _money(inp.monthly_salary)}
+    await db.employees.update_one({"id": emp_id, "tenant_id": tid}, {"$set": data})
+    return await db.employees.find_one({"id": emp_id, "tenant_id": tid}, {"_id": 0})
+
+@api.delete("/finance/employees/{emp_id}")
+async def delete_employee(emp_id: str, user=Depends(require_role(*FINANCE_ROLES))):
+    """Geçmiş maaş kayıtları korunsun diye personel silinmez, pasifleştirilir."""
+    tid = _finance_tenant(user)
+    r = await db.employees.update_one({"id": emp_id, "tenant_id": tid}, {"$set": {"active": False}})
+    if r.matched_count == 0:
+        raise HTTPException(404, "Personel bulunamadı")
+    return {"ok": True}
+
+@api.get("/finance/employees/{emp_id}/salary-payments")
+async def list_salary_payments(emp_id: str, user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    return await db.salary_payments.find({"tenant_id": tid, "employee_id": emp_id}, {"_id": 0}).sort("month", -1).to_list(240)
+
+@api.post("/finance/employees/{emp_id}/salary-payments")
+async def pay_salary(emp_id: str, inp: SalaryPaymentIn, user=Depends(require_role(*FINANCE_ROLES))):
+    """Avans ve kısmi ödemeler serbest; tutar boşsa o ayın kalan bakiyesi yazılır."""
+    tid = _finance_tenant(user)
+    emp = await db.employees.find_one({"id": emp_id, "tenant_id": tid}, {"_id": 0})
+    if not emp:
+        raise HTTPException(404, "Personel bulunamadı")
+    salary = float(emp.get("monthly_salary") or 0)
+    paid_so_far = 0.0
+    async for p in db.salary_payments.find({"tenant_id": tid, "employee_id": emp_id, "month": inp.month}, {"_id": 0, "amount": 1}):
+        paid_so_far += float(p.get("amount") or 0)
+    if inp.amount is not None:
+        amount = _money(inp.amount)
+    else:
+        amount = _money(max(0.0, salary - paid_so_far))
+    if amount <= 0:
+        raise HTTPException(400, "Ödeme tutarı sıfırdan büyük olmalı")
+    pay_id = uid()
+    entry_id = uid()
+    doc = {"id": pay_id, "tenant_id": tid, "employee_id": emp_id, "month": inp.month, "amount": amount,
+           "paid_on": inp.paid_on, "payment_method": inp.payment_method, "note": inp.note or "",
+           "entry_id": entry_id, "created_by": user["email"], "created_at": now_iso()}
+    await db.salary_payments.insert_one(dict(doc))
+    try:
+        await db.finance_entries.insert_one({
+            "id": entry_id, "tenant_id": tid, "type": "expense", "category": SALARY_CATEGORY,
+            "amount": amount, "date": inp.paid_on, "description": f"{inp.month} maaşı — {emp['name']}",
+            "payee": emp["name"], "payment_method": inp.payment_method,
+            "salary_payment_id": pay_id, "created_by": user["email"], "created_at": now_iso(),
+        })
+    except Exception:
+        await db.salary_payments.delete_one({"id": pay_id, "tenant_id": tid})
+        raise
+    doc.pop("_id", None)
+    return doc
+
+@api.delete("/finance/salary-payments/{pay_id}")
+async def delete_salary_payment(pay_id: str, user=Depends(require_role(*FINANCE_ROLES))):
+    tid = _finance_tenant(user)
+    p = await db.salary_payments.find_one({"id": pay_id, "tenant_id": tid}, {"_id": 0})
+    if not p:
+        raise HTTPException(404, "Ödeme bulunamadı")
+    await db.finance_entries.delete_one({"id": p.get("entry_id"), "tenant_id": tid})
+    await db.salary_payments.delete_one({"id": pay_id, "tenant_id": tid})
+    await db.audit_logs.insert_one({"id": uid(), "tenant_id": tid, "user": user["email"],
+                                    "action": "salary.delete", "entity_id": pay_id, "at": now_iso()})
+    return {"ok": True}
+
 app.include_router(api)
 
 # CORS: when credentials are enabled, wildcard origins are unsafe/invalid.

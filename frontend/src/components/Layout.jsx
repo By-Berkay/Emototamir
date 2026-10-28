@@ -4,7 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList, ClipboardCheck, Wallet, Receipt,
   BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText,
-  Trash2, KeyRound, Plus, UserRound,
+  Trash2, KeyRound, Plus, UserRound, ArrowLeftRight, Banknote,
 } from "lucide-react";
 import { Input } from "./ui/input";
 import { usePrivacy } from "../context/PrivacyContext";
@@ -46,6 +46,8 @@ const NAV_TENANT = [
   {
     title: "Finans",
     items: [
+      { to: "/finance", label: "Gelir & Gider", icon: ArrowLeftRight, financeOnly: true },
+      { to: "/finance/staff", label: "Personel & Maaş", icon: Banknote, financeOnly: true },
       { to: "/current-accounts", label: "Cari Hesaplar", icon: Wallet },
       { to: "/payments", label: "Tahsilatlar", icon: Receipt },
       { to: "/reports", label: "Raporlar", icon: BarChart3 },
@@ -106,7 +108,10 @@ export default function Layout() {
     return <Navigate to="/admin/tenants" replace />;
   }
 
-  const visible = (item) => !item.adminOnly || user?.role === "admin" || isSuper;
+  const visible = (item) => {
+    if (item.financeOnly) return ["admin", "accountant"].includes(user?.role);
+    return !item.adminOnly || user?.role === "admin" || isSuper;
+  };
 
   return (
     <div className="emt-aurora flex min-h-screen">
