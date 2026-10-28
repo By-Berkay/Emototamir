@@ -9,6 +9,7 @@ import {
 import { Input } from "./ui/input";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Lock, LockOpen } from "lucide-react";
+import AuthedImage from "./AuthedImage";
 
 const ROLE_LABELS = {
   super_admin: "Süper Admin",
@@ -190,8 +191,8 @@ export default function Layout() {
 
         <div className="m-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-700 text-xs font-semibold text-white">
-              {initials(user?.name)}
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-700 text-xs font-semibold text-white">
+              {user?.avatar_path ? <AuthedImage path={user.avatar_path} alt="" className="h-full w-full object-cover" /> : initials(user?.name)}
             </span>
             <div className="min-w-0 flex-1">
               <Link to="/profil" className="block truncate text-sm font-medium text-white hover:underline">{user?.name}</Link>
@@ -254,8 +255,8 @@ export default function Layout() {
                   {ROLE_LABELS[user?.role] || user?.role}
                 </span>
               </div>
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-900 text-xs font-semibold text-white">
-                {initials(user?.name)}
+              <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-900 text-xs font-semibold text-white">
+                {user?.avatar_path ? <AuthedImage path={user.avatar_path} alt="" className="h-full w-full object-cover" /> : initials(user?.name)}
               </span>
             </div>
           </div>

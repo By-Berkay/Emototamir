@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { UserRound, Link2, Link2Off, ShieldAlert, KeyRound } from "lucide-react";
+import { UserRound, Link2, Link2Off, ShieldAlert, KeyRound, Upload, Trash2 } from "lucide-react";
+import AuthedImage from "../components/AuthedImage";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
@@ -60,6 +61,7 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const avatarRef = useRef(null);
 
   const isSuper = user?.role === "super_admin";
   const isAdmin = user?.role === "admin";
@@ -71,6 +73,34 @@ export default function Profile() {
   }, []);
 
   if (!profile || !form) return <div>Yükleniyor…</div>;
+
+  const uploadAvatar = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const { data } = await api.post("/profile/avatar", fd);
+      setProfile((p) => ({ ...p, avatar_path: data.avatar_path }));
+      await refresh();
+      toast.success("Profil fotoğrafı güncellendi");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Fotoğraf yüklenemedi");
+    }
+  };
+
+  const removeAvatar = async () => {
+    if (!window.confirm("Profil fotoğrafı kaldırılsın mı?")) return;
+    try {
+      await api.delete("/profile/avatar");
+      setProfile((p) => ({ ...p, avatar_path: null }));
+      await refresh();
+      toast.success("Profil fotoğrafı kaldırıldı");
+    } catch {
+      toast.error("Fotoğraf kaldırılamadı");
+    }
+  };
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const anyLinked = Object.keys(LINKS).some((k) => form[`link_${k}`]);
@@ -238,6 +268,33 @@ export default function Profile() {
         </div>
 
         <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Profil fotoğrafı</CardTitle>
+              <CardDescription>PNG, JPG veya WEBP; en fazla 3 MB.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex items-center gap-5">
+              <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-xl font-bold text-white ring-2 ring-white/20">
+                {profile.avatar_path ? (
+                  <AuthedImage path={profile.avatar_path} alt="Profil fotoğrafı" className="h-full w-full object-cover" />
+                ) : (
+                  (profile.name || "?").split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("")
+                )}
+              </span>
+              <div className="flex flex-wrap gap-2">
+                <input ref={avatarRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={uploadAvatar} data-testid="input-avatar" />
+                <Button type="button" variant="outline" onClick={() => avatarRef.current?.click()} data-testid="btn-avatar-upload">
+                  <Upload className="mr-2 h-4 w-4" />Fotoğraf yükle
+                </Button>
+                {profile.avatar_path && (
+                  <Button type="button" variant="ghost" onClick={removeAvatar} data-testid="btn-avatar-remove">
+                    <Trash2 className="mr-2 h-4 w-4" />Kaldır
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
           {!isSuper && profile.has_firm && profile.firm && (
             <Card>
               <CardHeader>

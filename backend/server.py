@@ -539,6 +539,7 @@ def _profile_view(doc: Dict[str, Any], tenant: Optional[Dict[str, Any]]) -> Dict
         "phone": doc.get("phone", "") or "", "contact_email": doc.get("contact_email", "") or "",
         "address": doc.get("address", "") or "", "city": doc.get("city", "") or "",
         "district": doc.get("district", "") or "",
+        "avatar_path": doc.get("avatar_path"),
     }
     for key in PROFILE_LINKS:
         view[f"link_{key}"] = bool(doc.get(f"link_{key}")) and view["has_firm"]
@@ -630,6 +631,40 @@ async def update_profile(inp: ProfileIn, user=Depends(get_current_user)):
     })
     fresh = await db.users.find_one({"id": user["id"]}, {"password_hash": 0, "_id": 0})
     return _profile_view(fresh, await _tenant_of(fresh))
+
+AVATAR_MAX_BYTES = 3 * 1024 * 1024
+
+@api.post("/profile/avatar")
+async def upload_avatar(file: UploadFile = File(...), user=Depends(get_current_user)):
+    ext = ((file.filename or "").rsplit(".", 1)[-1] if "." in (file.filename or "") else "").lower()
+    if ext not in {"png", "jpg", "jpeg", "webp"}:
+        raise HTTPException(400, "Sadece PNG, JPG veya WEBP yüklenebilir")
+    data = await file.read()
+    if not data:
+        raise HTTPException(400, "Dosya boş")
+    if len(data) > AVATAR_MAX_BYTES:
+        raise HTTPException(400, "Profil fotoğrafı en fazla 3 MB olabilir")
+    path = f"{APP_NAME}/users/{user['id']}/avatar-{uid()}.{ext}"
+    result = await put_object(path, data, file.content_type or "image/jpeg")
+    await db.file_refs.insert_one({
+        "id": uid(), "path": result["path"], "tenant_id": user.get("tenant_id"),
+        "original_name": file.filename, "content_type": file.content_type or "image/jpeg",
+        "size": len(data), "uploaded_at": now_iso(), "is_deleted": False, "kind": "user_avatar",
+    })
+    # Eski profil fotoğrafını pasifleştir (dosya saklama alanında kalır, erişimi kapanır)
+    old = await db.users.find_one({"id": user["id"]}, {"avatar_path": 1, "_id": 0})
+    if old and old.get("avatar_path"):
+        await db.file_refs.update_many({"path": old["avatar_path"]}, {"$set": {"is_deleted": True}})
+    await db.users.update_one({"id": user["id"]}, {"$set": {"avatar_path": result["path"]}})
+    return {"avatar_path": result["path"]}
+
+@api.delete("/profile/avatar")
+async def delete_avatar(user=Depends(get_current_user)):
+    old = await db.users.find_one({"id": user["id"]}, {"avatar_path": 1, "_id": 0})
+    if old and old.get("avatar_path"):
+        await db.file_refs.update_many({"path": old["avatar_path"]}, {"$set": {"is_deleted": True}})
+    await db.users.update_one({"id": user["id"]}, {"$set": {"avatar_path": None}})
+    return {"ok": True}
 
 # ---------- Users (admin) ----------
 @api.get("/users")
