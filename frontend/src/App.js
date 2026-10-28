@@ -31,6 +31,8 @@ import QuotePublic from "./pages/QuotePublic";
 import Trash from "./pages/Trash";
 import ChangePassword from "./pages/ChangePassword";
 import Profile from "./pages/Profile";
+import Finance from "./pages/Finance";
+import Staff from "./pages/Staff";
 import Inspections from "./pages/Inspections";
 import InspectionEdit from "./pages/InspectionEdit";
 import InspectionDetail from "./pages/InspectionDetail";
@@ -95,6 +97,8 @@ export default function App() {
             <Route path="/settings" element={<Settings />} />
             <Route path="/account/password" element={<ChangePassword />} />
             <Route path="/profil" element={<Profile />} />
+            <Route path="/finance" element={<Finance />} />
+            <Route path="/finance/staff" element={<Staff />} />
             <Route path="/inspections" element={<Inspections />} />
             <Route path="/inspections/new" element={<InspectionEdit />} />
             <Route path="/inspections/:id" element={<InspectionDetail />} />
