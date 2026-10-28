@@ -3878,7 +3878,7 @@ async def shutdown_db_client():
 app.include_router(api)
 
 # CORS: when credentials are enabled, wildcard origins are unsafe/invalid.
-# Use explicit env-provided origins + FRONTEND_URL + Emergent hostname regex.
+# Yalnızca açıkça tanımlı origin'ler (CORS_ORIGINS, FRONTEND_URL, yerel geliştirme).
 _cors_origins = os.environ.get("CORS_ORIGINS", "")
 _origins_list = [o.strip() for o in _cors_origins.split(",") if o.strip() and o.strip() != "*"]
 _frontend_url = os.environ.get("FRONTEND_URL")
@@ -3893,7 +3893,6 @@ app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=_origins_list,
-    allow_origin_regex=r"https://.*\.emergent(agent|)\.(com|host)$",
     allow_methods=["*"],
     allow_headers=["*"],
 )
