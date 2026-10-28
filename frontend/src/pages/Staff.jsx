@@ -48,7 +48,9 @@ export default function Staff() {
   };
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [month]);
 
-  const isPaid = (emp) => (paidMap[emp.id] || []).some((p) => p.month === month);
+  // Seçili ay için ödenen toplam ve kalan bakiye (avans/kısmi ödemeler birikir)
+  const monthPaid = (emp) => (paidMap[emp.id] || []).filter((p) => p.month === month).reduce((sum, p) => sum + Number(p.amount || 0), 0);
+  const remainingOf = (emp) => Math.max(0, Number(emp.monthly_salary || 0) - monthPaid(emp));
 
   const openNewEmp = () => { setEmpEditing(null); setEmpForm(EMPTY_EMP); setEmpOpen(true); };
   const openEditEmp = (emp) => {
@@ -88,7 +90,7 @@ export default function Staff() {
 
   const openPay = (emp) => {
     setPayFor(emp);
-    setPayForm({ month, amount: String(emp.monthly_salary || ""), paid_on: month === currentMonth() ? today() : `${month}-28`, payment_method: "havale", note: "" });
+    setPayForm({ month, amount: String(remainingOf(emp) || ""), paid_on: month === currentMonth() ? today() : `${month}-28`, payment_method: "havale", note: "" });
   };
 
   const paySalary = async (ev) => {
@@ -149,27 +151,31 @@ export default function Staff() {
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {active.map((emp) => {
-            const paid = isPaid(emp);
+            const paidSum = monthPaid(emp);
+            const remaining = remainingOf(emp);
+            const done = remaining <= 0;
+            const partial = !done && paidSum > 0;
             const hist = paidMap[emp.id] || [];
             return (
               <Card key={emp.id} className="relative overflow-hidden">
-                <span aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-1", paid ? "bg-emerald-500" : "bg-orange-500")} />
+                <span aria-hidden="true" className={cn("absolute inset-x-0 top-0 h-1", done ? "bg-emerald-500" : partial ? "bg-amber-500" : "bg-orange-500")} />
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="font-heading truncate text-base font-semibold text-slate-900 dark:text-white">{emp.name}</p>
                       <p className="truncate text-xs text-slate-500 dark:text-slate-400">{emp.role || "Pozisyon belirtilmedi"}{emp.phone ? ` · ${emp.phone}` : ""}</p>
                     </div>
-                    <Badge variant={paid ? "success" : "warning"}>{paid ? "Ödendi" : "Bekliyor"}</Badge>
+                    <Badge variant={done ? "success" : partial ? "info" : "warning"}>{done ? "Ödendi" : partial ? "Kısmi" : "Bekliyor"}</Badge>
                   </div>
                   <p className="mt-4 text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Aylık maaş</p>
                   <p className="font-heading text-2xl font-bold text-slate-900 dark:text-white"><Money value={emp.monthly_salary} /></p>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    {partial && <>Bu ay ödenen <Money value={paidSum} /> · kalan <Money value={remaining} /><br /></>}
                     {hist.length ? `Son ödeme: ${hist[0].month} · ${fmtDate(hist[0].paid_on)}` : "Henüz ödeme yok"}
                   </p>
                   <div className="mt-5 flex flex-wrap gap-2">
-                    <Button size="sm" onClick={() => openPay(emp)} disabled={paid} data-testid={`btn-pay-${emp.id}`}>
-                      <Banknote className="mr-1.5 h-3.5 w-3.5" />{paid ? "Bu ay ödendi" : "Maaş öde"}
+                    <Button size="sm" onClick={() => openPay(emp)} disabled={done} data-testid={`btn-pay-${emp.id}`}>
+                      <Banknote className="mr-1.5 h-3.5 w-3.5" />{done ? "Bu ay ödendi" : partial ? "Kalanı öde" : "Maaş öde"}
                     </Button>
                     <Button size="sm" variant="outline" onClick={() => setHistory(emp)}><History className="mr-1.5 h-3.5 w-3.5" />Geçmiş</Button>
                     <Button size="sm" variant="ghost" onClick={() => openEditEmp(emp)} aria-label={`${emp.name} düzenle`}><Pencil className="h-3.5 w-3.5" /></Button>
@@ -223,13 +229,18 @@ export default function Staff() {
       <Dialog open={!!payFor} onOpenChange={(o) => !o && setPayFor(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Maaş öde · {payFor?.name}</DialogTitle></DialogHeader>
+          {payFor && (
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Aylık maaş <Money value={payFor.monthly_salary} /> · {month} için kalan <Money value={remainingOf(payFor)} />
+            </p>
+          )}
           <form onSubmit={paySalary} className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <Label htmlFor="p-month">Maaş ayı</Label>
               <Input id="p-month" type="month" value={payForm.month} onChange={(e) => setPayForm({ ...payForm, month: e.target.value })} required className="mt-1.5" />
             </div>
             <div>
-              <Label htmlFor="p-amount">Tutar (₺)</Label>
+              <Label htmlFor="p-amount">Tutar (₺) · avans veya kısmi ödeme için düzenleyin</Label>
               <Input id="p-amount" inputMode="decimal" value={payForm.amount} onChange={(e) => setPayForm({ ...payForm, amount: e.target.value })} className="mt-1.5" />
             </div>
             <div>

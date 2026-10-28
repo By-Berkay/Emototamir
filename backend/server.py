@@ -19,7 +19,6 @@ from pydantic import BaseModel, Field, EmailStr, ConfigDict
 import io
 import re
 import secrets
-from pymongo.errors import DuplicateKeyError
 
 from storage_utils import put_object, get_object, init_storage, APP_NAME
 from pdf_utils import build_service_pdf, build_inspection_pdf
@@ -3353,8 +3352,7 @@ async def seed_admin_and_indexes():
     await db.service_orders.create_index([("tenant_id", 1), ("service_no", 1)])
     await db.service_orders.create_index([("tenant_id", 1), ("customer_id", 1)])
     await db.service_orders.create_index([("tenant_id", 1), ("motorcycle_id", 1)])
-    # Bir personel için ayda en fazla bir maaş ödemesi (yarışmaya karşı veritabanı seviyesinde)
-    await db.salary_payments.create_index([("tenant_id", 1), ("employee_id", 1), ("month", 1)], unique=True)
+    await db.salary_payments.create_index([("tenant_id", 1), ("employee_id", 1), ("month", 1)])
 
     # Süper Admin: yalnızca hesap yoksa oluşturulur. Mevcut hesabın şifresi açılışta ASLA sıfırlanmaz.
     # Şifre ortam değişkeninden alınır; varsayılan/sabit bir şifre kullanılmaz.
@@ -3978,17 +3976,20 @@ async def finance_summary(month: Optional[str] = None, user=Depends(require_role
         key = f"{e['type']}:{e['category']}"
         by_cat[key] = by_cat.get(key, 0) + e["amount"]
     employees = await db.employees.find({"tenant_id": tid, "active": True}, {"_id": 0}).to_list(500)
-    paid_ids = {p["employee_id"] for p in await db.salary_payments.find(
-        {"tenant_id": tid, "month": month}, {"_id": 0, "employee_id": 1}).to_list(500)}
+    paid_by_emp: Dict[str, float] = {}
+    for p in await db.salary_payments.find({"tenant_id": tid, "month": month}, {"_id": 0, "employee_id": 1, "amount": 1}).to_list(2000):
+        paid_by_emp[p["employee_id"]] = paid_by_emp.get(p["employee_id"], 0.0) + float(p.get("amount") or 0)
     payroll_total = sum(float(e.get("monthly_salary") or 0) for e in employees)
-    payroll_due = sum(float(e.get("monthly_salary") or 0) for e in employees if e["id"] not in paid_ids)
+    remaining = {e["id"]: max(0.0, float(e.get("monthly_salary") or 0) - paid_by_emp.get(e["id"], 0.0)) for e in employees}
+    payroll_due = sum(remaining.values())
+    fully_paid = [e for e in employees if remaining[e["id"]] <= 0 and float(e.get("monthly_salary") or 0) > 0]
     return {
         "month": month,
         "income": _money(income), "expense": _money(expense), "net": _money(income - expense),
         "by_category": [{"key": k, "type": k.split(":")[0], "category": k.split(":", 1)[1], "amount": _money(v)}
                         for k, v in sorted(by_cat.items(), key=lambda kv: -kv[1])],
         "payroll_total": _money(payroll_total), "payroll_due": _money(payroll_due),
-        "employees_active": len(employees), "employees_paid": len([e for e in employees if e["id"] in paid_ids]),
+        "employees_active": len(employees), "employees_paid": len(fully_paid),
     }
 
 @api.get("/finance/entries")
@@ -4092,25 +4093,27 @@ async def list_salary_payments(emp_id: str, user=Depends(require_role(*FINANCE_R
 
 @api.post("/finance/employees/{emp_id}/salary-payments")
 async def pay_salary(emp_id: str, inp: SalaryPaymentIn, user=Depends(require_role(*FINANCE_ROLES))):
+    """Avans ve kısmi ödemeler serbest; tutar boşsa o ayın kalan bakiyesi yazılır."""
     tid = _finance_tenant(user)
     emp = await db.employees.find_one({"id": emp_id, "tenant_id": tid}, {"_id": 0})
     if not emp:
         raise HTTPException(404, "Personel bulunamadı")
-    if await db.salary_payments.find_one({"tenant_id": tid, "employee_id": emp_id, "month": inp.month}):
-        raise HTTPException(409, "Bu ayın maaşı zaten ödenmiş")
-    amount = _money(inp.amount if inp.amount is not None else emp.get("monthly_salary") or 0)
+    salary = float(emp.get("monthly_salary") or 0)
+    paid_so_far = 0.0
+    async for p in db.salary_payments.find({"tenant_id": tid, "employee_id": emp_id, "month": inp.month}, {"_id": 0, "amount": 1}):
+        paid_so_far += float(p.get("amount") or 0)
+    if inp.amount is not None:
+        amount = _money(inp.amount)
+    else:
+        amount = _money(max(0.0, salary - paid_so_far))
     if amount <= 0:
-        raise HTTPException(400, "Maaş tutarı sıfırdan büyük olmalı")
+        raise HTTPException(400, "Ödeme tutarı sıfırdan büyük olmalı")
     pay_id = uid()
     entry_id = uid()
     doc = {"id": pay_id, "tenant_id": tid, "employee_id": emp_id, "month": inp.month, "amount": amount,
            "paid_on": inp.paid_on, "payment_method": inp.payment_method, "note": inp.note or "",
            "entry_id": entry_id, "created_by": user["email"], "created_at": now_iso()}
-    # Önce benzersiz ödeme kaydı yazılır: aynı ay için eşzamanlı istekte ikincisi burada düşer
-    try:
-        await db.salary_payments.insert_one(dict(doc))
-    except DuplicateKeyError:
-        raise HTTPException(409, "Bu ayın maaşı zaten ödenmiş")
+    await db.salary_payments.insert_one(dict(doc))
     try:
         await db.finance_entries.insert_one({
             "id": entry_id, "tenant_id": tid, "type": "expense", "category": SALARY_CATEGORY,
