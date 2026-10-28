@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Camera, Save, Search, X } from "lucide-react";
 import api from "../lib/api";
@@ -166,8 +166,7 @@ function ChecklistRow({ item, photos, isEdit, photosOpen, onTogglePhotos, onStat
             type="button"
             variant={photosOpen ? "secondary" : "ghost"}
             size="sm"
-            disabled={!isEdit}
-            title={isEdit ? undefined : "Fotoğrafları kaydettikten sonra ekleyebilirsiniz"}
+            title={isEdit ? undefined : "Ekspertiz kaydedilir ve fotoğraf paneli açılır"}
             onClick={() => onTogglePhotos(item.key)}
             data-testid={`btn-toggle-photos-${item.key}`}
           >
@@ -307,13 +306,30 @@ export default function InspectionEdit() {
   const setStatus = (key, status) =>
     setItems((list) => list.map((it) => (it.key === key ? { ...it, status } : it)));
   const setNote = (key, note) => setItems((list) => list.map((it) => (it.key === key ? { ...it, note } : it)));
-  const togglePhotos = (key) =>
+  // Yeni kayıttan gelindiyse ilgili maddenin fotoğraf paneli açık gelir
+  const location = useLocation();
+  useEffect(() => {
+    const key = location.state?.openPhotosFor;
+    if (key && isEdit) setPhotosOpen((s) => ({ ...s, [key]: true }));
+  }, [location.state, isEdit]);
+
+  const togglePhotos = (key) => {
+    // Yeni kayıtta fotoğraf kaydın ID'sine ihtiyaç duyar: önce kaydedilir, sonra bu madde açılır
+    if (!isEdit) {
+      if (!form.plate.trim()) {
+        toast.error("Fotoğraf eklemek için önce plakayı girin; kayıt otomatik oluşturulur");
+        return;
+      }
+      save({ openPhotosFor: key });
+      return;
+    }
     setPhotosOpen((s) => {
       const current = s[key] ?? photos.some((p) => p.item_key === key);
       return { ...s, [key]: !current };
     });
+  };
 
-  const save = async () => {
+  const save = async (opts = {}) => {
     if (!form.plate.trim()) {
       toast.error("Plaka zorunludur");
       return;
@@ -353,7 +369,7 @@ export default function InspectionEdit() {
       } else {
         const { data } = await api.post("/inspections", payload);
         toast.success(`Ekspertiz kaydedildi · ${data.report_no}`);
-        navigate(`/inspections/${data.id}/edit`, { replace: true });
+        navigate(`/inspections/${data.id}/edit`, { replace: true, state: opts.openPhotosFor ? { openPhotosFor: opts.openPhotosFor } : undefined });
       }
     } catch (err) {
       const detail = err.response?.data?.detail;

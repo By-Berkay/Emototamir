@@ -180,7 +180,6 @@ export function ItemPhotos({ inspectionId, itemKey, itemLabel, photos, onAdded, 
           type="file"
           accept="image/*"
           multiple
-          capture="environment"
           onChange={upload}
           className="hidden"
           data-testid={`input-item-photo-${itemKey}`}
