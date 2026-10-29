@@ -8,9 +8,10 @@ import { Textarea } from "../components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
 import { Plus } from "lucide-react";
 import PageHeader from "../components/PageHeader";
+import { PriceModeSelect, VatSelect } from "../components/PriceControls";
 import { toast } from "sonner";
 
-const empty = { code:"", name:"", description:"", price:0, vat:20 };
+const empty = { code:"", name:"", description:"", price:0, vat:20, price_mode:"incl" };
 
 export default function Services() {
   const [items, setItems] = useState([]);
@@ -43,7 +44,8 @@ export default function Services() {
               <div><Label>Ad</Label><Input value={form.name} onChange={(e)=>setForm({...form, name:e.target.value})} /></div>
               <div className="col-span-2"><Label>Açıklama</Label><Textarea rows={2} value={form.description} onChange={(e)=>setForm({...form, description:e.target.value})} /></div>
               <div><Label>Fiyat (₺)</Label><Input type="number" value={form.price} onChange={(e)=>setForm({...form, price:e.target.value})} /></div>
-              <div><Label>KDV (%)</Label><Input type="number" value={form.vat} onChange={(e)=>setForm({...form, vat:e.target.value})} /></div>
+              <div><Label>KDV</Label><VatSelect value={form.vat} onChange={(v)=>setForm({...form, vat:v})} testId="service-vat" /></div>
+              <div><Label>Fiyat tipi</Label><PriceModeSelect value={form.price_mode} onChange={(v)=>setForm({...form, price_mode:v})} testId="service-price-mode" /></div>
             </div>
             <DialogFooter><Button variant="outline" onClick={()=>setOpen(false)}>İptal</Button><Button className="bg-brand-500 hover:bg-brand-600" onClick={save}>Kaydet</Button></DialogFooter>
           </DialogContent>
