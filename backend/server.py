@@ -5,6 +5,7 @@ ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 import os
+import asyncio
 import uuid
 import logging
 import bcrypt
@@ -3030,7 +3031,21 @@ INSPECTION_STATUSES = ("good", "medium", "service")  # İYİ, ORTA, BAKIM
 INSPECTION_MAX_ITEMS = 60
 INSPECTION_MAX_PHOTOS = 60
 INSPECTION_PHOTO_MAX_BYTES = 10 * 1024 * 1024
-PHOTO_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif"}
+PHOTO_EXTENSIONS = {"jpg", "jpeg", "png", "webp", "gif", "heic", "heif"}
+# iPhone fotoğrafları HEIC gelir; tarayıcılar göstermez, bu yüzden yüklemede JPEG'e çevrilir.
+try:
+    from pillow_heif import register_heif_opener
+    register_heif_opener()
+    HEIF_SUPPORTED = True
+except Exception:  # kütüphane yoksa HEIC yüklemesi açık bir hata ile reddedilir
+    HEIF_SUPPORTED = False
+
+def _heic_to_jpeg(data: bytes) -> bytes:
+    from PIL import Image, ImageOps
+    img = ImageOps.exif_transpose(Image.open(io.BytesIO(data))).convert("RGB")
+    out = io.BytesIO()
+    img.save(out, "JPEG", quality=88)
+    return out.getvalue()
 _DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 class InspectionItemIn(BaseModel):
@@ -3237,8 +3252,16 @@ async def upload_inspection_photo(iid: str, file: UploadFile = File(...), item_k
         raise HTTPException(400, "Dosya boş")
     if len(data) > INSPECTION_PHOTO_MAX_BYTES:
         raise HTTPException(400, "Fotoğraf en fazla 10 MB olabilir")
-    photo_id = uid()
     content_type = file.content_type or "image/jpeg"
+    if ext in ("heic", "heif"):
+        if not HEIF_SUPPORTED:
+            raise HTTPException(400, "HEIC fotoğraflar desteklenmiyor; fotoğrafı JPEG olarak kaydedip tekrar deneyin")
+        try:
+            data = await asyncio.to_thread(_heic_to_jpeg, data)
+        except Exception:
+            raise HTTPException(400, "HEIC fotoğraf okunamadı; JPEG olarak kaydedip tekrar deneyin")
+        ext, content_type = "jpg", "image/jpeg"
+    photo_id = uid()
     path = f"{APP_NAME}/tenants/{tid}/inspections/{iid}/{photo_id}.{ext}"
     result = await put_object(path, data, content_type)
     photo = {
