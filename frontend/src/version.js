@@ -1,3 +1,3 @@
 // Uygulama sürümü. Her yayında bu değer ve CHANGELOG.md birlikte güncellenir.
 // Kural: büyük değişiklik → 2.0, 3.0 ...; küçük düzeltme → 2.01, 2.02 ...
-export const APP_VERSION = "2.06";
+export const APP_VERSION = "2.07";

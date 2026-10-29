@@ -14,7 +14,7 @@ const TONES = {
 export default function StatCard({ label, value, hint, icon: Icon, tone = "brand", testId }) {
   return (
     <Tilt3D
-      className="emt-depth flex h-full items-start justify-between gap-3 rounded-xl border border-slate-200/80 bg-white p-5"
+      className="glass-card emt-depth flex h-full items-start justify-between gap-3 rounded-xl p-5"
       data-testid={testId}
     >
       <div className="min-w-0">
