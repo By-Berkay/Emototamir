@@ -14,13 +14,14 @@ import ServiceOrders from "./pages/ServiceOrders";
 import ServiceOrderCreate from "./pages/ServiceOrderCreate";
 import ServiceOrderDetail from "./pages/ServiceOrderDetail";
 import ServiceOrderEdit from "./pages/ServiceOrderEdit";
-import Products from "./pages/Products";
-import Services from "./pages/Services";
+
 import CurrentAccounts from "./pages/CurrentAccounts";
 import Payments from "./pages/Payments";
 import Reports from "./pages/Reports";
 import Reminders from "./pages/Reminders";
 import Settings from "./pages/Settings";
+import Products from "./pages/Products";
+import Services from "./pages/Services";
 import AdminTenants from "./pages/AdminTenants";
 import AdminTenantEdit from "./pages/AdminTenantEdit";
 import AdminAuditLogs from "./pages/AdminAuditLogs";
@@ -89,8 +90,8 @@ export default function App() {
             <Route path="/quotes/new" element={<QuoteEdit />} />
             <Route path="/quotes/:id" element={<QuoteEdit />} />
             <Route path="/trash" element={<Trash />} />
-            <Route path="/products" element={<Settings />} />
-            <Route path="/services" element={<Settings />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/services" element={<Services />} />
             <Route path="/current-accounts" element={<CurrentAccounts />} />
             <Route path="/payments" element={<Payments />} />
             <Route path="/reports" element={<Reports />} />

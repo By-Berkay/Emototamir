@@ -9,13 +9,12 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Trash2, Plus, UserPlus, Bike as BikeIcon, Package } from "lucide-react";
 import { toast } from "sonner";
-import FaultDiagram from "../components/FaultDiagram";
+import FaultViewer from "../components/FaultViewer";
 import { documentTotals, lineAmounts, DEFAULT_VAT } from "../lib/pricing";
 import { PriceModeSelect, VatSelect } from "../components/PriceControls";
 import DocumentTotals from "../components/DocumentTotals";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { MOTO_TYPES } from "../lib/api";
-import MotorcycleIllustration from "../components/MotorcycleIllustration";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 
@@ -195,7 +194,7 @@ export default function ServiceOrderCreate() {
         </Card>
 
         <Card className="border-slate-200"><CardHeader><CardTitle className="text-base">Arızalı Bölgeler</CardTitle></CardHeader>
-          <CardContent><FaultDiagram selected={faults} onToggle={toggleFault} motoType={motos.find(x => x.id === motoId)?.type} /></CardContent>
+          <CardContent><FaultViewer selected={faults} onToggle={toggleFault} type={motos.find(x => x.id === motoId)?.type} color={motos.find(x => x.id === motoId)?.color} label={(() => { const m = motos.find(x => x.id === motoId); return m ? `${m.brand} ${m.model}` : ""; })()} /></CardContent>
         </Card>
       </div>
 
@@ -286,7 +285,7 @@ export default function ServiceOrderCreate() {
               <div><Label>Plaka *</Label><Input value={motoForm.plate} onChange={(e)=>setMotoForm({...motoForm,plate:e.target.value.toUpperCase()})} className="font-mono" data-testid="qa-plate" /></div>
               <div><Label>Şase/VIN</Label><Input value={motoForm.vin} onChange={(e)=>setMotoForm({...motoForm,vin:e.target.value})} className="font-mono" /></div>
             </div>
-            <div><Label>Önizleme</Label><MotorcycleIllustration type={motoForm.type} className="w-full h-32" /></div>
+            <div><Label>Önizleme</Label><FaultViewer type={motoForm.type} color={motoForm.color} label={`${motoForm.brand} ${motoForm.model}`.trim()} height={160} /></div>
           </div>
           <DialogFooter><Button variant="outline" onClick={()=>setMotoOpen(false)}>Vazgeç</Button><Button className="bg-brand-500 hover:bg-brand-600" onClick={saveMoto} data-testid="qa-save-moto">Kaydet</Button></DialogFooter>
         </DialogContent>
