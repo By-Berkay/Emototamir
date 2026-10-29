@@ -4,7 +4,7 @@ import api, { fmtMoney, fmtDateShort } from "../lib/api";
 import { Card, CardContent } from "../components/ui/card";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
-import MotorcycleIllustration from "../components/MotorcycleIllustration";
+import FaultViewer from "../components/FaultViewer";
 import { toast } from "sonner";
 
 export default function MotorcycleDetail() {
@@ -20,7 +20,7 @@ export default function MotorcycleDetail() {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1 border-slate-200"><CardContent className="p-5">
-          <MotorcycleIllustration type={m.type} className="w-full h-40" />
+          <FaultViewer type={m.type} color={m.color} label={`${m.brand} ${m.model}`} height={200} />
           <div className="mt-4 space-y-1">
             <div className="font-heading text-2xl font-bold">{m.brand} {m.model}</div>
             <div className="text-sm text-slate-500">{m.type} · {m.year || "-"}</div>

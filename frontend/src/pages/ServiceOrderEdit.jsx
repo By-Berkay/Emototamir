@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Trash2, Save } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import { toast } from "sonner";
-import FaultDiagram from "../components/FaultDiagram";
+import FaultViewer from "../components/FaultViewer";
 import { documentTotals, lineAmounts, DEFAULT_VAT } from "../lib/pricing";
 import { PriceModeSelect, VatSelect } from "../components/PriceControls";
 import DocumentTotals from "../components/DocumentTotals";
@@ -130,7 +130,7 @@ export default function ServiceOrderEdit() {
           </CardContent>
         </Card>
         <Card className="border-slate-200"><CardHeader><CardTitle className="text-base">Arızalı Bölgeler</CardTitle></CardHeader>
-          <CardContent><FaultDiagram selected={order.fault_zones || []} onToggle={toggleFault} motoType={order.motorcycle?.type || order.moto_type} /></CardContent>
+          <CardContent><FaultViewer selected={order.fault_zones || []} onToggle={toggleFault} type={order.motorcycle?.type || order.moto_type} color={order.motorcycle?.color} label={order.motorcycle ? `${order.motorcycle.brand} ${order.motorcycle.model}` : ""} /></CardContent>
         </Card>
       </div>
 
