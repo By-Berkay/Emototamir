@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Plus, Pencil, UserX, Banknote, History, ArrowLeft } from "lucide-react";
 import api, { fmtDate } from "../lib/api";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Users as PvIcon } from "lucide-react";
 import Money from "../components/Money";
 import EmptyState from "../components/EmptyState";
 import { Card, CardContent } from "../components/ui/card";
@@ -129,7 +131,7 @@ export default function Staff() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         eyebrow="Muhasebe"
         title="Personel & Maaş"
         description="Personel kartları, aylık maaş ödemeleri ve geçmiş. Ödenen maaş gider olarak Gelir & Gider'e yansır."

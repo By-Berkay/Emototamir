@@ -14,6 +14,8 @@ import { Plus, Upload, Trash2, Palette, Building, Users2, MapPin, Image as Image
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Settings as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 
 const THEMES = [
@@ -108,7 +110,7 @@ export default function Settings() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Ayarlar" />
+      <PageHeader visual={<PageVisual icon={PvIcon} />} title="Ayarlar" />
       <Tabs defaultValue="firma">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="firma"><Building className="h-4 w-4 mr-1" />Firma Bilgileri</TabsTrigger>

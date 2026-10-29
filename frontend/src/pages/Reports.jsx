@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { Download } from "lucide-react";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import { BarChart3 as PvIcon } from "lucide-react";
 import StatCard from "../components/StatCard";
 import Money from "../components/Money";
 import DashboardDebtorsTable from "../components/DashboardDebtorsTable";
@@ -237,7 +240,7 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader art={<AnimatedMotorcycleSVG type="touring" height="100%" />} visual={<PageVisual icon={PvIcon} />}
         title="Raporlar"
         actions={
           <SectionsPanel

@@ -6,6 +6,8 @@ import AuthedImage from "../components/AuthedImage";
 import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { UserRound as PvIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -154,7 +156,7 @@ export default function Profile() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Profilim" description="Kişisel bilgilerinizi ve iletişim bilgilerinizi yönetin" />
+      <PageHeader visual={<PageVisual icon={PvIcon} />} title="Profilim" description="Kişisel bilgilerinizi ve iletişim bilgilerinizi yönetin" />
 
       <form onSubmit={save} className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">

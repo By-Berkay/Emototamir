@@ -4,9 +4,10 @@ import React from "react";
  * Sayfa başlığı: etiket (eyebrow), başlık, açıklama, isteğe bağlı görsel öge (visual) ve eylem düğmeleri.
  * Koyu temada yumuşak marka ışıması içerir; görsel öge yalnızca geniş ekranda gösterilir.
  */
-export default function PageHeader({ eyebrow, title, description, actions, visual, className = "" }) {
+export default function PageHeader({ eyebrow, title, description, actions, visual, art, className = "" }) {
   return (
     <div className={`relative mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between ${className}`}>
+      {art && <div aria-hidden="true" className="pointer-events-none absolute right-0 top-0 hidden h-full w-[360px] opacity-90 xl:block">{art}</div>}
       <div aria-hidden="true" className="pointer-events-none absolute -right-20 -top-16 h-56 w-56 rounded-full bg-brand-500/10 blur-3xl" />
       <div aria-hidden="true" className="pointer-events-none absolute right-48 -bottom-16 h-40 w-40 rounded-full bg-cyan-400/10 blur-3xl" />
       <div className="relative min-w-0">

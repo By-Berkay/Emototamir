@@ -7,6 +7,8 @@ import { Label } from "../components/ui/label";
 import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { KeyRound as PvIcon } from "lucide-react";
 import PinChangeCard from "../components/PinChangeCard";
 
 const MIN_LEN = 8;
@@ -50,7 +52,7 @@ export default function ChangePassword() {
 
   return (
     <div className="max-w-md mx-auto">
-      <PageHeader title="Şifre Değiştir" description="Hesabınızın şifresini güncelleyin." />
+      <PageHeader visual={<PageVisual icon={PvIcon} />} title="Şifre Değiştir" description="Hesabınızın şifresini güncelleyin." />
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">

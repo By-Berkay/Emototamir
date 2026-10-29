@@ -4,6 +4,9 @@ import { toast } from "sonner";
 import { ClipboardCheck, Plus, Search } from "lucide-react";
 import api from "../lib/api";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import { ClipboardCheck as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -46,7 +49,7 @@ export default function Inspections() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader art={<AnimatedMotorcycleSVG type="enduro" height="100%" />} visual={<PageVisual icon={PvIcon} />}
         eyebrow="Ekspertiz"
         title="Ekspertiz raporları"
         description="Araç kabul ve durum tespiti raporları. Her rapor fotoğraflı, PDF olarak paylaşılabilir."

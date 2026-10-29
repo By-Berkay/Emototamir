@@ -6,6 +6,8 @@ import api from "../lib/api";
 import { toWhatsAppNumber } from "../lib/phone";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { ClipboardCheck as PvIcon } from "lucide-react";
 import { ItemPhotos, StatusSegment, groupItems, STATUS_OPTIONS } from "../components/InspectionChecklist";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -388,7 +390,7 @@ export default function InspectionEdit() {
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         eyebrow="Ekspertiz"
         title={title}
         description={

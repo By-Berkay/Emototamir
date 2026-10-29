@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Plus, Search, Bike, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import { Bike as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import MotorcycleIllustration from "../components/MotorcycleIllustration";
 import { useAuth } from "../context/AuthContext";
@@ -81,7 +84,7 @@ export default function Motorcycles() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader art={<AnimatedMotorcycleSVG type="naked" height="100%" />} visual={<PageVisual icon={PvIcon} />}
         title="Motosikletler"
         description={`${items.length} motosiklet`}
         actions={

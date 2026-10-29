@@ -10,6 +10,8 @@ import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "../components/ui/dialog";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Wrench as PvIcon } from "lucide-react";
 import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import SignaturePad from "../components/SignaturePad";
@@ -94,7 +96,7 @@ export default function ServiceOrderDetail() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title={
           <span className="inline-flex flex-wrap items-center gap-3">
             <span className="font-mono">{o.service_no}</span>

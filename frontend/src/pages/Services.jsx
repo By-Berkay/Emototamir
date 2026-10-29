@@ -8,6 +8,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
 import { Plus } from "lucide-react";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Hammer as PvIcon } from "lucide-react";
 import { PriceModeSelect, VatSelect } from "../components/PriceControls";
 import { toast } from "sonner";
 
@@ -31,7 +33,7 @@ export default function Services() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title="Hizmetler"
         description={`${items.length} hizmet`}
         actions={

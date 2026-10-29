@@ -7,6 +7,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { BellRing as PvIcon } from "lucide-react";
 import StatCard from "../components/StatCard";
 import EmptyState from "../components/EmptyState";
 import { BellRing, Download, MessageCircle, RefreshCw, AlertCircle, CheckSquare, Square } from "lucide-react";
@@ -75,7 +77,7 @@ export default function Reminders() {
   const policy = data.policy || {};
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title={<span className="flex items-center gap-2"><BellRing className="h-7 w-7 text-brand-500" />Bakım Hatırlatmaları</span>}
         description={
           <>Kural: son servisten sonra <b>{policy.reminder_km || 5000} km</b> {policy.reminder_mode === "and" ? "ve" : "veya"} <b>{policy.reminder_months || 6} ay</b> geçen motosikletler.</>

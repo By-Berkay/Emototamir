@@ -3,7 +3,7 @@ import "./AnimatedMotorcycleSVG.css";
 
 /**
  * E-Moto Tamir - enhanced animated 2.5D motorcycle vector viewer (V4).
- * Copy the V4 models to frontend/public/motorcycles/*.svg.
+ * Copy the V4 models to frontend/public/moto-svg/*.svg.
  * Compatible with FaultViewer's {type,color,label,selected,onToggle,height,className} API.
  * Vector graphics are 2.5D, not true 360-degree rotating geometry.
  */
@@ -80,7 +80,7 @@ export default function AnimatedMotorcycleSVG({
         >
           <img
             className="em-bike-art"
-            src={`/motorcycles/${model}.svg`}
+            src={`/moto-svg/${model}.svg`}
             alt={`${label || type} — hareketli SVG motosiklet`}
             loading="lazy"
             draggable={false}

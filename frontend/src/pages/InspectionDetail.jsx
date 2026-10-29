@@ -6,6 +6,8 @@ import api, { API, fmtDate } from "../lib/api";
 import { toWhatsAppNumber } from "../lib/phone";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { ClipboardCheck as PvIcon } from "lucide-react";
 import StatCard from "../components/StatCard";
 import EmptyState from "../components/EmptyState";
 import {
@@ -190,7 +192,7 @@ export default function InspectionDetail() {
 
   return (
     <div className="space-y-6 pb-8">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         eyebrow="Ekspertiz raporu"
         title={<span className="font-mono tracking-tight">{doc.report_no}</span>}
         description={subtitle}

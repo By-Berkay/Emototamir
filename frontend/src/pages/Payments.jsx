@@ -9,6 +9,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "../components/ui/dialog";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { HandCoins as PvIcon } from "lucide-react";
 import StatCard from "../components/StatCard";
 import EmptyState from "../components/EmptyState";
 import { Plus, Pencil, Trash2 } from "lucide-react";
@@ -92,7 +94,7 @@ export default function Payments() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title="Tahsilatlar"
         actions={
         <Dialog open={open} onOpenChange={setOpen}>

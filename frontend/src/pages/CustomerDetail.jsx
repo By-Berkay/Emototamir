@@ -10,6 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import StatusBadge from "../components/StatusBadge";
 import StatCard from "../components/StatCard";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { UserRound as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import { Bike, Phone, MapPin, Mail, StickyNote, Trash2, PencilLine, Check, X } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -82,7 +84,7 @@ export default function CustomerDetail() {
 
   return (
     <div className="space-y-8">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         eyebrow="Müşteri kartı"
         title={`${c.first_name} ${c.last_name}`}
         description={

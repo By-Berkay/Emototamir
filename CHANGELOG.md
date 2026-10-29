@@ -3,6 +3,12 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.09 — Sayfa başlıkları ve motosiklet görselleri
+- Sayfa başlıklarına konuya uygun görsel öge eklendi (müşteri, motosiklet, servis, ekspertiz, cari, rapor).
+- Motosiklet görselleri SVG setiyle başlıkta gösteriliyor (Motosikletler, Servis, Ekspertiz, Cari, Raporlar).
+- Düzeltme: SVG dosyaları `/motorcycles` sayfa yolundan ayrıldı (`/moto-svg`); bu çakışma sayfanın açılmasını engelleyebiliyordu.
+- Yedek: önceki sürüm `backup/v2.08` dalında.
+
 ## v2.08 — Tüm ekranlarda ortak tasarım
 - Kartlar, tablolar ve sayfa başlıkları tek tasarım sisteminde: cam yüzey, koyu temada ışıltılı başlık ve tablo başlıkları.
 - Yedek: önceki sürüm `backup/v2.07` dalında.

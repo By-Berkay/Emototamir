@@ -9,6 +9,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { FileText as PvIcon } from "lucide-react";
 import { documentTotals, lineAmounts, DEFAULT_VAT } from "../lib/pricing";
 import { PriceModeSelect, VatSelect } from "../components/PriceControls";
 import DocumentTotals from "../components/DocumentTotals";
@@ -105,7 +107,7 @@ export default function QuoteEdit() {
       <div>
         <Button variant="ghost" size="sm" onClick={()=>nav("/quotes")} data-testid="back-to-quotes"><ArrowLeft className="h-4 w-4 mr-1" />Geri</Button>
       </div>
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title={
           <span className="flex flex-wrap items-center gap-3">
             <span className="flex items-center gap-2"><FileText className="h-6 w-6 text-brand-500" />{isNew ? "Yeni Teklif" : quote?.quote_no}</span>

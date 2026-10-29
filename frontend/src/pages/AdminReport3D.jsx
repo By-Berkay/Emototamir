@@ -5,6 +5,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { BarChart3 as PvIcon } from "lucide-react";
 import StatCard from "../components/StatCard";
 import EmptyState from "../components/EmptyState";
 import {
@@ -223,7 +225,7 @@ export default function AdminReport3D() {
   );
 
   const header = (
-    <PageHeader eyebrow="Süper Admin" title="3D Genel Rapor" description="Tüm firmalar, müşteriler ve sistem durumu" actions={actions} />
+    <PageHeader visual={<PageVisual icon={PvIcon} />} eyebrow="Süper Admin" title="3D Genel Rapor" description="Tüm firmalar, müşteriler ve sistem durumu" actions={actions} />
   );
 
   if (!data && loading) {
