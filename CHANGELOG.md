@@ -3,6 +3,10 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.08 — Tüm ekranlarda ortak tasarım
+- Kartlar, tablolar ve sayfa başlıkları tek tasarım sisteminde: cam yüzey, koyu temada ışıltılı başlık ve tablo başlıkları.
+- Yedek: önceki sürüm `backup/v2.07` dalında.
+
 ## v2.07 — Tasarım sistemi: cam kartlar ve koyu tema vurguları
 - KPI kartları (dashboard ve diğer StatCard kullanan ekranlar) cam yüzey tokenlarıyla yenilendi.
 - Sayfa başlığı etiketi koyu temada marka turuncusunun açık tonunu kullanıyor.
