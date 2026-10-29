@@ -3,6 +3,14 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.04 — 3D motosiklet, rota düzeltmeleri, tasarım tokenları
+- Servis kaydı ve motosiklet detayında 3D motosiklet (hologram): tip ve renk bilgisine göre üretilir, boş kayıtta varsayılan hologram motor gösterilir.
+- Servis kaydında arıza bölgeleri 3D modelin üzerinde tıklanarak seçilir; altındaki liste aynı seçimi yapar.
+- WebGL yoksa veya hareket azaltma açıksa eski SVG görünümü kullanılır.
+- `/products` ve `/services` artık kendi sayfalarını açıyor (önceden Ayarlar'a yönleniyordu).
+- Açık/koyu tema için marka renk tokenları ve cam kart bileşeni (`GlassCard`).
+- Yedek: önceki sürüm `backup/v2.03` dalında saklı.
+
 ## v2.03 — Ekspertiz fotoğrafları
 - iPhone'dan gelen HEIC/HEIF fotoğraflar artık yüklenebiliyor; sunucuda JPEG'e çevrilir.
 - Ekspertiz fotoğraf galerisi ve plaka uyarısı düzeltmeleri (önceki çalışma).

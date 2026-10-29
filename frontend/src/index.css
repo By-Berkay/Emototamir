@@ -375,3 +375,25 @@ main table tbody tr:hover {
 
 /* Veri tabloları */
 .dark main table tbody tr:hover { background-color: rgb(var(--brand-rgb) / 0.08); }
+
+/* ---- Tasarım tokenları (v2.04): marka vurgusu ve cam yüzeyler. Açık ve koyu temada ortak isimler. ---- */
+:root {
+  --brand-orange: 24 95% 53%;   /* #F97316 */
+  --brand-cyan: 199 94% 60%;    /* #38BDF8 */
+  --glass-bg: 0 0% 100% / 0.72;
+  --glass-border: 215 25% 80% / 0.6;
+}
+.dark {
+  --brand-orange: 24 95% 53%;
+  --brand-cyan: 199 94% 60%;
+  --glass-bg: 217 45% 12% / 0.72;
+  --glass-border: 199 94% 60% / 0.18;
+}
+.glass-card {
+  background: hsl(var(--glass-bg));
+  border: 1px solid hsl(var(--glass-border));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 8px 24px -12px rgb(0 0 0 / 0.35);
+}
+.glass-card:hover { border-color: hsl(var(--brand-cyan) / 0.4); }
