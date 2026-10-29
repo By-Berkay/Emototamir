@@ -3,6 +3,13 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.06 — Animasyonlu SVG motosiklet görünümleri
+- Tüm motosiklet görselleri E-Moto animasyonlu SVG setiyle değişti: Naked, Supersport, Touring, Adventure, Cruiser, Chopper, Scooter, Maxi Scooter, Cafe Racer, Motocross.
+- Servis kaydında arıza bölgeleri SVG üzerinde tıklanarak seçilir; listedeki düğmeler aynı seçimi yapar.
+- Tip görseli yüklenmiş firmalarda o görsel kullanılmaya devam eder.
+- 3D (three.js) görünümü kaldırıldı; paket boyutu küçüldü.
+- Yedek: önceki sürüm `backup/v2.05` dalında.
+
 ## v2.05 — Fiyat listesi sadeleştirildi
 - Ayarlar'daki "Fiyat Listesi" sekmesi ve Yönetim menüsündeki "Fiyat Listesi" sayfası kaldırıldı. Vitrin planları "Vitrin & Planlar" sayfasında yönetilir ve ana sayfada gösterilir.
 - Toplu KDV değiştirme düğmesi Ürünler sayfasına taşındı.
