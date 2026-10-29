@@ -3,6 +3,11 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.07 — Tasarım sistemi: cam kartlar ve koyu tema vurguları
+- KPI kartları (dashboard ve diğer StatCard kullanan ekranlar) cam yüzey tokenlarıyla yenilendi.
+- Sayfa başlığı etiketi koyu temada marka turuncusunun açık tonunu kullanıyor.
+- Yedek: önceki sürüm `backup/v2.06` dalında.
+
 ## v2.06 — Animasyonlu SVG motosiklet görünümleri
 - Tüm motosiklet görselleri E-Moto animasyonlu SVG setiyle değişti: Naked, Supersport, Touring, Adventure, Cruiser, Chopper, Scooter, Maxi Scooter, Cafe Racer, Motocross.
 - Servis kaydında arıza bölgeleri SVG üzerinde tıklanarak seçilir; listedeki düğmeler aynı seçimi yapar.
