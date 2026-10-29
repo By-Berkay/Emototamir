@@ -3,6 +3,10 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.02 — Fiyat listesi girişi
+- Süper admin `/admin/pricing` sayfası eski fiyat listesi düzenine döndü: paketler (ad, fiyat, birim, öne çıkar, özellikler) ve kalem tablosu, arama, fiyat doğrulama, son güncelleme bilgisi.
+- Vitrin metinleri, SaaS planları ve iletişim bilgileri ayrı sayfada: `/admin/landing` ("Vitrin İçeriği").
+
 ## v2.01 — Açık / koyu tema
 - Uygulama genelinde açık ve koyu tema; üst çubuktaki düğmeyle değiştirilir.
 - Seçim tarayıcıda saklanır; seçim yoksa işletim sisteminin tercihi kullanılır.
