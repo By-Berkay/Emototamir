@@ -3,6 +3,13 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.05 — Fiyat listesi sadeleştirildi
+- Ayarlar'daki "Fiyat Listesi" sekmesi ve Yönetim menüsündeki "Fiyat Listesi" sayfası kaldırıldı. Vitrin planları "Vitrin & Planlar" sayfasında yönetilir ve ana sayfada gösterilir.
+- Toplu KDV değiştirme düğmesi Ürünler sayfasına taşındı.
+- Ürün ve hizmet formlarına KDV oranı ve fiyat tipi (KDV dahil/hariç) seçimi eklendi.
+- Ayarlar'daki ürün/hizmet kodu kaldırıldı; katalog işlemleri Ürünler ve Hizmetler sayfalarında.
+- Yedek: önceki sürüm `backup/v2.04` dalında.
+
 ## v2.04 — 3D motosiklet, rota düzeltmeleri, tasarım tokenları
 - Servis kaydı ve motosiklet detayında 3D motosiklet (hologram): tip ve renk bilgisine göre üretilir, boş kayıtta varsayılan hologram motor gösterilir.
 - Servis kaydında arıza bölgeleri 3D modelin üzerinde tıklanarak seçilir; altındaki liste aynı seçimi yapar.

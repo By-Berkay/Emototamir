@@ -9,12 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import PageHeader from "../components/PageHeader";
+import BulkVatDialog from "../components/BulkVatDialog";
+import { PriceModeSelect, VatSelect } from "../components/PriceControls";
+import { useAuth } from "../context/AuthContext";
 import EmptyState from "../components/EmptyState";
 import { Plus, Search, AlertTriangle, Pencil, Trash2, Package } from "lucide-react";
 import { toast } from "sonner";
 
 const CATS = ["Motor Yağı", "Filtre", "Fren", "Elektrik", "Lastik", "Zincir", "Dişli", "Akü", "Buji", "Süspansiyon", "Kaporta", "Motor", "Egzoz", "Diğer"];
-const EMPTY = { code: "", name: "", brand: "", category: "Motor Yağı", cost_price: 0, sale_price: 0, stock: 0, min_stock: 5, unit: "Adet", description: "" };
+const EMPTY = { code: "", name: "", brand: "", category: "Motor Yağı", cost_price: 0, sale_price: 0, stock: 0, min_stock: 5, unit: "Adet", description: "", vat: 20, price_mode: "incl" };
 
 const isCritical = (p) => Number(p.stock) <= Number(p.min_stock);
 
@@ -48,6 +51,8 @@ function RowActions({ onEdit, onDelete, testId }) {
 }
 
 export default function Products() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [items, setItems] = useState([]);
   const [loaded, setLoaded] = useState(false);
   const [q, setQ] = useState("");
@@ -124,10 +129,13 @@ export default function Products() {
         title="Parçalar"
         description={`${items.length} parça${criticalCount ? ` · ${criticalCount} kritik stok` : ""}`}
         actions={
+          <div className="flex flex-wrap items-center gap-2">
+          {isAdmin && <BulkVatDialog onDone={load} />}
           <Button onClick={openNew} data-testid="btn-new-product">
             <Plus />
             Yeni parça
           </Button>
+          </div>
         }
       />
 
@@ -282,6 +290,12 @@ export default function Products() {
             </Field>
             <Field label="Satış fiyatı (₺)">
               <Input type="number" min="0" step="0.01" value={form.sale_price} onChange={set("sale_price")} />
+            </Field>
+            <Field label="Fiyat tipi">
+              <PriceModeSelect value={form.price_mode} onChange={(v) => setForm((f) => ({ ...f, price_mode: v }))} testId="product-price-mode" />
+            </Field>
+            <Field label="KDV">
+              <VatSelect value={form.vat} onChange={(v) => setForm((f) => ({ ...f, vat: v }))} testId="product-vat" />
             </Field>
             <Field label="Stok">
               <Input type="number" min="0" value={form.stock} onChange={set("stock")} />
