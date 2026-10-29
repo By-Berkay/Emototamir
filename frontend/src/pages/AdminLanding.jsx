@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import api from "../lib/api";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { LayoutTemplate as PvIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
@@ -52,7 +54,7 @@ export default function AdminLanding() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title="Vitrin & Fiyatlar"
         description="Giriş yapmamış ziyaretçilerin gördüğü ana sayfa: metinler, iletişim, özellikler ve SaaS planları."
         actions={<Button onClick={save} disabled={saving} data-testid="btn-save-landing"><Save className="mr-2 h-4 w-4" />{saving ? "Kaydediliyor…" : "Yayınla"}</Button>}

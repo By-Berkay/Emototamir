@@ -5,6 +5,8 @@ import { Button } from "../components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Trash2 as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import { Trash2, ArchiveRestore, ArchiveX, User as UserIcon, Bike, RefreshCw, AlertTriangle } from "lucide-react";
 
@@ -61,7 +63,7 @@ export default function Trash() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title={<span className="flex items-center gap-2"><Trash2 className="h-7 w-7 text-red-500" />Çöp Kutusu</span>}
         description="Silinen kayıtlar 30 gün saklanır. Sonrasında otomatik olarak kalıcı silinir."
         actions={

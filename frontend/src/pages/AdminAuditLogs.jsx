@@ -10,6 +10,8 @@ import { History, RefreshCw, Filter, ArrowRight, X } from "lucide-react";
 import { fmtDate } from "../lib/api";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { History as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 
 const ACTION_COLORS = {
@@ -74,7 +76,7 @@ export default function AdminAuditLogs() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title={<span className="inline-flex items-center gap-2"><History className="h-7 w-7 text-brand-500" />Denetim Kayıtları</span>}
         description={`${logs.length} kayıt · Her işlem kim yaptı, ne zaman yaptı — filtreleyerek inceleyin.`}
         actions={

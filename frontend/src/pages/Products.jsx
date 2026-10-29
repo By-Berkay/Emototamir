@@ -9,6 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Package as PvIcon } from "lucide-react";
 import BulkVatDialog from "../components/BulkVatDialog";
 import { PriceModeSelect, VatSelect } from "../components/PriceControls";
 import { useAuth } from "../context/AuthContext";
@@ -124,7 +126,7 @@ export default function Products() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         eyebrow="Katalog"
         title="Parçalar"
         description={`${items.length} parça${criticalCount ? ` · ${criticalCount} kritik stok` : ""}`}

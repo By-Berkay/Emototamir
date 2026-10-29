@@ -6,6 +6,8 @@ import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { FileText as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import { FileText, Plus, ExternalLink, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
@@ -61,7 +63,7 @@ export default function Quotes() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title={<span className="flex items-center gap-2"><FileText className="h-7 w-7 text-brand-500" />Fiyat Teklifleri</span>}
         description="Servisten önce müşteriye teklif gönderin — link ile onayladığında iş emrine dönüşür."
         actions={<Link to="/quotes/new"><Button className="bg-brand-500 hover:bg-brand-600" data-testid="quote-new"><Plus className="h-4 w-4 mr-1" />Yeni Teklif</Button></Link>}

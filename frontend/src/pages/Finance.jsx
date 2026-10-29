@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Wallet, Users, Search } from "lucide-react";
 import api, { fmtDate } from "../lib/api";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { ArrowLeftRight as PvIcon } from "lucide-react";
 import Money from "../components/Money";
 import EmptyState from "../components/EmptyState";
 import Tilt3D from "../components/Tilt3D";
@@ -118,7 +120,7 @@ export default function Finance() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         eyebrow="Muhasebe"
         title="Gelir & Gider"
         description="Aylık gelir, gider ve masraf kayıtları. Personel maaşları Personel & Maaş ekranından işlenir."

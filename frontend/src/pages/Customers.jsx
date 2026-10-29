@@ -13,6 +13,8 @@ import { toast } from "sonner";
 import { TAG_META } from "./CustomerDetail";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Users as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 
 const empty = { first_name: "", last_name: "", phone: "", alt_phone: "", email: "", tc_no: "", address: "", city: "", district: "", notes: "" };
@@ -117,7 +119,7 @@ export default function Customers() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         eyebrow="Müşteri kayıtları"
         title="Müşteriler"
         description={`${items.length} müşteri`}

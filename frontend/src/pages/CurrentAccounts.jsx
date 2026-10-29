@@ -3,6 +3,9 @@ import { Link } from "react-router-dom";
 import api, { fmtMoney } from "../lib/api";
 import { Card, CardContent } from "../components/ui/card";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import { Wallet as PvIcon } from "lucide-react";
 import StatCard from "../components/StatCard";
 
 export default function CurrentAccounts() {
@@ -13,7 +16,7 @@ export default function CurrentAccounts() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Cari Hesaplar" />
+      <PageHeader art={<AnimatedMotorcycleSVG type="cruiser" height="100%" />} visual={<PageVisual icon={PvIcon} />} title="Cari Hesaplar" />
       <div className="max-w-xs">
         <StatCard label="Toplam Alacak" value={fmtMoney(totalDebt)} tone="red" />
       </div>

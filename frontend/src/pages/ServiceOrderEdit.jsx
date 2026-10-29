@@ -9,6 +9,8 @@ import { Textarea } from "../components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Trash2, Save } from "lucide-react";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Wrench as PvIcon } from "lucide-react";
 import { toast } from "sonner";
 import FaultViewer from "../components/FaultViewer";
 import { documentTotals, lineAmounts, DEFAULT_VAT } from "../lib/pricing";
@@ -83,7 +85,7 @@ export default function ServiceOrderEdit() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title="Servis Düzenle"
         description={<span className="font-mono">{order.service_no}</span>}
         actions={

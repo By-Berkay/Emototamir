@@ -10,6 +10,8 @@ import { Plus, Building2, Trash2, Settings2, Copy, ShieldAlert } from "lucide-re
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Building2 as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 
 const empty = {
@@ -63,7 +65,7 @@ export default function AdminTenants() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
+      <PageHeader visual={<PageVisual icon={PvIcon} />}
         title="Firma Yönetimi"
         description={`${tenants.length} firma · Her firma kendi verilerini ayrı görür`}
         actions={

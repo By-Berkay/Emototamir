@@ -16,6 +16,8 @@ import DocumentTotals from "../components/DocumentTotals";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { MOTO_TYPES } from "../lib/api";
 import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import { Wrench as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 
 const ACCESSORY_OPTS = ["Kask", "Telefon Tutucu", "Çanta", "Topcase", "Yan Çanta", "Navigasyon"];
@@ -143,7 +145,7 @@ export default function ServiceOrderCreate() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Yeni Servis Kaydı" description="İş emri oluşturmak için müşteri, motosiklet ve arıza bilgilerini girin." />
+      <PageHeader visual={<PageVisual icon={PvIcon} />} title="Yeni Servis Kaydı" description="İş emri oluşturmak için müşteri, motosiklet ve arıza bilgilerini girin." />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-2 border-slate-200">
