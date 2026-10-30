@@ -6,6 +6,10 @@ import StatCard from "../components/StatCard";
 import StatusBadge from "../components/StatusBadge";
 import FaultViewer from "../components/FaultViewer";
 import { toast } from "sonner";
+import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
+import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import { Bike } from "lucide-react";
 
 export default function MotorcycleDetail() {
   const { id } = useParams();
@@ -18,6 +22,12 @@ export default function MotorcycleDetail() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        art={<AnimatedMotorcycleSVG type={m.type} color={m.color} height="100%" />}
+        visual={<PageVisual icon={Bike} />}
+        title={`${m.brand} ${m.model}`}
+        description={`${m.plate} · ${m.type}${m.year ? ` · ${m.year}` : ""}${m.customer ? ` · ${m.customer.first_name} ${m.customer.last_name}` : ""}`}
+      />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1 border-slate-200"><CardContent className="p-5">
           <FaultViewer type={m.type} color={m.color} label={`${m.brand} ${m.model}`} height={200} />
