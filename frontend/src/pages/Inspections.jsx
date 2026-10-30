@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { CountStrip } from "../components/reports/ReportKit";
+import { CalendarDays, Wrench, Gauge } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { ClipboardCheck, Plus, Search } from "lucide-react";
@@ -61,6 +63,12 @@ export default function Inspections() {
           </Button>
         }
       />
+      <CountStrip items={[
+        { label: "Toplam ekspertiz", value: rows.length, hint: "Tüm raporlar", icon: ClipboardCheck, tone: "orange", testId: "insp-total" },
+        { label: "Bu ay", value: rows.filter((r) => String(r.inspection_date || r.created_at || "").startsWith(new Date().toISOString().slice(0, 7))).length, hint: "Bu ayki raporlar", icon: CalendarDays, tone: "cyan", testId: "insp-month" },
+        { label: "Servis gerekli", value: rows.filter((r) => (r.items || []).some((x) => x.status === "service")).length, hint: "En az bir kalem servis", icon: Wrench, tone: "red", testId: "insp-service" },
+        { label: "Son 7 gün", value: rows.filter((r) => Date.now() - new Date(r.inspection_date || r.created_at || 0).getTime() < 7 * 864e5).length, hint: "Yeni kayıtlar", icon: Gauge, tone: "violet", testId: "insp-week" },
+      ]} />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative w-full sm:max-w-md">

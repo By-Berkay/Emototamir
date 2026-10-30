@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { CountStrip } from "../components/reports/ReportKit";
+import { Wrench, Clock, Gauge, CircleCheck } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import api, { fmtMoney, fmtDateShort, STATUS_META, STATUS_LIST } from "../lib/api";
 import { Card, CardContent } from "../components/ui/card";
@@ -46,6 +48,12 @@ export default function ServiceOrders() {
           <Link to="/service-orders/new"><Button className="bg-brand-500 hover:bg-brand-600" data-testid="btn-new-service"><Plus className="h-4 w-4 mr-2" />Yeni Servis</Button></Link>
         }
       />
+      <CountStrip items={[
+        { label: "Toplam servis", value: items.length, hint: "Tüm kayıtlar", icon: Wrench, tone: "orange", testId: "so-total" },
+        { label: "Açık iş", value: items.filter((o) => !["completed", "delivered", "cancelled"].includes(o.status)).length, hint: "Tamamlanmamış kayıtlar", icon: Clock, tone: "cyan", testId: "so-open" },
+        { label: "Tamirde", value: items.filter((o) => o.status === "in_repair").length, hint: "Aktif işçilik", icon: Gauge, tone: "violet", testId: "so-repair" },
+        { label: "Teslim edildi", value: items.filter((o) => o.status === "delivered").length, hint: "Kapanmış kayıtlar", icon: CircleCheck, tone: "emerald", testId: "so-delivered" },
+      ]} />
 
       <Card className="border-slate-200"><CardContent className="p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <div className="relative md:col-span-2">

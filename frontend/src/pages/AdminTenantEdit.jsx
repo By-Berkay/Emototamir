@@ -13,6 +13,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Checkbox } from "../components/ui/checkbox";
 import { Upload, ArrowLeft, Save, KeyRound, Trash2, Plus, Building2, Palette, MapPin, Users2, Type, Eye, CreditCard } from "lucide-react";
 import { toast } from "sonner";
+import PageHeader from "../components/PageHeader";
+import PageVisual from "../components/PageVisual";
 
 const THEMES = [
   { key: "orange", label: "Turuncu", primary: "#F97316" },
@@ -140,11 +142,14 @@ export default function AdminTenantEdit() {
 
   return (
     <div className="space-y-6">
+      <PageHeader
+        visual={<PageVisual icon={Building2} />}
+        title={t.name}
+        description="Süper Admin — tüm ayarlara erişim"
+      />
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <Button variant="ghost" size="sm" onClick={()=>nav("/admin/tenants")}><ArrowLeft className="h-4 w-4 mr-1" />Firmalar</Button>
-          <h1 className="font-heading text-3xl font-bold text-slate-900 mt-2">{t.name}</h1>
-          <p className="text-sm text-slate-500">Süper Admin — tüm ayarlara erişim</p>
         </div>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-2 text-sm">

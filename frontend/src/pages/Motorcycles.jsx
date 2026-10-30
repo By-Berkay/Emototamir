@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { CountStrip } from "../components/reports/ReportKit";
+import { Tags, Layers, Gauge } from "lucide-react";
 import { Link } from "react-router-dom";
 import api, { fmtMoney, MOTO_TYPES } from "../lib/api";
 import { Card, CardContent } from "../components/ui/card";
@@ -131,6 +133,12 @@ export default function Motorcycles() {
         </Dialog>
         }
       />
+      <CountStrip items={[
+        { label: "Toplam motosiklet", value: items.length, hint: "Kayıtlı araç", icon: Bike, tone: "orange", testId: "moto-total" },
+        { label: "Marka", value: new Set(items.map((m) => m.brand).filter(Boolean)).size, hint: "Farklı marka", icon: Tags, tone: "cyan", testId: "moto-brands" },
+        { label: "Tip", value: new Set(items.map((m) => m.type).filter(Boolean)).size, hint: "Farklı motosiklet tipi", icon: Layers, tone: "violet", testId: "moto-types" },
+        { label: "Ortalama km", value: items.length ? Math.round(items.reduce((a, m) => a + (Number(m.km) || 0), 0) / items.length).toLocaleString("tr-TR") : "0", hint: "Araç başına", icon: Gauge, tone: "emerald", testId: "moto-km" },
+      ]} />
 
       <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />

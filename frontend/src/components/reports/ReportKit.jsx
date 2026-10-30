@@ -174,3 +174,14 @@ export function Initials({ name = "" }) {
   const t = name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0].toUpperCase()).join("") || "?";
   return <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-cyan-400 text-xs font-bold text-white">{t}</span>;
 }
+
+/** Sayfa üstü sayı şeridi: liste ekranları için hızlı özet (sayılar, tutar içermez). */
+export function CountStrip({ items }) {
+  return (
+    <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+      {items.map((it) => (
+        <KpiTile key={it.label} label={it.label} value={it.value} hint={it.hint} icon={it.icon} tone={it.tone} testId={it.testId} />
+      ))}
+    </div>
+  );
+}

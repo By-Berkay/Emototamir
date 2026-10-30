@@ -7,8 +7,9 @@ import DocumentTotals from "../components/DocumentTotals";
 import { Card, CardContent } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Textarea } from "../components/ui/textarea";
-import { Wrench, Check, X, CheckCircle2, XCircle } from "lucide-react";
+import { Check, X, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
+import PublicShell from "../components/PublicShell";
 
 export default function PublicApproval() {
   const { token } = useParams();
@@ -34,8 +35,8 @@ export default function PublicApproval() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
   if (!data) return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
-      <Card className="max-w-md w-full"><CardContent className="p-8 text-center">
+    <div className="emt-aurora min-h-screen flex items-center justify-center p-6">
+      <Card className="glass-card max-w-md w-full"><CardContent className="p-8 text-center">
         <XCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
         <h1 className="font-heading text-xl font-bold">Geçersiz Bağlantı</h1>
         <p className="text-sm text-slate-500 mt-2">Bu onay bağlantısı geçersiz ya da süresi dolmuş olabilir.</p>
@@ -46,17 +47,11 @@ export default function PublicApproval() {
   const decided = data.approval_status === "approved" || data.approval_status === "rejected";
 
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="h-11 w-11 bg-brand-500 rounded-md flex items-center justify-center"><Wrench className="h-5 w-5 text-white" /></div>
-          <div>
-            <div className="font-heading font-bold text-slate-900">MOTO SERVİS</div>
-            <div className="text-xs text-slate-500">Müşteri Onay Formu</div>
-          </div>
-        </div>
-
-        <Card className="border-slate-200 border-t-4 border-t-brand-500 shadow-card">
+    <PublicShell
+      eyebrow="Müşteri Onay Formu"
+      footer="Bu sayfa Moto Servis tarafından gönderilen resmi bir onay formudur."
+    >
+        <Card className="glass-card border-t-4 border-t-brand-500 shadow-card">
           <CardContent className="p-6 sm:p-8 space-y-6">
             <div>
               <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Servis</div>
@@ -90,7 +85,7 @@ export default function PublicApproval() {
               </div>
             )}
 
-            <div className="bg-slate-50 rounded-md p-4">
+            <div className="rounded-md bg-slate-50 p-4 dark:bg-white/5">
               <DocumentTotals t={documentTotals({ items: data.items || [], labor_total: data.labor_total, labor_price_mode: data.labor_price_mode || "incl", labor_vat: data.labor_vat ?? 20, discount: data.discount })} />
             </div>
 
@@ -119,8 +114,6 @@ export default function PublicApproval() {
           </CardContent>
         </Card>
 
-        <div className="text-center text-xs text-slate-400 mt-6">Bu sayfa Moto Servis tarafından gönderilen resmi bir onay formudur.</div>
-      </div>
-    </div>
+    </PublicShell>
   );
 }
