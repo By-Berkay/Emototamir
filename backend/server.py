@@ -530,6 +530,34 @@ async def change_password(inp: ChangePasswordIn, user=Depends(get_current_user))
     })
     return {"ok": True}
 
+class LoginEmailIn(BaseModel):
+    new_email: str
+    current_password: str
+
+@api.put("/profile/login")
+async def change_login_email(inp: LoginEmailIn, user=Depends(get_current_user)):
+    """Oturum açmış kullanıcı kendi giriş e-postasını (kullanıcı adı) mevcut şifresini doğrulayarak değiştirir."""
+    new_email = (inp.new_email or "").strip().lower()
+    if not PROFILE_EMAIL_RE.match(new_email) or len(new_email) > 120:
+        raise HTTPException(400, "Geçerli bir giriş e-postası girin")
+    doc = await db.users.find_one({"id": user["id"]})
+    if not doc:
+        raise HTTPException(404, "Kullanıcı bulunamadı")
+    if new_email == doc.get("email"):
+        raise HTTPException(400, "Yeni giriş e-postası mevcut olandan farklı olmalıdır")
+    if not verify_password(inp.current_password, doc.get("password_hash", "")):
+        raise HTTPException(400, "Mevcut şifre hatalı")
+    if await db.users.find_one({"email": new_email, "id": {"$ne": user["id"]}}):
+        raise HTTPException(409, "Bu e-posta zaten kullanımda")
+    old_email = doc.get("email")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"email": new_email}})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": user.get("tenant_id"), "user": new_email,
+        "action": "user.login_email_change", "entity_id": user["id"],
+        "detail": f"{old_email} -> {new_email}", "at": now_iso(),
+    })
+    return {"ok": True, "email": new_email}
+
 # ---------- Kişisel profil ----------
 def _profile_view(doc: Dict[str, Any], tenant: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """Profil yanıtı. Firma ile bağlı alanlar firma kaydındaki güncel değerden okunur."""
