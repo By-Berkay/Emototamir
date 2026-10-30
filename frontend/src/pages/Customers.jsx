@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { CountStrip } from "../components/reports/ReportKit";
+import { Mail, MapPin, CircleCheck } from "lucide-react";
 import api, { fmtMoney } from "../lib/api";
 import { Link } from "react-router-dom";
 import { Card, CardContent } from "../components/ui/card";
@@ -152,6 +154,12 @@ export default function Customers() {
           </Dialog>
         }
       />
+      <CountStrip items={[
+        { label: "Toplam müşteri", value: items.length, hint: "Kayıtlı müşteri", icon: Users, tone: "orange", testId: "cust-total" },
+        { label: "E-posta kayıtlı", value: items.filter((c) => c.email).length, hint: "İletişim bilgisi tam", icon: Mail, tone: "cyan", testId: "cust-email" },
+        { label: "Şehir sayısı", value: new Set(items.map((c) => c.city).filter(Boolean)).size, hint: "Farklı il", icon: MapPin, tone: "violet", testId: "cust-cities" },
+        { label: "Notlu müşteri", value: items.filter((c) => (c.notes || "").trim()).length, hint: "Not eklenmiş", icon: CircleCheck, tone: "emerald", testId: "cust-notes" },
+      ]} />
 
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative w-full max-w-md flex-1">

@@ -11,7 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
 import { HandCoins as PvIcon } from "lucide-react";
-import StatCard from "../components/StatCard";
+import Money from "../components/Money";
+import { KpiTile, ChartPanel, Donut, Bar, PALETTE, LockedChart } from "../components/reports/ReportKit";
+import { Wallet, Receipt, Gauge, CreditCard } from "lucide-react";
 import EmptyState from "../components/EmptyState";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -84,7 +86,7 @@ export default function Payments() {
   };
 
   const del = async (p) => {
-    if (!window.confirm(`${fmtMoney(p.amount)} tutarındaki tahsilatı silmek istediğinize emin misiniz?`)) return;
+    if (!window.confirm("Bu tahsilatı silmek istediğinize emin misiniz?")) return;
     try {
       await api.delete(`/payments/${p.id}`);
       toast.success("Tahsilat silindi");
@@ -139,9 +141,43 @@ export default function Payments() {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Toplam" value={fmtMoney(total)} tone="emerald" />
-      </div>
+      {(() => {
+        const split = METHODS.map((m, i) => {
+          const rows = items.filter((x) => x.method === m.v);
+          return { name: m.l, value: rows.reduce((a, b) => a + (Number(b.amount) || 0), 0), count: rows.length, color: PALETTE[i] };
+        }).filter((x) => x.count > 0);
+        const splitTotal = split.reduce((a, b) => a + b.value, 0);
+        const top = split.reduce((m, x) => (x.value > (m?.value || 0) ? x : m), null);
+        const masked = items.some((x) => x.amount === null || x.amount === undefined);
+        return (
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-2">
+              <KpiTile testId="pay-total" label="Toplam tahsilat" icon={Wallet} tone="emerald" value={<Money value={total} />} hint={`${items.length} tahsilat kaydı`} />
+              <KpiTile testId="pay-avg" label="Ortalama tahsilat" icon={Gauge} tone="cyan" value={<Money value={items.length ? total / items.length : 0} />} hint="Kayıt başına" />
+              <KpiTile testId="pay-top" label="En çok kullanılan" icon={CreditCard} tone="violet" value={top ? top.name : "—"} hint={top ? `${top.count} işlem` : "Henüz tahsilat yok"} />
+              <KpiTile testId="pay-count" label="Yöntem sayısı" icon={Receipt} tone="orange" value={split.length} hint="Kullanılan ödeme tipi" />
+            </div>
+            <ChartPanel title="Yönteme göre dağılım" description="Tahsilat tutarının payı">
+              {masked ? <LockedChart height={180} /> : split.length ? (
+                <>
+                  <Donut data={split} centerLabel="Toplam" centerValue={fmtMoney(splitTotal)} height={180} />
+                  <ul className="space-y-2.5">
+                    {split.map((x) => (
+                      <li key={x.name}>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="flex items-center gap-2"><i className="h-2.5 w-2.5 rounded-full" style={{ background: x.color }} />{x.name}</span>
+                          <span className="font-medium">%{splitTotal ? Math.round((x.value / splitTotal) * 100) : 0}</span>
+                        </div>
+                        <div className="mt-1.5"><Bar value={x.value} max={splitTotal || 1} color={x.color} /></div>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              ) : <p className="py-10 text-center text-sm text-slate-500">Tahsilat kaydı yok</p>}
+            </ChartPanel>
+          </div>
+        );
+      })()}
 
       <Card className="border-slate-200"><CardContent className="p-0">
         <div className="overflow-x-auto">
@@ -163,7 +199,7 @@ export default function Payments() {
                   <td className="px-4 py-3 text-slate-600 text-xs">{p.service_order_id ? "Servise Bağlı" : <span className="text-brand-600 font-semibold">Harici</span>}</td>
                   <td className="px-4 py-3">{methodLabel(p.method)}</td>
                   <td className="px-4 py-3 text-slate-600 text-xs">{p.note || "-"}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-emerald-600">{fmtMoney(p.amount)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-emerald-600"><Money value={p.amount} /></td>
                   {isAdmin && (
                     <td className="px-4 py-3">
                       <div className="flex justify-end gap-1">

@@ -1990,11 +1990,15 @@ async def delete_service_order(sid: str, hard: bool = False, user=Depends(requir
 
 # ---------- Payments ----------
 @api.get("/payments")
-async def list_payments(customer_id: str = "", user=Depends(get_current_user)):
+async def list_payments(request: Request, customer_id: str = "", user=Depends(get_current_user)):
     q: Dict[str, Any] = tf(user)
     if customer_id:
         q["customer_id"] = customer_id
-    return await db.payments.find(q, {"_id": 0}).sort("created_at", -1).to_list(2000)
+    rows = await db.payments.find(q, {"_id": 0}).sort("created_at", -1).to_list(2000)
+    # Tutarlar kilitliyken (PIN doğrulanmamışsa) parasal alanlar sunucuda maskelenir
+    if await _is_revealed(request, user):
+        return rows
+    return _mask_money(rows)
 
 @api.post("/payments")
 async def create_payment(inp: PaymentIn, user=Depends(get_current_user)):

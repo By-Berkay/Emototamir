@@ -3,6 +3,15 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.11 — Herkese açık sayfalar, tahsilat, finans ve liste özetleri
+- Teklif ve onay sayfaları: ortak kabuk (`PublicShell`), aurora arka plan, cam kartlar.
+- Firma yönetimi (süper admin) sayfasına başlık eklendi.
+- Tahsilatlar: KPI kartları, yöntem dağılımı; tutarlar kilitliyken hiçbir yerde açılmıyor.
+- Tahsilat listesi (`GET /payments`) artık kilitliyken tutarları sunucuda maskeliyor.
+- Finans: gelir/gider dengesi halka grafiği (kilitliyken gizli).
+- Servis, ekspertiz, müşteri ve motosiklet listelerine sayı özet şeridi.
+- Yedek: önceki sürüm `backup/v2.10` dalında.
+
 ## v2.10 — Raporlar, cari hesaplar ve profil
 - Raporlar: özet KPI kartları (mini trend), 12 aylık ciro/tahsilat grafiği, servis durumu ve tahsilat yöntemi halka grafikleri, aylık ciro bileşimi, sıralı müşteri/hizmet/parça tabloları, kritik stok listesi.
 - `/reports/summary` yanıtına `analytics` alanı eklendi (aylık seri, durum ve ödeme yöntemi dağılımı, ortalama fiş, tahsilat oranı). Para alanları mevcut maskeleme kurallarına tabi.

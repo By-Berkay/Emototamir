@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, TrendingUp, TrendingDown, Wallet, Users, Search } from "lucide-react";
-import api, { fmtDate } from "../lib/api";
+import api, { fmtDate, fmtMoney } from "../lib/api";
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
 import { ArrowLeftRight as PvIcon } from "lucide-react";
@@ -15,6 +15,8 @@ import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
 import { cn } from "../lib/utils";
+import { Donut, LockedChart } from "../components/reports/ReportKit";
+import { usePrivacy } from "../context/PrivacyContext";
 
 const currentMonth = () => new Date().toISOString().slice(0, 7);
 const today = () => new Date().toISOString().slice(0, 10);
@@ -38,6 +40,7 @@ function StatTile({ icon: Icon, label, children, tone = "cyan" }) {
 }
 
 export default function Finance() {
+  const { unlocked } = usePrivacy();
   const [month, setMonth] = useState(currentMonth());
   const [summary, setSummary] = useState(null);
   const [entries, setEntries] = useState([]);
@@ -153,6 +156,19 @@ export default function Finance() {
       <div className="grid gap-6 xl:grid-cols-3">
         <Card className="xl:col-span-1">
           <CardContent className="p-5">
+            <p className="font-heading mb-4 text-sm font-semibold text-slate-900 dark:text-white">Gelir / gider dengesi</p>
+            {unlocked && summary && (summary.income || summary.expense) ? (
+              <div className="mb-5">
+                <Donut
+                  height={160}
+                  data={[{ name: "Gelir", value: summary.income || 0, color: "#10b981" }, { name: "Gider", value: summary.expense || 0, color: "#f97316" }]}
+                  centerLabel="Net"
+                  centerValue={fmtMoney(summary.net || 0)}
+                />
+              </div>
+            ) : summary ? (
+              <div className="mb-5"><LockedChart height={160} /></div>
+            ) : null}
             <p className="font-heading mb-4 text-sm font-semibold text-slate-900 dark:text-white">Kategori dağılımı</p>
             {(summary?.by_category || []).length === 0 ? (
               <p className="text-sm text-slate-500">Bu ay için kayıt yok.</p>

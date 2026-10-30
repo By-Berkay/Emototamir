@@ -46,8 +46,8 @@ export default function QuotePublic() {
   };
 
   if (err) return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <Card className="max-w-md w-full"><CardContent className="p-8 text-center">
+    <div className="emt-aurora min-h-screen flex items-center justify-center p-6">
+      <Card className="glass-card max-w-md w-full"><CardContent className="p-8 text-center">
         <XCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
         <h1 className="font-heading text-2xl font-bold mb-2">Teklif Bulunamadı</h1>
         <p className="text-slate-500">{err}</p>
@@ -63,10 +63,10 @@ export default function QuotePublic() {
   const brandColor = t.primary_color || "#F97316";
 
   return (
-    <div className="min-h-screen bg-slate-100 py-8 px-4" data-testid="quote-public">
+    <div className="emt-aurora min-h-screen py-8 px-4" data-testid="quote-public">
       <div className="max-w-3xl mx-auto space-y-4">
         {/* Header */}
-        <Card>
+        <Card className="glass-card">
           <CardContent className="p-6">
             <div className="flex items-start justify-between flex-wrap gap-3">
               <div>
@@ -91,7 +91,7 @@ export default function QuotePublic() {
         </Card>
 
         {/* Customer + Moto */}
-        <Card>
+        <Card className="glass-card">
           <CardContent className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <div className="text-xs uppercase text-slate-500 mb-1">Sayın Müşterimiz</div>
@@ -100,13 +100,13 @@ export default function QuotePublic() {
             <div>
               <div className="text-xs uppercase text-slate-500 mb-1">Motosiklet</div>
               <div className="text-lg font-semibold">{q.motorcycle.brand} {q.motorcycle.model} {q.motorcycle.year && `(${q.motorcycle.year})`}</div>
-              <div className="font-mono text-sm bg-slate-100 rounded px-2 py-0.5 inline-block mt-1">{q.motorcycle.plate}</div>
+              <div className="font-mono text-sm rounded bg-slate-100 px-2 py-0.5 inline-block mt-1 dark:bg-white/10">{q.motorcycle.plate}</div>
             </div>
           </CardContent>
         </Card>
 
         {/* Items */}
-        <Card>
+        <Card className="glass-card">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
@@ -143,7 +143,7 @@ export default function QuotePublic() {
         </Card>
 
         {q.notes && (
-          <Card><CardContent className="p-6">
+          <Card className="glass-card"><CardContent className="p-6">
             <div className="text-xs uppercase text-slate-500 mb-1">Servis Notları</div>
             <div className="whitespace-pre-wrap text-sm">{q.notes}</div>
           </CardContent></Card>
@@ -163,13 +163,13 @@ export default function QuotePublic() {
             </CardContent>
           </Card>
         ) : readonly ? (
-          <Card><CardContent className="p-6 text-center text-slate-500">
+          <Card className="glass-card"><CardContent className="p-6 text-center text-slate-500">
             {expiredByDate && !decided
               ? <>Bu teklifin geçerlilik süresi dolmuş — üzerinde işlem yapılamaz.</>
               : <>Bu teklif <b>{STATUS_TR[q.status] || q.status}</b> durumunda — üzerinde işlem yapılamaz.</>}
           </CardContent></Card>
         ) : (
-          <Card>
+          <Card className="glass-card">
             <CardContent className="p-6 space-y-3">
               <div className="text-sm text-slate-700">Teklifi onaylamak veya reddetmek için lütfen ad-soyadınızı yazın.</div>
               <div>
