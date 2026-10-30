@@ -3,6 +3,14 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.10 — Raporlar, cari hesaplar ve profil
+- Raporlar: özet KPI kartları (mini trend), 12 aylık ciro/tahsilat grafiği, servis durumu ve tahsilat yöntemi halka grafikleri, aylık ciro bileşimi, sıralı müşteri/hizmet/parça tabloları, kritik stok listesi.
+- `/reports/summary` yanıtına `analytics` alanı eklendi (aylık seri, durum ve ödeme yöntemi dağılımı, ortalama fiş, tahsilat oranı). Para alanları mevcut maskeleme kurallarına tabi.
+- Cari hesaplar: KPI kartları, alacak dağılımı, arama ve sıralama, bakiye çubukları. Tutarlar kilitliyken hiçbir yerde açılmaz.
+- Motosiklet detayına sayfa başlığı ve motosiklet görseli eklendi.
+- Profil: giriş e-postası (kullanıcı adı) mevcut şifre onayıyla değiştirilebiliyor (`PUT /profile/login`).
+- Yedek: önceki sürüm `backup/v2.09` dalında.
+
 ## v2.09 — Sayfa başlıkları ve motosiklet görselleri
 - Sayfa başlıklarına konuya uygun görsel öge eklendi (müşteri, motosiklet, servis, ekspertiz, cari, rapor).
 - Motosiklet görselleri SVG setiyle başlıkta gösteriliyor (Motosikletler, Servis, Ekspertiz, Cari, Raporlar).

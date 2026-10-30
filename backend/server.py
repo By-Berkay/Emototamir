@@ -530,6 +530,34 @@ async def change_password(inp: ChangePasswordIn, user=Depends(get_current_user))
     })
     return {"ok": True}
 
+class LoginEmailIn(BaseModel):
+    new_email: str
+    current_password: str
+
+@api.put("/profile/login")
+async def change_login_email(inp: LoginEmailIn, user=Depends(get_current_user)):
+    """Oturum açmış kullanıcı kendi giriş e-postasını (kullanıcı adı) mevcut şifresini doğrulayarak değiştirir."""
+    new_email = (inp.new_email or "").strip().lower()
+    if not PROFILE_EMAIL_RE.match(new_email) or len(new_email) > 120:
+        raise HTTPException(400, "Geçerli bir giriş e-postası girin")
+    doc = await db.users.find_one({"id": user["id"]})
+    if not doc:
+        raise HTTPException(404, "Kullanıcı bulunamadı")
+    if new_email == doc.get("email"):
+        raise HTTPException(400, "Yeni giriş e-postası mevcut olandan farklı olmalıdır")
+    if not verify_password(inp.current_password, doc.get("password_hash", "")):
+        raise HTTPException(400, "Mevcut şifre hatalı")
+    if await db.users.find_one({"email": new_email, "id": {"$ne": user["id"]}}):
+        raise HTTPException(409, "Bu e-posta zaten kullanımda")
+    old_email = doc.get("email")
+    await db.users.update_one({"id": user["id"]}, {"$set": {"email": new_email}})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": user.get("tenant_id"), "user": new_email,
+        "action": "user.login_email_change", "entity_id": user["id"],
+        "detail": f"{old_email} -> {new_email}", "at": now_iso(),
+    })
+    return {"ok": True, "email": new_email}
+
 # ---------- Kişisel profil ----------
 def _profile_view(doc: Dict[str, Any], tenant: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """Profil yanıtı. Firma ile bağlı alanlar firma kaydındaki güncel değerden okunur."""
@@ -2087,6 +2115,7 @@ REVEAL_KEYS = {
     "today_collection", "month_revenue", "total_receivables", "revenue", "grand_total", "paid_total",
     "spent", "amount", "balance", "debt", "total", "labor_total", "discount", "unit_price", "line_total",
     "cost_price", "sale_price", "price", "net_total", "vat_total", "collected", "receivable",
+    "avg_ticket", "parts_revenue", "services_revenue", "labor_revenue",
 }
 
 async def _is_revealed(request: Request, user: Dict[str, Any]) -> bool:
@@ -2201,8 +2230,8 @@ async def dashboard(request: Request, user=Depends(get_current_user)):
 async def report_summary(request: Request, user=Depends(get_current_user)):
     tid = tenant_id_of(user)
     # İptal edilen servisler raporlarda gelir/alacak olarak sayılmaz
-    orders = await db.service_orders.find({"tenant_id": tid, "status": {"$ne": "cancelled"}}, {"grand_total": 1, "paid_total": 1, "customer_id": 1, "customer_name": 1, "items": 1, "labor_total": 1, "discount": 1, "_id": 0}).to_list(2000)
-    payments = await db.payments.find({"tenant_id": tid}, {"amount": 1, "_id": 0}).to_list(2000)
+    orders = await db.service_orders.find({"tenant_id": tid, "status": {"$ne": "cancelled"}}, {"grand_total": 1, "paid_total": 1, "customer_id": 1, "customer_name": 1, "status": 1, "created_at": 1, "items": 1, "labor_total": 1, "discount": 1, "_id": 0}).to_list(2000)
+    payments = await db.payments.find({"tenant_id": tid}, {"amount": 1, "method": 1, "created_at": 1, "_id": 0}).to_list(2000)
     products = await db.products.find({"tenant_id": tid}, {"id": 1, "code": 1, "name": 1, "stock": 1, "min_stock": 1, "cost_price": 1, "sale_price": 1, "_id": 0}).to_list(2000)
 
     # Top customers by spend
@@ -2260,6 +2289,61 @@ async def report_summary(request: Request, user=Depends(get_current_user)):
                 services_revenue += qty * price
         labor_revenue += float(o.get("labor_total", 0))
     gross_profit = (parts_revenue - parts_cost) + services_revenue + labor_revenue - sum(o.get("discount",0) for o in orders)
+    # ---- Analitik: son 12 ay serisi, durum ve ödeme yöntemi dağılımı, KPI'lar ----
+    now_utc = datetime.now(timezone.utc)
+    yy, mm = now_utc.year, now_utc.month
+    month_keys: List[str] = []
+    for _ in range(12):
+        month_keys.append(f"{yy:04d}-{mm:02d}")
+        mm -= 1
+        if mm == 0:
+            mm, yy = 12, yy - 1
+    month_keys.reverse()
+    monthly = {k: {"month": k, "revenue": 0.0, "collected": 0.0, "orders": 0,
+                   "parts_revenue": 0.0, "services_revenue": 0.0, "labor_revenue": 0.0} for k in month_keys}
+    status_counts: Dict[str, int] = {}
+    for o in orders:
+        st = o.get("status") or "new"
+        status_counts[st] = status_counts.get(st, 0) + 1
+        row = monthly.get(str(o.get("created_at", ""))[:7])
+        if row is None:
+            continue
+        row["revenue"] += float(o.get("grand_total", 0) or 0)
+        row["orders"] += 1
+        row["labor_revenue"] += float(o.get("labor_total", 0) or 0)
+        for it in o.get("items", []):
+            line = float(it.get("qty", 0) or 0) * float(it.get("unit_price", 0) or 0)
+            if it.get("kind") == "part":
+                row["parts_revenue"] += line
+            elif it.get("kind") == "service":
+                row["services_revenue"] += line
+    method_totals: Dict[str, Dict[str, Any]] = {}
+    for p in payments:
+        row = monthly.get(str(p.get("created_at", ""))[:7])
+        amt = float(p.get("amount", 0) or 0)
+        if row is not None:
+            row["collected"] += amt
+        m = p.get("method") or "other"
+        mt = method_totals.setdefault(m, {"method": m, "amount": 0.0, "count": 0})
+        mt["amount"] += amt
+        mt["count"] += 1
+    for row in monthly.values():
+        for k in ("revenue", "collected", "parts_revenue", "services_revenue", "labor_revenue"):
+            row[k] = round(row[k], 2)
+    n_orders = len(orders)
+    collected_sum = sum(float(p.get("amount", 0) or 0) for p in payments)
+    analytics = {
+        "monthly": [monthly[k] for k in month_keys],
+        "status_distribution": [{"status": k, "count": v} for k, v in sorted(status_counts.items(), key=lambda x: -x[1])],
+        "payment_methods": [{**v, "amount": round(v["amount"], 2)} for v in sorted(method_totals.values(), key=lambda x: -x["amount"])],
+        "kpis": {
+            "avg_ticket": round(total_revenue / n_orders, 2) if n_orders else 0,
+            "collection_rate": round(min(100.0, collected_sum / total_revenue * 100), 1) if total_revenue else 0,
+            "open_orders": sum(v for k, v in status_counts.items() if k not in {"completed", "delivered"}),
+            "debtor_count": len(_debtors(orders)),
+        },
+    }
+
     report = {
         "totals": {
             "total_revenue": round(total_revenue, 2),
@@ -2280,6 +2364,7 @@ async def report_summary(request: Request, user=Depends(get_current_user)):
         "top_services": top_services,
         "critical_stock": critical_stock,
         "debtors": _debtors(orders),
+        "analytics": analytics,
     }
     if await _is_revealed(request, user):
         return {**report, "masked": False}

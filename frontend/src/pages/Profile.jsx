@@ -63,6 +63,9 @@ export default function Profile() {
   const [profile, setProfile] = useState(null);
   const [form, setForm] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPw, setLoginPw] = useState("");
+  const [savingLogin, setSavingLogin] = useState(false);
   const avatarRef = useRef(null);
 
   const isSuper = user?.role === "super_admin";
@@ -127,6 +130,24 @@ export default function Profile() {
     setForm((f) => ({ ...f, [`link_${key}`]: checked }));
   };
 
+  const saveLogin = async () => {
+    const next = loginEmail.trim().toLowerCase();
+    if (!next || !loginPw) return;
+    setSavingLogin(true);
+    try {
+      const { data } = await api.put("/profile/login", { new_email: next, current_password: loginPw });
+      setProfile((p) => ({ ...p, email: data.email }));
+      setLoginEmail("");
+      setLoginPw("");
+      await refresh();
+      toast.success("Giriş e-postası güncellendi");
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Giriş e-postası güncellenemedi");
+    } finally {
+      setSavingLogin(false);
+    }
+  };
+
   const save = async (e) => {
     e.preventDefault();
     if (!form.name || form.name.trim().length < 2) {
@@ -172,8 +193,40 @@ export default function Profile() {
               </div>
               <div>
                 <Label htmlFor="p-login">Giriş e-postası</Label>
-                <Input id="p-login" value={profile.email} disabled data-testid="input-profile-login" />
-                <p className="mt-1 text-xs text-slate-500">Giriş e-postası Süper Admin tarafından değiştirilir.</p>
+                <Input
+                  id="p-login"
+                  type="email"
+                  autoComplete="username"
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  placeholder={profile.email}
+                  data-testid="input-profile-login"
+                />
+                {loginEmail.trim() && loginEmail.trim().toLowerCase() !== profile.email && (
+                  <div className="mt-2 space-y-2 rounded-md border border-amber-300/60 bg-amber-50 p-3 dark:border-amber-400/30 dark:bg-amber-400/10">
+                    <p className="text-xs text-slate-600 dark:text-slate-300">
+                      Giriş e-postanız değişecek. Onaylamak için mevcut şifrenizi girin.
+                    </p>
+                    <Input
+                      type="password"
+                      autoComplete="current-password"
+                      value={loginPw}
+                      onChange={(e) => setLoginPw(e.target.value)}
+                      placeholder="Mevcut şifre"
+                      data-testid="input-profile-login-password"
+                    />
+                    <Button
+                      type="button"
+                      size="sm"
+                      disabled={savingLogin || !loginPw}
+                      onClick={saveLogin}
+                      data-testid="btn-profile-login-save"
+                    >
+                      {savingLogin ? "Kaydediliyor..." : "Giriş e-postasını güncelle"}
+                    </Button>
+                  </div>
+                )}
+                <p className="mt-1 text-xs text-slate-500">Giriş e-postanız aynı zamanda giriş kullanıcı adınızdır.</p>
               </div>
               <div>
                 <Label>Rol</Label>
