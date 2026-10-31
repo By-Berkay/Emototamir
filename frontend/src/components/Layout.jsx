@@ -60,7 +60,6 @@ const NAV_TENANT = [
       { to: "/trash", label: "Çöp Kutusu", icon: Trash2, adminOnly: true },
       { to: "/profil", label: "Profilim", icon: UserRound },
       { to: "/settings", label: "Ayarlar", icon: Settings },
-      { to: "/account/password", label: "Şifre Değiştir", icon: KeyRound },
     ],
   },
 ];
@@ -74,13 +73,12 @@ const NAV_SUPER = [
       { to: "/admin/landing", label: "Vitrin & Planlar", icon: BarChart3 },
       { to: "/admin/audit-logs", label: "Denetim Kayıtları", icon: History },
       { to: "/profil", label: "Profilim", icon: UserRound },
-      { to: "/account/password", label: "Şifre Değiştir", icon: KeyRound },
     ],
   },
 ];
 
 // Süper Admin firma verisine erişemez (backend 403 döner); yalnızca bu sayfalara girebilir
-const SUPER_ADMIN_ALLOWED = ["/settings", "/account/password", "/profil"];
+const SUPER_ADMIN_ALLOWED = ["/settings", "/profil"];
 
 function initials(name) {
   return (name || "?")
@@ -196,15 +194,15 @@ export default function Layout() {
         </nav>
 
         <div className="m-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-          <div className="flex items-center gap-3">
+          <Link to="/profil" className="flex items-center gap-3 rounded-lg p-1 -m-1 transition-colors hover:bg-white/5" data-testid="sidebar-profile-link">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-700 text-xs font-semibold text-white">
               {user?.avatar_path ? <AuthedImage path={user.avatar_path} alt="" className="h-full w-full object-cover" /> : initials(user?.name)}
             </span>
             <div className="min-w-0 flex-1">
-              <Link to="/profil" className="block truncate text-sm font-medium text-white hover:underline">{user?.name}</Link>
+              <span className="block truncate text-sm font-medium text-white">{user?.name}</span>
               <div className="truncate text-xs text-slate-400">{user?.email}</div>
             </div>
-          </div>
+          </Link>
           <button
             onClick={logout}
             className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-300 transition-colors duration-150 hover:bg-white/5 hover:text-white"
@@ -255,7 +253,12 @@ export default function Layout() {
                 <Plus className="h-4 w-4" /> Yeni iş emri
               </Link>
             )}
-            <div className="hidden items-center gap-3 border-l border-slate-200 pl-3 sm:flex">
+            <Link
+              to="/profil"
+              className="hidden items-center gap-3 rounded-lg border-l border-slate-200 py-1 pl-3 pr-1 transition-colors hover:bg-slate-100 sm:flex"
+              title="Profilim ve giriş bilgileri"
+              data-testid="header-profile-link"
+            >
               <div className="flex flex-col items-end leading-tight">
                 <span className="text-sm font-medium text-slate-800">{user?.name}</span>
                 <span className="text-[11px] uppercase tracking-wider text-slate-500">
@@ -265,7 +268,7 @@ export default function Layout() {
               <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-900 text-xs font-semibold text-white">
                 {user?.avatar_path ? <AuthedImage path={user.avatar_path} alt="" className="h-full w-full object-cover" /> : initials(user?.name)}
               </span>
-            </div>
+            </Link>
           </div>
         </header>
 
