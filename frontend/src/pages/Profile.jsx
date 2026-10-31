@@ -7,6 +7,8 @@ import api from "../lib/api";
 import { useAuth } from "../context/AuthContext";
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
+import PasswordForm from "../components/PasswordForm";
+import PinChangeCard from "../components/PinChangeCard";
 import { UserRound as PvIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
 import { Button } from "../components/ui/button";
@@ -179,12 +181,13 @@ export default function Profile() {
     <div className="space-y-6">
       <PageHeader visual={<PageVisual icon={PvIcon} />} title="Profilim" description="Kişisel bilgilerinizi ve iletişim bilgilerinizi yönetin" />
 
-      <form onSubmit={save} className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        <form onSubmit={save} className="grid grid-cols-1 gap-6 xl:col-span-2 xl:grid-cols-3">
         <div className="space-y-6 xl:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base"><UserRound className="h-4 w-4" /> Hesap</CardTitle>
-              <CardDescription>Oturumda görünen adınız ve giriş bilgileriniz</CardDescription>
+              <CardDescription>Oturumda görünen adınız ve rolünüz</CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
@@ -192,50 +195,8 @@ export default function Profile() {
                 <Input id="p-name" value={form.name} onChange={set("name")} data-testid="input-profile-name" />
               </div>
               <div>
-                <Label htmlFor="p-login">Giriş e-postası</Label>
-                <Input
-                  id="p-login"
-                  type="email"
-                  autoComplete="username"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  placeholder={profile.email}
-                  data-testid="input-profile-login"
-                />
-                {loginEmail.trim() && loginEmail.trim().toLowerCase() !== profile.email && (
-                  <div className="mt-2 space-y-2 rounded-md border border-amber-300/60 bg-amber-50 p-3 dark:border-amber-400/30 dark:bg-amber-400/10">
-                    <p className="text-xs text-slate-600 dark:text-slate-300">
-                      Giriş e-postanız değişecek. Onaylamak için mevcut şifrenizi girin.
-                    </p>
-                    <Input
-                      type="password"
-                      autoComplete="current-password"
-                      value={loginPw}
-                      onChange={(e) => setLoginPw(e.target.value)}
-                      placeholder="Mevcut şifre"
-                      data-testid="input-profile-login-password"
-                    />
-                    <Button
-                      type="button"
-                      size="sm"
-                      disabled={savingLogin || !loginPw}
-                      onClick={saveLogin}
-                      data-testid="btn-profile-login-save"
-                    >
-                      {savingLogin ? "Kaydediliyor..." : "Giriş e-postasını güncelle"}
-                    </Button>
-                  </div>
-                )}
-                <p className="mt-1 text-xs text-slate-500">Giriş e-postanız aynı zamanda giriş kullanıcı adınızdır.</p>
-              </div>
-              <div>
                 <Label>Rol</Label>
                 <div className="pt-2"><Badge variant="outline">{ROLE_LABELS[profile.role] || profile.role}</Badge></div>
-              </div>
-              <div className="flex items-end">
-                <Button asChild variant="outline" type="button">
-                  <Link to="/account/password"><KeyRound className="mr-2 h-4 w-4" />Şifre değiştir</Link>
-                </Button>
               </div>
             </CardContent>
           </Card>
@@ -328,7 +289,7 @@ export default function Profile() {
               <CardTitle className="text-base">Profil fotoğrafı</CardTitle>
               <CardDescription>PNG, JPG veya WEBP; en fazla 3 MB.</CardDescription>
             </CardHeader>
-            <CardContent className="flex items-center gap-5">
+            <CardContent className="flex flex-wrap items-center gap-4">
               <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-xl font-bold text-white ring-2 ring-white/20">
                 {profile.avatar_path ? (
                   <AuthedImage path={profile.avatar_path} alt="Profil fotoğrafı" className="h-full w-full object-cover" />
@@ -370,7 +331,58 @@ export default function Profile() {
             {saving ? "Kaydediliyor…" : "Profili kaydet"}
           </Button>
         </div>
-      </form>
+        </form>
+
+        <aside className="space-y-6 xl:sticky xl:top-6 xl:self-start" data-testid="account-security">
+          <Card className="glass-card">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base"><KeyRound className="h-4 w-4" /> Giriş bilgileri</CardTitle>
+              <CardDescription>Kullanıcı adınız giriş e-postanızdır. Değiştirmek için mevcut şifrenizi girin.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+        <div>
+          <Label htmlFor="p-login">Giriş e-postası</Label>
+          <Input
+            id="p-login"
+            type="email"
+            autoComplete="username"
+            value={loginEmail}
+            onChange={(e) => setLoginEmail(e.target.value)}
+            placeholder={profile.email}
+            data-testid="input-profile-login"
+          />
+          {loginEmail.trim() && loginEmail.trim().toLowerCase() !== profile.email && (
+            <div className="mt-2 space-y-2 rounded-md border border-amber-300/60 bg-amber-50 p-3 dark:border-amber-400/30 dark:bg-amber-400/10">
+              <p className="text-xs text-slate-600 dark:text-slate-300">
+                Giriş e-postanız değişecek. Onaylamak için mevcut şifrenizi girin.
+              </p>
+              <Input
+                type="password"
+                autoComplete="current-password"
+                value={loginPw}
+                onChange={(e) => setLoginPw(e.target.value)}
+                placeholder="Mevcut şifre"
+                data-testid="input-profile-login-password"
+              />
+              <Button
+                type="button"
+                size="sm"
+                disabled={savingLogin || !loginPw}
+                onClick={saveLogin}
+                data-testid="btn-profile-login-save"
+              >
+                {savingLogin ? "Kaydediliyor..." : "Giriş e-postasını güncelle"}
+              </Button>
+            </div>
+          )}
+          <p className="mt-1 text-xs text-slate-500">Giriş e-postanız aynı zamanda giriş kullanıcı adınızdır.</p>
+        </div>
+            </CardContent>
+          </Card>
+          <PasswordForm />
+          <PinChangeCard />
+        </aside>
+      </div>
     </div>
   );
 }
