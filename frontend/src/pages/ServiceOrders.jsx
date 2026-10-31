@@ -11,7 +11,7 @@ import StatusBadge from "../components/StatusBadge";
 import { Plus, Search } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
-import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import MotoPhoto from "../components/MotoPhoto";
 import { Wrench as PvIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,7 +41,7 @@ export default function ServiceOrders() {
 
   return (
     <div className="space-y-6">
-      <PageHeader art={<AnimatedMotorcycleSVG type="sport" height="100%" />} visual={<PageVisual icon={PvIcon} />}
+      <PageHeader art={<MotoPhoto />} visual={<PageVisual icon={PvIcon} />}
         title="Servis Kayıtları"
         description={`${items.length} servis kaydı`}
         actions={

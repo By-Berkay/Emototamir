@@ -3,6 +3,12 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.13 — Gerçekçi motosiklet görseli
+- Ana ekran motosiklet görseli çizim yerine gerçekçi fotoğrafla değiştirildi.
+- Sayfa başlıklarındaki ve motosiklet kartlarındaki çizimler de gerçekçi görselle değiştirildi.
+- SVG motosiklet çizimleri servis ve ekspertiz raporlarındaki arıza diyagramlarında kalmaya devam ediyor.
+- Yedek: önceki sürüm `backup/v2.12` dalında.
+
 ## v2.12 — Hesabım: giriş bilgileri ve şifre tek ekranda
 - Üst sağdaki ve sol alttaki kullanıcı kartına tıklanınca Profilim açılır.
 - Profilim ekranında giriş bilgileri (kullanıcı adı = giriş e-postası) ve şifre değiştirme aynı sağ sütunda; yönetici PIN'i de aynı grupta.
