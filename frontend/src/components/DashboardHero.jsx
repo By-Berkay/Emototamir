@@ -24,55 +24,17 @@ const CSS = `
 }
 `;
 
-/** Motosikletin SVG parçalarla çizilmiş sade hali (tekerlekler, gövde, marka turuncusu aksanı). */
+/** Ana ekran motosiklet görseli: gerçekçi fotoğraf (SVG çizim servis raporları için ayrılmıştır). */
 function MotorcycleSvg() {
   return (
-    <svg viewBox="0 0 240 150" className="h-full w-full overflow-visible drop-shadow-[0_12px_18px_rgba(0,0,0,0.45)]" aria-hidden="true">
-      <defs>
-        <linearGradient id="dh-tank" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#fdba74" />
-          <stop offset="0.5" stopColor="#f97316" />
-          <stop offset="1" stopColor="#c2410c" />
-        </linearGradient>
-        <radialGradient id="dh-tire" cx="0.5" cy="0.5" r="0.5">
-          <stop offset="0.6" stopColor="#1e293b" />
-          <stop offset="1" stopColor="#020617" />
-        </radialGradient>
-      </defs>
-
-      {/* egzoz */}
-      <path d="M108 112 Q96 128 66 122" fill="none" stroke="#94a3b8" strokeWidth="5" strokeLinecap="round" />
-      {/* şasi ve salıncak kolu */}
-      <path d="M62 110 L100 76 L150 78 L184 110" fill="none" stroke="#f97316" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M100 112 L126 100 L150 110" fill="none" stroke="#64748b" strokeWidth="4" strokeLinecap="round" />
-
-      {/* motor bloğu */}
-      <rect x="110" y="96" width="42" height="22" rx="5" fill="#475569" />
-      <rect x="116" y="101" width="8" height="12" rx="2" fill="#64748b" />
-
-      {/* sele */}
-      <path d="M84 62 Q104 50 126 56 L124 66 L82 70 Z" fill="#1e293b" />
-      {/* depo */}
-      <path d="M100 70 Q110 50 140 50 L160 58 Q166 66 150 74 L104 78 Z" fill="url(#dh-tank)" />
-      <path d="M118 62 Q132 58 146 62" fill="none" stroke="#fff7ed" strokeOpacity="0.55" strokeWidth="2" strokeLinecap="round" />
-
-      {/* çatal ve gidon */}
-      <line x1="178" y1="60" x2="185" y2="110" stroke="#94a3b8" strokeWidth="5" strokeLinecap="round" />
-      <path d="M168 54 L182 46 M176 56 L184 48" stroke="#e2e8f0" strokeWidth="4" strokeLinecap="round" />
-      {/* far */}
-      <circle cx="186" cy="66" r="6" fill="#fef3c7" />
-      <circle cx="186" cy="66" r="10" fill="#fef3c7" fillOpacity="0.2" />
-
-      {/* tekerlekler */}
-      {[60, 185].map((cx) => (
-        <g key={cx}>
-          <circle cx={cx} cy="110" r="32" fill="url(#dh-tire)" stroke="#334155" strokeWidth="5" />
-          <circle cx={cx} cy="110" r="19" fill="none" stroke="#cbd5e1" strokeWidth="3" />
-          <circle cx={cx} cy="110" r="6" fill="#e2e8f0" />
-          <path d={`M${cx} 91 L${cx} 129 M${cx - 19} 110 L${cx + 19} 110`} stroke="#94a3b8" strokeWidth="1.5" strokeOpacity="0.6" />
-        </g>
-      ))}
-    </svg>
+    <img
+      src="/visuals/moto-hologram.jpg"
+      alt=""
+      width="1386"
+      height="665"
+      decoding="async"
+      className="h-full w-full rounded-xl object-cover drop-shadow-[0_12px_18px_rgba(0,0,0,0.45)]"
+    />
   );
 }
 

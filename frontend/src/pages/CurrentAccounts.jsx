@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../co
 import { Input } from "../components/ui/input";
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
-import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import MotoPhoto from "../components/MotoPhoto";
 import { Wallet, Search, Users, TrendingDown, TrendingUp, CircleCheck } from "lucide-react";
 import Money from "../components/Money";
 import { usePrivacy } from "../context/PrivacyContext";
@@ -64,7 +64,7 @@ export default function CurrentAccounts() {
   return (
     <div className="space-y-6">
       <PageHeader
-        art={<AnimatedMotorcycleSVG type="cruiser" height="100%" />}
+        art={<MotoPhoto />}
         visual={<PageVisual icon={Wallet} />}
         title="Cari Hesaplar"
         description="Müşteri bakiyeleri, tahsilat durumu ve açık alacaklar."

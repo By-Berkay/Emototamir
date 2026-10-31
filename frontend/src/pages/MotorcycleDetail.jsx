@@ -8,7 +8,7 @@ import FaultViewer from "../components/FaultViewer";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
-import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import MotoPhoto from "../components/MotoPhoto";
 import { Bike } from "lucide-react";
 
 export default function MotorcycleDetail() {
@@ -23,7 +23,7 @@ export default function MotorcycleDetail() {
   return (
     <div className="space-y-6">
       <PageHeader
-        art={<AnimatedMotorcycleSVG type={m.type} color={m.color} height="100%" />}
+        art={<MotoPhoto />}
         visual={<PageVisual icon={Bike} />}
         title={`${m.brand} ${m.model}`}
         description={`${m.plate} · ${m.type}${m.year ? ` · ${m.year}` : ""}${m.customer ? ` · ${m.customer.first_name} ${m.customer.last_name}` : ""}`}

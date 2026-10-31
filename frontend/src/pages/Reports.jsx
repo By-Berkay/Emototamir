@@ -7,7 +7,7 @@ import { Button } from "../components/ui/button";
 import { Download, Wallet, Receipt, Percent, Gauge, TrendingUp, Wrench, Package, Users, Boxes, BarChart3 } from "lucide-react";
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
-import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import MotoPhoto from "../components/MotoPhoto";
 import Money from "../components/Money";
 import DashboardDebtorsTable from "../components/DashboardDebtorsTable";
 import { DashboardSection, SectionsPanel } from "../components/DashboardLayout";
@@ -383,7 +383,7 @@ export default function Reports() {
   return (
     <div className="space-y-6">
       <PageHeader
-        art={<AnimatedMotorcycleSVG type="touring" height="100%" />}
+        art={<MotoPhoto />}
         visual={<PageVisual icon={BarChart3} />}
         title="Raporlar"
         description="Ciro, tahsilat, servis durumu ve stok özetleri. Bölümleri sürükleyerek düzenleyebilirsiniz."

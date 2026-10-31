@@ -13,10 +13,10 @@ import { Plus, Search, Bike, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
-import AnimatedMotorcycleSVG from "../components/AnimatedMotorcycleSVG";
+import MotoPhoto from "../components/MotoPhoto";
 import { Bike as PvIcon } from "lucide-react";
 import EmptyState from "../components/EmptyState";
-import MotorcycleIllustration from "../components/MotorcycleIllustration";
+
 import { useAuth } from "../context/AuthContext";
 import { Textarea } from "../components/ui/textarea";
 
@@ -86,7 +86,7 @@ export default function Motorcycles() {
 
   return (
     <div className="space-y-6">
-      <PageHeader art={<AnimatedMotorcycleSVG type="naked" height="100%" />} visual={<PageVisual icon={PvIcon} />}
+      <PageHeader art={<MotoPhoto />} visual={<PageVisual icon={PvIcon} />}
         title="Motosikletler"
         description={`${items.length} motosiklet`}
         actions={
@@ -122,7 +122,7 @@ export default function Motorcycles() {
               </div>
               <div className="md:col-span-1">
                 <Label>Önizleme</Label>
-                <div className="mt-1"><MotorcycleIllustration type={form.type} className="w-full" /></div>
+                <div className="mt-1"><div className="aspect-[16/9] w-full overflow-hidden rounded-xl"><MotoPhoto /></div></div>
               </div>
             </div>
             <DialogFooter>
@@ -151,7 +151,7 @@ export default function Motorcycles() {
             <Link to={`/motorcycles/${m.id}`}>
               <Card className="border-slate-200 hover:border-brand-400 hover:shadow-md transition-all duration-150">
                 <CardContent className="p-5">
-                  <MotorcycleIllustration type={m.type} className="w-full h-32 mb-4" />
+                  <div className="mb-4 h-32 w-full overflow-hidden rounded-xl"><MotoPhoto /></div>
                   <div className="flex items-start justify-between">
                     <div>
                       <div className="font-heading text-lg font-semibold text-slate-900">{m.brand} {m.model}</div>
