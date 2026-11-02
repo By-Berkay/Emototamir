@@ -3,6 +3,12 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.14 — Panel KPI ve grafik düzeni
+- Panel üst KPI kartları, Raporlar ile aynı cam kart ve mini çizgi (sparkline) düzenine geçti.
+- Aylık ciro grafiği gradyanlı alan grafiği olarak yenilendi.
+- En çok yapılan işlemler turuncu vurguyla gösteriliyor.
+- Yedek: önceki sürüm `backup/v2.13` dalında.
+
 ## v2.13 — Gerçekçi motosiklet görseli
 - Ana ekran motosiklet görseli çizim yerine gerçekçi fotoğrafla değiştirildi.
 - Sayfa başlıklarındaki ve motosiklet kartlarındaki çizimler de gerçekçi görselle değiştirildi.

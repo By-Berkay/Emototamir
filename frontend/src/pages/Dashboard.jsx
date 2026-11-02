@@ -9,7 +9,7 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
 import StatusBadge from "../components/StatusBadge";
-import StatCard from "../components/StatCard";
+import { KpiTile, GlassTooltip } from "../components/reports/ReportKit";
 import PageHeader from "../components/PageHeader";
 import EmptyState from "../components/EmptyState";
 import Money from "../components/Money";
@@ -17,7 +17,7 @@ import DashboardDebtorsTable from "../components/DashboardDebtorsTable";
 import DashboardHero from "../components/DashboardHero";
 import { DashboardSection, SectionsPanel } from "../components/DashboardLayout";
 import {
-  ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid,
+  ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
   PieChart, Pie, Cell, BarChart, Bar,
 } from "recharts";
 import {
@@ -28,8 +28,8 @@ import { toast } from "sonner";
 
 const FALLBACK_BRAND = "#F97316";
 const FALLBACK_STATUS = "#94A3B8";
-const GRID_STROKE = "#E2E8F0";
-const AXIS_TICK = { fontSize: 11, fill: "#64748B" };
+const GRID_STROKE = "rgba(148,163,184,0.18)";
+const AXIS_TICK = { fontSize: 11, fill: "#94A3B8" };
 
 // Durum renkleri: her durum kendi anlamını taşır (grafik ve açıklama listesinde aynı renk).
 const STATUS_HEX = {
@@ -119,14 +119,14 @@ export default function Dashboard() {
   const bodies = {
     kpi: (
       <section aria-label="Özet göstergeler" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={Wrench} label="Bugünkü servis" value={kpi.today_services} testId="kpi-today" />
-        <StatCard icon={ClipboardList} label="Açık servisler" value={kpi.open_services} tone="slate" testId="kpi-open" />
-        <StatCard icon={PackageCheck} label="Tamamlanan" value={kpi.completed_services} tone="emerald" testId="kpi-completed" />
-        <StatCard icon={Truck} label="Teslim bekliyor" value={kpi.awaiting_delivery} tone="amber" testId="kpi-awaiting" />
-        <StatCard icon={HandCoins} label="Bugünkü tahsilat" value={<Money value={kpi.today_collection} />} tone="emerald" testId="kpi-today-collection" />
-        <StatCard icon={TrendingUp} label="Bu ay ciro" value={<Money value={kpi.month_revenue} />} tone="sky" testId="kpi-month-revenue" />
-        <StatCard icon={Wallet} label="Toplam alacak" value={<Money value={kpi.total_receivables} />} tone="red" testId="kpi-receivables" />
-        <StatCard icon={AlertTriangle} label="Borçlu servis" value={kpi.unpaid_count} tone="amber" testId="kpi-unpaid" />
+        <KpiTile icon={Wrench} label="Bugünkü servis" value={kpi.today_services} tone="orange" testId="kpi-today" />
+        <KpiTile icon={ClipboardList} label="Açık servisler" value={kpi.open_services} tone="cyan" testId="kpi-open" />
+        <KpiTile icon={PackageCheck} label="Tamamlanan" value={kpi.completed_services} tone="emerald" testId="kpi-completed" />
+        <KpiTile icon={Truck} label="Teslim bekliyor" value={kpi.awaiting_delivery} tone="violet" testId="kpi-awaiting" />
+        <KpiTile icon={HandCoins} label="Bugünkü tahsilat" value={<Money value={kpi.today_collection} />} tone="emerald" testId="kpi-today-collection" />
+        <KpiTile icon={TrendingUp} label="Bu ay ciro" value={<Money value={kpi.month_revenue} />} tone="orange" spark={monthly_revenue} sparkKey="revenue" testId="kpi-month-revenue" />
+        <KpiTile icon={Wallet} label="Toplam alacak" value={<Money value={kpi.total_receivables} />} tone="red" testId="kpi-receivables" />
+        <KpiTile icon={AlertTriangle} label="Borçlu servis" value={kpi.unpaid_count} tone="violet" testId="kpi-unpaid" />
       </section>
     ),
 
@@ -234,20 +234,27 @@ export default function Dashboard() {
           ) : monthly_revenue?.length ? (
             <div className="h-72">
               <ResponsiveContainer>
-                <LineChart data={monthly_revenue} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                <AreaChart data={monthly_revenue} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                  <defs>
+                    <linearGradient id="dashRevGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={brand} stopOpacity={0.5} />
+                      <stop offset="100%" stopColor={brand} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
                   <CartesianGrid stroke={GRID_STROKE} strokeDasharray="3 3" vertical={false} />
                   <XAxis dataKey="month" tick={AXIS_TICK} tickLine={false} axisLine={false} />
                   <YAxis tick={AXIS_TICK} tickLine={false} axisLine={false} width={56} tickFormatter={compact} />
-                  <Tooltip formatter={(v) => fmtMoney(v)} />
-                  <Line
+                  <Tooltip content={<GlassTooltip />} />
+                  <Area
                     type="monotone"
                     dataKey="revenue"
+                    name="Ciro"
                     stroke={brand}
                     strokeWidth={2.5}
-                    dot={{ r: 3, fill: brand, strokeWidth: 0 }}
+                    fill="url(#dashRevGrad)"
                     activeDot={{ r: 5 }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           ) : (
@@ -368,7 +375,7 @@ export default function Dashboard() {
                   <XAxis type="number" tick={AXIS_TICK} tickLine={false} axisLine={false} allowDecimals={false} />
                   <YAxis dataKey="name" type="category" width={110} tick={AXIS_TICK} tickLine={false} axisLine={false} />
                   <Tooltip />
-                  <Bar dataKey="count" fill="#0F172A" radius={[0, 4, 4, 0]} barSize={14} />
+                  <Bar dataKey="count" name="Adet" fill="#f97316" radius={[0, 4, 4, 0]} barSize={14} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
