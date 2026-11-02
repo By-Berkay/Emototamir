@@ -1,4 +1,3 @@
-import AuthedImage from "./AuthedImage";
 import React, { useState } from "react";
 import { NavLink, Outlet, Navigate, useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
