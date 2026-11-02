@@ -28,12 +28,12 @@ const CSS = `
 function MotorcycleSvg() {
   return (
     <img
-      src="/visuals/moto-hologram.jpg"
+      src="/visuals/moto-main.png"
       alt=""
-      width="1386"
-      height="665"
+      width="689"
+      height="533"
       decoding="async"
-      className="h-full w-full rounded-xl object-cover drop-shadow-[0_12px_18px_rgba(0,0,0,0.45)]"
+      className="h-full w-full object-contain drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)]"
     />
   );
 }

@@ -4,13 +4,13 @@ import React from "react";
 export default function MotoPhoto({ className = "", alt = "Motosiklet" }) {
   return (
     <img
-      src="/visuals/moto-hologram.jpg"
+      src="/visuals/moto-main.png"
       alt={alt}
-      width="1386"
-      height="665"
+      width="689"
+      height="533"
       decoding="async"
       loading="lazy"
-      className={`h-full w-full object-cover ${className}`}
+      className={`h-full w-full object-contain ${className}`}
     />
   );
 }

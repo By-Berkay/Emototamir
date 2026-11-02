@@ -21,13 +21,13 @@ export default function HoloMotorcycle({ className = "" }) {
       <Tilt3D max={5} lift={6} className="emt-glass-dark relative overflow-hidden rounded-2xl p-1.5">
         <span aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.06] to-transparent" />
         <img
-          src="/visuals/moto-hud.jpg"
+          src="/visuals/moto-main.png"
           alt="Motosiklet servis analiz arayüzü: holografik gösterge panelleri"
-          width="1179"
-          height="792"
+          width="689"
+          height="533"
           decoding="async"
           fetchPriority="high"
-          className="emt-float relative z-[1] block h-auto w-full rounded-xl"
+          className="emt-float relative z-[1] mx-auto block h-auto w-full max-w-[520px] object-contain p-4"
         />
       </Tilt3D>
 

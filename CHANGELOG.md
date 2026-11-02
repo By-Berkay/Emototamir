@@ -3,6 +3,12 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.15 — Gerçekçi motosiklet görselleri
+- Tüm motosiklet görselleri gerçekçi fotoğraftan üretilen şeffaf arka planlı görselle değiştirildi (Panel, sayfa başlıkları, motosiklet kartları, giriş, ana sayfa).
+- Eski holografik ve şematik görseller kaldırıldı.
+- Servis raporlarındaki SVG arıza çizimleri değişmedi.
+- Yedek: önceki sürüm `backup/v2.14` dalında.
+
 ## v2.14 — Panel KPI ve grafik düzeni
 - Panel üst KPI kartları, Raporlar ile aynı cam kart ve mini çizgi (sparkline) düzenine geçti.
 - Aylık ciro grafiği gradyanlı alan grafiği olarak yenilendi.
