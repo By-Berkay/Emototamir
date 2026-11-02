@@ -27,16 +27,14 @@ const CSS = `
 /** Ana ekran görseli: E-Moto logosu (siyah zemin, kart içinde). */
 function MotorcycleSvg() {
   return (
-    <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-black ring-1 ring-white/10 drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)]">
-      <img
-        src="/visuals/emoto-logo.png"
-        alt="E-Moto Tamir"
-        width="1536"
-        height="1024"
-        decoding="async"
-        className="h-full w-full object-contain"
-      />
-    </div>
+    <img
+      src="/visuals/emoto-logo.png"
+      alt="E-Moto Tamir"
+      width="1536"
+      height="1024"
+      decoding="async"
+      className="h-full w-full object-contain drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)]"
+    />
   );
 }
 

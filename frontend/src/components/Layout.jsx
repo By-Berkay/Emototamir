@@ -122,11 +122,11 @@ export default function Layout() {
         data-testid="sidebar"
       >
         <div className="border-b border-white/5 px-4 py-4" data-testid="sidebar-brand">
-          <div className="flex justify-center overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
+          <div className="flex justify-center">
             {tenant?.logo_path ? (
               <AuthedImage path={tenant.logo_path} alt={tenant?.name || "Logo"} className="h-24 w-auto max-w-full object-contain p-2" />
             ) : (
-              <img src="/visuals/emoto-logo.png" alt="E-Moto Tamir" width="1536" height="1024" className="h-24 w-auto max-w-full object-contain" />
+              <img src="/visuals/emoto-logo.png" alt="E-Moto Tamir" width="1536" height="1024" className="h-24 w-auto max-w-full object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,0.5)]" />
             )}
           </div>
           <div className="mt-3 flex items-start gap-2">
