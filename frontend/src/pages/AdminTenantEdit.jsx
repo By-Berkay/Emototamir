@@ -185,8 +185,8 @@ export default function AdminTenantEdit() {
               <input ref={logoRef} type="file" accept="image/*" className="hidden" onChange={uploadLogo} />
               <Button variant="outline" onClick={()=>logoRef.current?.click()}><Upload className="h-4 w-4 mr-2" />Logo Değiştir</Button>
             </div>
-            <div><Label>Firma Adı</Label><Input value={t.name||""} onChange={(e)=>upd({name:e.target.value})} /></div>
-            <div><Label>Alt Başlık</Label><Input value={t.subtitle||""} onChange={(e)=>upd({subtitle:e.target.value})} /></div>
+            <div><Label>Firma Adı (sol üst başlık)</Label><Input value={t.name||""} onChange={(e)=>upd({name:e.target.value})} /></div>
+            <div><Label>Alt Başlık (firma adının altı)</Label><Input value={t.subtitle||""} onChange={(e)=>upd({subtitle:e.target.value})} /></div>
             <div className="md:col-span-2"><Label>Adres</Label><Textarea rows={2} value={t.address||""} onChange={(e)=>upd({address:e.target.value})} /></div>
             <div><Label>İl</Label><Input value={t.city||""} onChange={(e)=>upd({city:e.target.value})} /></div>
             <div><Label>İlçe</Label><Input value={t.district||""} onChange={(e)=>upd({district:e.target.value})} /></div>
