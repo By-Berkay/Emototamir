@@ -24,17 +24,19 @@ const CSS = `
 }
 `;
 
-/** Ana ekran motosiklet görseli: gerçekçi fotoğraf (SVG çizim servis raporları için ayrılmıştır). */
+/** Ana ekran görseli: E-Moto logosu (siyah zemin, kart içinde). */
 function MotorcycleSvg() {
   return (
-    <img
-      src="/visuals/moto-main.png"
-      alt=""
-      width="689"
-      height="533"
-      decoding="async"
-      className="h-full w-full object-contain drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)]"
-    />
+    <div className="flex h-full w-full items-center justify-center overflow-hidden rounded-xl bg-black ring-1 ring-white/10 drop-shadow-[0_18px_24px_rgba(0,0,0,0.55)]">
+      <img
+        src="/visuals/emoto-logo.jpg"
+        alt="E-Moto Tamir"
+        width="1536"
+        height="1024"
+        decoding="async"
+        className="h-full w-full object-contain"
+      />
+    </div>
   );
 }
 
