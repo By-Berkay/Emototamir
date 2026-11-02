@@ -126,7 +126,7 @@ export default function Layout() {
             {tenant?.logo_path ? (
               <AuthedImage path={tenant.logo_path} alt={tenant?.name || "Logo"} className="h-24 w-auto max-w-full object-contain p-2" />
             ) : (
-              <img src="/visuals/emoto-logo.jpg" alt="E-Moto Tamir" width="1536" height="1024" className="h-24 w-auto max-w-full object-contain" />
+              <img src="/visuals/emoto-logo.png" alt="E-Moto Tamir" width="1536" height="1024" className="h-24 w-auto max-w-full object-contain" />
             )}
           </div>
           <div className="mt-3 flex items-start gap-2">

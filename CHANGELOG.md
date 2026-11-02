@@ -3,6 +3,10 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.19 — Yeni E-Moto logosu
+- Yeni E-Moto logosu kenar çubuğunun sol üstünde ve panel ana kartında kullanılıyor.
+- Yedek: önceki sürüm `backup/v2.18` dalında.
+
 ## v2.18 — Panel görseli E-Moto logosu
 - Panel ana kartındaki motosiklet görseli E-Moto logosuyla değiştirildi.
 - Yedek: önceki sürüm `backup/v2.17` dalında.
