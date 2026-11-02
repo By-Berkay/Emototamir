@@ -3,6 +3,12 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.16 — Sol üst marka alanı ve firma ayarları
+- Kenar çubuğunun sol üstüne E-Moto logosu eklendi. Firma logosu yüklüyse o gösterilir.
+- Kenar çubuğundaki firma adı ve alt başlık, süper admin firma düzenleme ekranından değiştirilebilir.
+- Süper admin firma düzenleme ekranındaki alanlar sol üst görünümüyle eşleşecek şekilde adlandırıldı.
+- Yedek: önceki sürüm `backup/v2.15` dalında.
+
 ## v2.15 — Gerçekçi motosiklet görselleri
 - Tüm motosiklet görselleri gerçekçi fotoğraftan üretilen şeffaf arka planlı görselle değiştirildi (Panel, sayfa başlıkları, motosiklet kartları, giriş, ana sayfa).
 - Eski holografik ve şematik görseller kaldırıldı.

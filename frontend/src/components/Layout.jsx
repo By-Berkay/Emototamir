@@ -121,27 +121,32 @@ export default function Layout() {
         }`}
         data-testid="sidebar"
       >
-        <div className="flex h-16 items-center gap-3 border-b border-white/5 px-5">
-          <span
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-500 text-white shadow-[0_0_20px_rgba(249,115,22,0.45)]"
-            aria-hidden="true"
-          >
-            <Wrench className="h-[18px] w-[18px]" />
-          </span>
-          <div className="min-w-0 flex-1">
-            <div className="font-heading truncate text-[15px] font-bold leading-tight text-white">
-              {tenant?.name || "E-Moto Tamir"}
-            </div>
-            <div className="truncate text-xs text-slate-400">{isSuper ? "Platform yönetimi" : "Servis yönetimi"}</div>
+        <div className="border-b border-white/5 px-4 py-4" data-testid="sidebar-brand">
+          <div className="flex justify-center overflow-hidden rounded-xl bg-black ring-1 ring-white/10">
+            {tenant?.logo_path ? (
+              <AuthedImage path={tenant.logo_path} alt={tenant?.name || "Logo"} className="h-24 w-auto max-w-full object-contain p-2" />
+            ) : (
+              <img src="/visuals/emoto-logo.jpg" alt="E-Moto Tamir" width="1536" height="1024" className="h-24 w-auto max-w-full object-contain" />
+            )}
           </div>
-          <button
-            className="rounded-md p-1 text-slate-400 hover:bg-white/5 hover:text-white lg:hidden"
-            onClick={() => setOpen(false)}
-            aria-label="Menüyü kapat"
-            data-testid="close-sidebar"
-          >
-            <X className="h-5 w-5" />
-          </button>
+          <div className="mt-3 flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <div className="font-heading truncate text-[15px] font-bold leading-tight text-white" data-testid="sidebar-brand-name">
+                {tenant?.name || "E-Moto Tamir"}
+              </div>
+              <div className="truncate text-xs text-slate-400" data-testid="sidebar-brand-subtitle">
+                {tenant?.subtitle || (isSuper ? "Platform yönetimi" : "Servis yönetimi")}
+              </div>
+            </div>
+            <button
+              className="rounded-md p-1 text-slate-400 hover:bg-white/5 hover:text-white lg:hidden"
+              onClick={() => setOpen(false)}
+              aria-label="Menüyü kapat"
+              data-testid="close-sidebar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-4">
