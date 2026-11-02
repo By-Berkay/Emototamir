@@ -270,12 +270,12 @@ export default function Landing() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="emt-glass-dark relative overflow-hidden rounded-3xl">
             <img
-              src="/visuals/moto-systems.jpg"
-              alt="Motosiklet sistemleri: motor, şasi, fren, şanzıman ve elektrik bölgeleri"
-              width="1179"
-              height="468"
+              src="/visuals/moto-main.png"
+              alt="Motosiklet: motor, şasi, fren ve elektrik bölgeleri"
+              width="689"
+              height="533"
               decoding="async"
-              className="block h-auto w-full object-cover"
+              className="mx-auto block h-80 w-auto max-w-full object-contain px-6 pt-10 drop-shadow-[0_20px_30px_rgba(0,0,0,0.5)]"
             />
             <div className="px-6 pb-8 sm:px-10">
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-300">EKSPERTİZ VE ARIZA BÖLGELERİ</p>

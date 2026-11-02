@@ -68,9 +68,9 @@ export default function Login() {
         <img
           aria-hidden="true"
           alt=""
-          src="/visuals/moto-hud.jpg"
-          width="1179"
-          height="792"
+          src="/visuals/moto-main.png"
+          width="689"
+          height="533"
           decoding="async"
           className="pointer-events-none absolute -bottom-10 left-1/2 w-[130%] max-w-none -translate-x-1/2 opacity-35 mix-blend-screen"
         />
