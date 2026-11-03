@@ -40,6 +40,7 @@ import InspectionDetail from "./pages/InspectionDetail";
 import Landing from "./pages/Landing";
 import AdminLanding from "./pages/AdminLanding";
 import AdminReport3D from "./pages/AdminReport3D";
+import AdminSiteAssets from "./pages/AdminSiteAssets";
 import BrandLoader from "./components/BrandLoader";
 import "./App.css";
 
@@ -110,6 +111,7 @@ export default function App() {
             <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
             <Route path="/admin/landing" element={<AdminLanding />} />
             <Route path="/admin/report" element={<AdminReport3D />} />
+            <Route path="/admin/gorseller" element={<AdminSiteAssets />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

@@ -97,7 +97,7 @@ export default function ServiceOrderEdit() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-slate-200">
+        <Card className="lg:col-span-2 border-white/10">
           <CardHeader><CardTitle className="text-base">Genel</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div><Label>Kilometre</Label><Input type="number" value={order.km || ""} onChange={(e)=>update({ km: e.target.value })} /></div>
@@ -119,7 +119,7 @@ export default function ServiceOrderEdit() {
               <div className="flex flex-wrap gap-2 mt-1">
                 {ACCESSORY_OPTS.map(a => (
                   <button key={a} type="button" onClick={()=>toggleAcc(a)}
-                    className={`text-xs px-3 py-1.5 rounded-md border ${(order.accessories||[]).includes(a) ? "bg-brand-500 text-white border-brand-500" : "bg-white border-slate-200 text-slate-700"}`}>
+                    className={`text-xs px-3 py-1.5 rounded-md border ${(order.accessories||[]).includes(a) ? "bg-brand-500 text-white border-brand-500" : "bg-slate-900/70 border-white/10 text-slate-200"}`}>
                     {a}
                   </button>
                 ))}
@@ -131,12 +131,12 @@ export default function ServiceOrderEdit() {
             <div className="md:col-span-2"><Label>Notlar</Label><Textarea rows={2} value={order.notes || ""} onChange={(e)=>update({ notes: e.target.value })} /></div>
           </CardContent>
         </Card>
-        <Card className="border-slate-200"><CardHeader><CardTitle className="text-base">Arızalı Bölgeler</CardTitle></CardHeader>
+        <Card className="border-white/10"><CardHeader><CardTitle className="text-base">Arızalı Bölgeler</CardTitle></CardHeader>
           <CardContent><FaultViewer selected={order.fault_zones || []} onToggle={toggleFault} type={order.motorcycle?.type || order.moto_type} color={order.motorcycle?.color} label={order.motorcycle ? `${order.motorcycle.brand} ${order.motorcycle.model}` : ""} /></CardContent>
         </Card>
       </div>
 
-      <Card className="border-slate-200">
+      <Card className="border-white/10">
         <CardHeader className="flex-row justify-between items-center">
           <CardTitle className="text-base">Parçalar & Yapılan İşler</CardTitle>
           <div className="flex gap-2">
@@ -152,7 +152,7 @@ export default function ServiceOrderEdit() {
         </CardHeader>
         <CardContent className="p-0">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+            <thead className="bg-white/5 text-xs uppercase text-slate-400">
               <tr><th className="text-left px-4 py-2">Tür</th><th className="text-left px-4 py-2">Ad</th><th className="text-right px-4 py-2 w-24">Adet</th><th className="text-right px-4 py-2 w-32">Birim ₺</th><th className="text-right px-4 py-2 w-40">Fiyat tipi</th><th className="text-right px-4 py-2 w-24">KDV</th><th className="text-right px-4 py-2 w-32">Toplam (KDV dahil)</th><th className="w-10"></th></tr>
             </thead>
             <tbody>
@@ -168,20 +168,20 @@ export default function ServiceOrderEdit() {
                   <td className="px-4 py-2"><button onClick={()=>rmItem(idx)} className="text-red-500 hover:text-red-700" data-testid={`item-del-${idx}`}><Trash2 className="h-4 w-4" /></button></td>
                 </tr>
               ))}
-              {order.items.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500">Kalem yok</td></tr>}
+              {order.items.length === 0 && <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">Kalem yok</td></tr>}
             </tbody>
           </table>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="lg:col-span-2 border-slate-200"><CardContent className="p-5 grid grid-cols-2 gap-4">
+        <Card className="lg:col-span-2 border-white/10"><CardContent className="p-5 grid grid-cols-2 gap-4">
           <div><Label>Ek İşçilik (₺)</Label><Input type="number" value={order.labor_total || 0} onChange={(e)=>update({ labor_total: e.target.value })} /></div>
           <div><Label>İşçilik fiyat tipi</Label><PriceModeSelect value={order.labor_price_mode || "incl"} onChange={(v)=>update({ labor_price_mode: v })} /></div>
           <div><Label>İşçilik KDV</Label><VatSelect value={order.labor_vat ?? DEFAULT_VAT} onChange={(v)=>update({ labor_vat: v })} /></div>
           <div><Label>İskonto (₺)</Label><Input type="number" value={order.discount || 0} onChange={(e)=>update({ discount: e.target.value })} /></div>
         </CardContent></Card>
-        <Card className="border-slate-200"><CardContent className="p-5">
+        <Card className="border-white/10"><CardContent className="p-5">
           <DocumentTotals t={totals} />
           <Button onClick={save} disabled={saving} className="w-full mt-4 h-11 bg-brand-500 hover:bg-brand-600 font-semibold"><Save className="h-4 w-4 mr-2" />Kaydet</Button>
         </CardContent></Card>

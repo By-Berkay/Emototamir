@@ -82,7 +82,7 @@ function WorkflowSection() {
                     <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-300/20 to-cyan-500/10 text-cyan-200 ring-1 ring-cyan-300/30">
                       <Icon className="h-5 w-5" />
                     </span>
-                    <span className="font-heading text-xs font-semibold text-slate-500">0{i + 1}</span>
+                    <span className="font-heading text-xs font-semibold text-slate-400">0{i + 1}</span>
                   </span>
                   <h3 className="font-heading mt-4 text-sm font-semibold text-white">{step.title}</h3>
                   <p className="mt-2 text-xs leading-relaxed text-slate-400">{step.text}</p>

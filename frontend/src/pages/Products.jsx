@@ -1,32 +1,39 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api, { fmtMoney } from "../lib/api";
-import { Card } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
-import { Badge } from "../components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../components/ui/dialog";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../components/ui/table";
-import PageHeader from "../components/PageHeader";
-import PageVisual from "../components/PageVisual";
-import { Package as PvIcon } from "lucide-react";
 import BulkVatDialog from "../components/BulkVatDialog";
 import { PriceModeSelect, VatSelect } from "../components/PriceControls";
 import { useAuth } from "../context/AuthContext";
 import EmptyState from "../components/EmptyState";
-import { Plus, Search, AlertTriangle, Pencil, Trash2, Package } from "lucide-react";
+import { Plus, Search, AlertTriangle, Pencil, Trash2, Package, Boxes, Layers } from "lucide-react";
 import { toast } from "sonner";
+import { HeroBanner, KpiCard, Panel, StatusBadge, DataTable, toneOf } from "../components/design/kit";
+import { cn } from "../lib/utils";
 
 const CATS = ["Motor Yağı", "Filtre", "Fren", "Elektrik", "Lastik", "Zincir", "Dişli", "Akü", "Buji", "Süspansiyon", "Kaporta", "Motor", "Egzoz", "Diğer"];
 const EMPTY = { code: "", name: "", brand: "", category: "Motor Yağı", cost_price: 0, sale_price: 0, stock: 0, min_stock: 5, unit: "Adet", description: "", vat: 20, price_mode: "incl" };
+
+// Koyu tema için ortak sınıflar (ui bileşenlerindeki açık zemin değerlerini ezer)
+const BTN_PRIMARY = "bg-orange-500 text-white shadow-sm hover:bg-orange-600";
+const BTN_OUTLINE = "border-white/10 bg-white/5 text-slate-200 shadow-none hover:bg-white/10 hover:text-white";
+const BTN_GHOST = "text-slate-400 hover:bg-white/10 hover:text-white";
+const BTN_DELETE = "text-rose-400 hover:bg-rose-500/10 hover:text-rose-300";
+const INPUT_CLS = "border-white/10 bg-white/5 text-white placeholder:text-slate-500 focus-visible:ring-orange-500/40 [color-scheme:dark]";
+const LABEL_CLS = "text-slate-300";
+const TRIGGER_CLS = "border-white/10 bg-white/5 text-white focus:ring-orange-500/40";
+const CONTENT_CLS = "border-white/10 bg-slate-950 text-white";
+const DIALOG_CLS = "max-w-2xl border-white/10 bg-slate-950 text-white";
 
 const isCritical = (p) => Number(p.stock) <= Number(p.min_stock);
 
 function Field({ label, className = "", children }) {
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <Label>{label}</Label>
+      <Label className={LABEL_CLS}>{label}</Label>
       {children}
     </div>
   );
@@ -35,7 +42,7 @@ function Field({ label, className = "", children }) {
 function RowActions({ onEdit, onDelete, testId }) {
   return (
     <div className="flex items-center justify-end gap-1">
-      <Button variant="ghost" size="icon" onClick={onEdit} aria-label="Parçayı düzenle" data-testid={`edit-product-${testId}`}>
+      <Button variant="ghost" size="icon" className={BTN_GHOST} onClick={onEdit} aria-label="Parçayı düzenle" data-testid={`edit-product-${testId}`}>
         <Pencil />
       </Button>
       <Button
@@ -43,7 +50,7 @@ function RowActions({ onEdit, onDelete, testId }) {
         size="icon"
         onClick={onDelete}
         aria-label="Parçayı sil"
-        className="text-red-600 hover:bg-red-50 hover:text-red-700"
+        className={BTN_DELETE}
         data-testid={`delete-product-${testId}`}
       >
         <Trash2 />
@@ -82,6 +89,7 @@ export default function Products() {
     [items]
   );
   const criticalCount = items.filter(isCritical).length;
+  const inStockCount = items.filter((p) => Number(p.stock) > 0).length;
   const visible = items.filter(
     (p) => (cat === "all" || p.category === cat) && (!onlyCritical || isCritical(p))
   );
@@ -125,21 +133,28 @@ export default function Products() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader visual={<PageVisual icon={PvIcon} />}
+    <div className="space-y-6 text-white">
+      <HeroBanner
         eyebrow="Katalog"
         title="Parçalar"
-        description={`${items.length} parça${criticalCount ? ` · ${criticalCount} kritik stok` : ""}`}
+        subtitle={`${items.length} parça${criticalCount ? ` · ${criticalCount} kritik stok` : ""}`}
         actions={
-          <div className="flex flex-wrap items-center gap-2">
-          {isAdmin && <BulkVatDialog onDone={load} />}
-          <Button onClick={openNew} data-testid="btn-new-product">
-            <Plus />
-            Yeni parça
-          </Button>
-          </div>
+          <>
+            {isAdmin && <BulkVatDialog onDone={load} />}
+            <Button onClick={openNew} className={BTN_PRIMARY} data-testid="btn-new-product">
+              <Plus />
+              Yeni parça
+            </Button>
+          </>
         }
       />
+
+      <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <KpiCard icon={Package} label="Toplam parça" tone="orange" value={items.length} testId="kpi-products-total" />
+        <KpiCard icon={AlertTriangle} label="Kritik stok" tone="red" value={criticalCount} delta={criticalCount ? "Dikkat" : "Sorun yok"} deltaTone={criticalCount ? "down" : "up"} testId="kpi-products-critical" />
+        <KpiCard icon={Boxes} label="Stokta olan" tone="green" value={inStockCount} testId="kpi-products-instock" />
+        <KpiCard icon={Layers} label="Kategori" tone="violet" value={categories.length} testId="kpi-products-categories" />
+      </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative sm:max-w-sm sm:flex-1">
@@ -148,17 +163,17 @@ export default function Products() {
             placeholder="Kod, ad veya marka ara"
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            className="pl-9"
+            className={cn("pl-9", INPUT_CLS)}
             aria-label="Parça ara"
             data-testid="product-search"
           />
         </div>
         <div className="flex gap-3 sm:ml-auto">
           <Select value={cat} onValueChange={setCat}>
-            <SelectTrigger className="flex-1 sm:w-56" aria-label="Kategori filtresi" data-testid="product-category">
+            <SelectTrigger className={cn("flex-1 sm:w-56", TRIGGER_CLS)} aria-label="Kategori filtresi" data-testid="product-category">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={CONTENT_CLS}>
               <SelectItem value="all">Tüm kategoriler</SelectItem>
               {categories.map((c) => (
                 <SelectItem key={c} value={c}>{c}</SelectItem>
@@ -166,7 +181,8 @@ export default function Products() {
             </SelectContent>
           </Select>
           <Button
-            variant={onlyCritical ? "dark" : "outline"}
+            variant="outline"
+            className={cn(onlyCritical ? "border-rose-500/40 bg-rose-500/20 text-rose-200 hover:bg-rose-500/30" : BTN_OUTLINE)}
             onClick={() => setOnlyCritical((v) => !v)}
             aria-pressed={onlyCritical}
             data-testid="product-critical-toggle"
@@ -178,9 +194,9 @@ export default function Products() {
       </div>
 
       {!loaded ? (
-        <div className="h-64 animate-pulse rounded-xl bg-slate-200/60" />
+        <div className="h-64 animate-pulse rounded-2xl border border-white/10 bg-white/5" />
       ) : visible.length === 0 ? (
-        <Card>
+        <Panel>
           <EmptyState
             icon={Package}
             title={items.length === 0 ? "Henüz parça yok" : "Filtreye uyan parça yok"}
@@ -189,98 +205,103 @@ export default function Products() {
                 ? "İlk parçayı ekleyerek stok ve satış fiyatı takibini başlatın."
                 : "Arama veya filtreleri temizleyip tekrar deneyin."
             }
-            action={items.length === 0 ? <Button onClick={openNew}><Plus />Yeni parça</Button> : null}
+            action={items.length === 0 ? <Button className={BTN_PRIMARY} onClick={openNew}><Plus />Yeni parça</Button> : null}
           />
-        </Card>
+        </Panel>
       ) : (
-        <Card className="overflow-hidden">
-          <div className="hidden md:block">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Kod</TableHead>
-                  <TableHead>Parça</TableHead>
-                  <TableHead>Kategori</TableHead>
-                  <TableHead className="text-right">Alış</TableHead>
-                  <TableHead className="text-right">Satış</TableHead>
-                  <TableHead className="text-right">Stok</TableHead>
-                  <TableHead className="w-24"><span className="sr-only">İşlemler</span></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+        <Panel
+          bodyClassName="p-0"
+          title="Parça listesi"
+          subtitle={`${visible.length} parça gösteriliyor`}
+          testId="panel-products"
+        >
+          <div className="hidden p-5 md:block">
+            <DataTable>
+              <thead>
+                <tr>
+                  <th>Kod</th>
+                  <th>Parça</th>
+                  <th>Kategori</th>
+                  <th className="text-right">Alış</th>
+                  <th className="text-right">Satış</th>
+                  <th className="text-right">Stok</th>
+                  <th className="w-24"><span className="sr-only">İşlemler</span></th>
+                </tr>
+              </thead>
+              <tbody>
                 {visible.map((p) => {
                   const crit = isCritical(p);
                   return (
-                    <TableRow key={p.id} data-testid={`product-row-${p.id}`}>
-                      <TableCell className="font-mono text-xs text-slate-600">{p.code}</TableCell>
-                      <TableCell>
-                        <div className="font-medium text-slate-900">{p.name}</div>
-                        {p.brand && <div className="text-xs text-slate-500">{p.brand}</div>}
-                      </TableCell>
-                      <TableCell><Badge variant="secondary">{p.category}</Badge></TableCell>
-                      <TableCell className="text-right tabular-nums text-slate-600">{fmtMoney(p.cost_price)}</TableCell>
-                      <TableCell className="text-right font-medium tabular-nums text-slate-900">{fmtMoney(p.sale_price)}</TableCell>
-                      <TableCell className="text-right">
+                    <tr key={p.id} data-testid={`product-row-${p.id}`}>
+                      <td className="font-mono text-xs text-slate-400">{p.code}</td>
+                      <td>
+                        <div className="font-medium text-white">{p.name}</div>
+                        {p.brand && <div className="text-xs text-slate-400">{p.brand}</div>}
+                      </td>
+                      <td><StatusBadge tone="neutral">{p.category}</StatusBadge></td>
+                      <td className="text-right tabular-nums text-slate-400">{fmtMoney(p.cost_price)}</td>
+                      <td className="text-right font-medium tabular-nums text-white">{fmtMoney(p.sale_price)}</td>
+                      <td className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {crit && <Badge variant="destructive">Kritik</Badge>}
-                          <span className={`tabular-nums ${crit ? "font-semibold text-red-600" : "text-slate-700"}`}>{p.stock}</span>
+                          {crit && <StatusBadge tone="danger">Kritik</StatusBadge>}
+                          <span className={`tabular-nums ${crit ? "font-semibold text-rose-300" : "text-slate-200"}`}>{p.stock}</span>
                           <span className="text-xs text-slate-400">/ {p.min_stock}</span>
                         </div>
-                      </TableCell>
-                      <TableCell>
+                      </td>
+                      <td>
                         <RowActions onEdit={() => openEdit(p)} onDelete={() => remove(p)} testId={p.id} />
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   );
                 })}
-              </TableBody>
-            </Table>
+              </tbody>
+            </DataTable>
           </div>
 
-          <ul className="divide-y divide-slate-100 md:hidden">
+          <ul className="divide-y divide-white/10 md:hidden">
             {visible.map((p) => {
               const crit = isCritical(p);
               return (
                 <li key={p.id} className="flex items-start gap-3 p-4" data-testid={`product-card-${p.id}`}>
                   <div className="min-w-0 flex-1">
-                    <p className="font-mono text-xs text-slate-500">{p.code}</p>
-                    <p className="truncate font-medium text-slate-900">{p.name}</p>
+                    <p className="font-mono text-xs text-slate-400">{p.code}</p>
+                    <p className="truncate font-medium text-white">{p.name}</p>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="secondary">{p.category}</Badge>
-                      {crit && <Badge variant="destructive">Kritik · {p.stock}/{p.min_stock}</Badge>}
+                      <StatusBadge tone="neutral">{p.category}</StatusBadge>
+                      {crit && <StatusBadge tone="danger">Kritik · {p.stock}/{p.min_stock}</StatusBadge>}
                     </div>
                   </div>
                   <div className="flex shrink-0 flex-col items-end gap-1">
-                    <span className="font-semibold tabular-nums text-slate-900">{fmtMoney(p.sale_price)}</span>
-                    <span className="text-xs text-slate-500">Stok {p.stock}</span>
+                    <span className="font-semibold tabular-nums text-white">{fmtMoney(p.sale_price)}</span>
+                    <span className="text-xs text-slate-400">Stok {p.stock}</span>
                     <RowActions onEdit={() => openEdit(p)} onDelete={() => remove(p)} testId={`m-${p.id}`} />
                   </div>
                 </li>
               );
             })}
           </ul>
-        </Card>
+        </Panel>
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className={DIALOG_CLS}>
           <DialogHeader>
-            <DialogTitle>{editing ? "Parça düzenle" : "Yeni parça"}</DialogTitle>
+            <DialogTitle className="font-heading text-white">{editing ? "Parça düzenle" : "Yeni parça"}</DialogTitle>
           </DialogHeader>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <Field label="Kod *">
-              <Input value={form.code ?? ""} onChange={set("code")} data-testid="input-product-code" />
+              <Input value={form.code ?? ""} onChange={set("code")} className={INPUT_CLS} data-testid="input-product-code" />
             </Field>
             <Field label="Ad *">
-              <Input value={form.name ?? ""} onChange={set("name")} data-testid="input-product-name" />
+              <Input value={form.name ?? ""} onChange={set("name")} className={INPUT_CLS} data-testid="input-product-name" />
             </Field>
             <Field label="Marka">
-              <Input value={form.brand ?? ""} onChange={set("brand")} />
+              <Input value={form.brand ?? ""} onChange={set("brand")} className={INPUT_CLS} />
             </Field>
             <Field label="Kategori">
               <Select value={form.category} onValueChange={(v) => setForm((f) => ({ ...f, category: v }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
+                <SelectTrigger className={TRIGGER_CLS}><SelectValue /></SelectTrigger>
+                <SelectContent className={CONTENT_CLS}>
                   {categories.map((c) => (
                     <SelectItem key={c} value={c}>{c}</SelectItem>
                   ))}
@@ -288,10 +309,10 @@ export default function Products() {
               </Select>
             </Field>
             <Field label="Alış fiyatı (₺)">
-              <Input type="number" min="0" step="0.01" value={form.cost_price} onChange={set("cost_price")} />
+              <Input type="number" min="0" step="0.01" value={form.cost_price} onChange={set("cost_price")} className={INPUT_CLS} />
             </Field>
             <Field label="Satış fiyatı (₺)">
-              <Input type="number" min="0" step="0.01" value={form.sale_price} onChange={set("sale_price")} />
+              <Input type="number" min="0" step="0.01" value={form.sale_price} onChange={set("sale_price")} className={INPUT_CLS} />
             </Field>
             <Field label="Fiyat tipi">
               <PriceModeSelect value={form.price_mode} onChange={(v) => setForm((f) => ({ ...f, price_mode: v }))} testId="product-price-mode" />
@@ -300,15 +321,15 @@ export default function Products() {
               <VatSelect value={form.vat} onChange={(v) => setForm((f) => ({ ...f, vat: v }))} testId="product-vat" />
             </Field>
             <Field label="Stok">
-              <Input type="number" min="0" value={form.stock} onChange={set("stock")} />
+              <Input type="number" min="0" value={form.stock} onChange={set("stock")} className={INPUT_CLS} />
             </Field>
             <Field label="Minimum stok">
-              <Input type="number" min="0" value={form.min_stock} onChange={set("min_stock")} />
+              <Input type="number" min="0" value={form.min_stock} onChange={set("min_stock")} className={INPUT_CLS} />
             </Field>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)}>İptal</Button>
-            <Button onClick={save} disabled={saving} data-testid="btn-save-product">
+            <Button variant="outline" className={BTN_OUTLINE} onClick={() => setOpen(false)}>İptal</Button>
+            <Button className={BTN_PRIMARY} onClick={save} disabled={saving} data-testid="btn-save-product">
               {saving ? "Kaydediliyor…" : "Kaydet"}
             </Button>
           </DialogFooter>

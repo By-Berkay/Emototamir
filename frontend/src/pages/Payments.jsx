@@ -173,16 +173,16 @@ export default function Payments() {
                     ))}
                   </ul>
                 </>
-              ) : <p className="py-10 text-center text-sm text-slate-500">Tahsilat kaydı yok</p>}
+              ) : <p className="py-10 text-center text-sm text-slate-400">Tahsilat kaydı yok</p>}
             </ChartPanel>
           </div>
         );
       })()}
 
-      <Card className="border-slate-200"><CardContent className="p-0">
+      <Card className="border-white/10"><CardContent className="p-0">
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr>
+            <thead className="bg-white/5 text-xs uppercase text-slate-400"><tr>
               <th className="text-left px-4 py-3">Tarih</th>
               <th className="text-left px-4 py-3">Tahsilat No</th>
               <th className="text-left px-4 py-3">Servis</th>
@@ -193,12 +193,12 @@ export default function Payments() {
             </tr></thead>
             <tbody>
               {items.map(p => (
-                <tr key={p.id} className="border-t hover:bg-slate-50" data-testid={`payment-row-${p.id}`}>
+                <tr key={p.id} className="border-t hover:bg-white/10" data-testid={`payment-row-${p.id}`}>
                   <td className="px-4 py-3">{fmtDate(p.created_at)}</td>
                   <td className="px-4 py-3 font-mono text-xs">{p.payment_no}</td>
-                  <td className="px-4 py-3 text-slate-600 text-xs">{p.service_order_id ? "Servise Bağlı" : <span className="text-brand-600 font-semibold">Harici</span>}</td>
+                  <td className="px-4 py-3 text-slate-300 text-xs">{p.service_order_id ? "Servise Bağlı" : <span className="text-brand-600 font-semibold">Harici</span>}</td>
                   <td className="px-4 py-3">{methodLabel(p.method)}</td>
-                  <td className="px-4 py-3 text-slate-600 text-xs">{p.note || "-"}</td>
+                  <td className="px-4 py-3 text-slate-300 text-xs">{p.note || "-"}</td>
                   <td className="px-4 py-3 text-right font-semibold text-emerald-600"><Money value={p.amount} /></td>
                   {isAdmin && (
                     <td className="px-4 py-3">

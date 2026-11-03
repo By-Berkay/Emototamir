@@ -23,9 +23,9 @@ function AuthImage({ path, caption }) {
   }, [path]);
   return (
     <div className="relative group">
-      {url ? <img src={url} alt={caption} className="w-full h-32 object-cover rounded-md border border-slate-200" /> :
-        <div className="w-full h-32 bg-slate-100 rounded-md flex items-center justify-center text-slate-400 text-xs">Yükleniyor…</div>}
-      {caption && <div className="text-xs text-slate-600 mt-1 truncate">{caption}</div>}
+      {url ? <img src={url} alt={caption} className="w-full h-32 object-cover rounded-md border border-white/10" /> :
+        <div className="w-full h-32 bg-white/10 rounded-md flex items-center justify-center text-slate-400 text-xs">Yükleniyor…</div>}
+      {caption && <div className="text-xs text-slate-300 mt-1 truncate">{caption}</div>}
     </div>
   );
 }
@@ -78,7 +78,7 @@ export default function PhotoUploader({ serviceOrderId, photos = [], onChange })
         </Button>
       </div>
       {photos.length === 0 ? (
-        <div className="border-2 border-dashed border-slate-200 rounded-md p-8 text-center text-slate-500 text-sm">
+        <div className="border-2 border-dashed border-white/10 rounded-md p-8 text-center text-slate-400 text-sm">
           <Camera className="h-8 w-8 mx-auto mb-2 opacity-40" />
           Henüz fotoğraf eklenmedi. Hasar, arıza veya değiştirilen parça fotoğraflarını yükleyin.
         </div>

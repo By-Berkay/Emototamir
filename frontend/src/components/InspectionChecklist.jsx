@@ -38,7 +38,7 @@ export function groupItems(items = []) {
 export function StatusSegment({ itemKey, value, onChange }) {
   return (
     <div
-      className="inline-flex flex-wrap gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1"
+      className="inline-flex flex-wrap gap-1 rounded-lg border border-white/10 bg-white/5 p-1"
       data-testid={`select-status-${itemKey}`}
     >
       {STATUS_OPTIONS.map((opt) => {
@@ -51,7 +51,7 @@ export function StatusSegment({ itemKey, value, onChange }) {
             onClick={() => onChange(active ? null : opt.value)}
             className={cn(
               "flex min-w-[68px] items-center justify-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-semibold tracking-wide transition-colors duration-150",
-              active ? opt.active : "border-transparent text-slate-500 hover:bg-white hover:text-slate-800"
+              active ? opt.active : "border-transparent text-slate-400 hover:bg-white/10 hover:text-slate-800"
             )}
             data-testid={`btn-status-${itemKey}-${opt.value}`}
           >
@@ -89,12 +89,12 @@ export function InspectionPhotoThumb({ inspectionId, photo, onDelete }) {
   }, [inspectionId, photo.id]);
 
   return (
-    <div className="group relative overflow-hidden rounded-lg border border-slate-200 bg-slate-100" data-testid={`photo-${photo.id}`}>
+    <div className="group relative overflow-hidden rounded-lg border border-white/10 bg-white/10" data-testid={`photo-${photo.id}`}>
       <div className="aspect-[4/3] w-full">
         {url ? (
           <img src={url} alt={photo.filename || "Ekspertiz fotoğrafı"} className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-slate-500">
+          <div className="flex h-full w-full items-center justify-center px-2 text-center text-xs text-slate-400">
             {failed ? "Fotoğraf yüklenemedi" : "Yükleniyor…"}
           </div>
         )}
@@ -159,9 +159,9 @@ export function ItemPhotos({ inspectionId, itemKey, itemLabel, photos, onAdded, 
   };
 
   return (
-    <div className="space-y-3 rounded-lg border border-dashed border-slate-300 bg-slate-50/60 p-3">
+    <div className="space-y-3 rounded-lg border border-dashed border-white/10 bg-slate-50/60 p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-medium text-slate-600">
+        <p className="text-xs font-medium text-slate-300">
           {itemLabel} · {photos.length} fotoğraf
         </p>
         <Button
@@ -186,7 +186,7 @@ export function ItemPhotos({ inspectionId, itemKey, itemLabel, photos, onAdded, 
         />
       </div>
       {photos.length === 0 ? (
-        <p className="flex items-center gap-2 text-xs text-slate-500">
+        <p className="flex items-center gap-2 text-xs text-slate-400">
           <Camera className="h-3.5 w-3.5" /> Henüz fotoğraf yok.
         </p>
       ) : (

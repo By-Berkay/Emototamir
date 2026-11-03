@@ -23,7 +23,7 @@ export default function AdminLanding() {
     api.get("/admin/landing").then(({ data }) => setC(data)).catch(() => toast.error("İçerik yüklenemedi"));
   }, []);
 
-  if (!c) return <div className="text-slate-500">Yükleniyor…</div>;
+  if (!c) return <div className="text-slate-400">Yükleniyor…</div>;
 
   const set = (path, value) => setC((prev) => {
     const next = structuredClone(prev);
@@ -93,8 +93,8 @@ export default function AdminLanding() {
             <div className="space-y-1.5"><Label>Bölüm açıklaması</Label><Input value={c.features_heading.description} onChange={(e) => set("features_heading.description", e.target.value)} /></div>
           </div>
           {c.features.map((f, i) => (
-            <div key={i} className="grid items-start gap-3 rounded-lg border border-slate-200 p-3 sm:grid-cols-[140px_1fr_2fr_auto]">
-              <select className="h-10 rounded-md border border-slate-300 bg-white px-2 text-sm" value={f.icon}
+            <div key={i} className="grid items-start gap-3 rounded-lg border border-white/10 p-3 sm:grid-cols-[140px_1fr_2fr_auto]">
+              <select className="h-10 rounded-md border border-white/10 bg-slate-900/70 px-2 text-sm" value={f.icon}
                       onChange={(e) => setList("features", i, "icon", e.target.value)}>
                 {ICON_NAMES.map((n) => <option key={n} value={n}>{n}</option>)}
               </select>
@@ -124,7 +124,7 @@ export default function AdminLanding() {
             <div className="space-y-1.5"><Label>Bölüm açıklaması</Label><Input value={c.pricing_heading.description} onChange={(e) => set("pricing_heading.description", e.target.value)} /></div>
           </div>
           {c.plans.map((p, i) => (
-            <div key={p.id} className="space-y-3 rounded-lg border border-slate-200 p-4">
+            <div key={p.id} className="space-y-3 rounded-lg border border-white/10 p-4">
               <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto_auto] sm:items-end">
                 <div className="space-y-1.5"><Label>Ad</Label><Input value={p.name} onChange={(e) => setList("plans", i, "name", e.target.value)} /></div>
                 <div className="space-y-1.5"><Label>Fiyat</Label><Input value={p.price_text} onChange={(e) => setList("plans", i, "price_text", e.target.value)} /></div>

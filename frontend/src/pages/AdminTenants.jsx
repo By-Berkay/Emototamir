@@ -81,11 +81,11 @@ export default function AdminTenants() {
               <div><Label>İlçe</Label><Input value={form.district} onChange={(e)=>setForm({...form, district:e.target.value})} /></div>
               <div><Label>Telefon</Label><Input value={form.phone} onChange={(e)=>setForm({...form, phone:e.target.value})} /></div>
               <div><Label>E-posta</Label><Input value={form.email} onChange={(e)=>setForm({...form, email:e.target.value})} /></div>
-              <div className="col-span-2 pt-3 border-t"><Label className="text-slate-500 uppercase text-xs">Banka Bilgileri</Label></div>
+              <div className="col-span-2 pt-3 border-t"><Label className="text-slate-400 uppercase text-xs">Banka Bilgileri</Label></div>
               <div><Label>Banka</Label><Input value={form.bank_name} onChange={(e)=>setForm({...form, bank_name:e.target.value})} /></div>
               <div><Label>Hesap Sahibi</Label><Input value={form.bank_account_name} onChange={(e)=>setForm({...form, bank_account_name:e.target.value})} /></div>
               <div className="col-span-2"><Label>IBAN</Label><Input value={form.iban} onChange={(e)=>setForm({...form, iban:e.target.value})} className="font-mono" /></div>
-              <div className="col-span-2 pt-3 border-t"><Label className="text-slate-500 uppercase text-xs">Firma Yönetici Hesabı</Label></div>
+              <div className="col-span-2 pt-3 border-t"><Label className="text-slate-400 uppercase text-xs">Firma Yönetici Hesabı</Label></div>
               <div className="col-span-2"><Label>Yönetici Ad *</Label><Input value={form.admin_name} onChange={(e)=>setForm({...form, admin_name:e.target.value})} data-testid="tenant-admin-name" /></div>
               <div><Label>Yönetici E-posta *</Label><Input value={form.admin_email} onChange={(e)=>setForm({...form, admin_email:e.target.value})} data-testid="tenant-admin-email" /></div>
               <div><Label>Yönetici Şifre *</Label><Input type="password" value={form.admin_password} onChange={(e)=>setForm({...form, admin_password:e.target.value})} data-testid="tenant-admin-password" /></div>
@@ -105,46 +105,46 @@ export default function AdminTenants() {
           const expired = ends && new Date(ends) < new Date();
           const inactive = t.is_active === false;
           return (
-          <Card key={t.id} className={`border-slate-200 hover:shadow-md transition-all ${inactive || expired ? "opacity-70" : "hover:border-brand-400"}`}>
+          <Card key={t.id} className={`border-white/10 hover:shadow-md transition-all ${inactive || expired ? "opacity-70" : "hover:border-brand-400"}`}>
             <CardContent className="p-5">
               <Link to={`/admin/tenants/${t.id}`} className="block" data-testid={`tenant-card-${t.id}`}>
                 <div className="flex items-start gap-3">
                   <div className="h-10 w-10 rounded-md bg-brand-100 text-brand-600 flex items-center justify-center"><Building2 className="h-5 w-5" /></div>
                   <div className="flex-1 min-w-0">
                     <div className="font-heading font-semibold truncate">{t.name}</div>
-                    <div className="text-xs text-slate-500">{t.city}{t.district?` / ${t.district}`:""}</div>
+                    <div className="text-xs text-slate-400">{t.city}{t.district?` / ${t.district}`:""}</div>
                   </div>
                 </div>
               </Link>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-600">{t.plan || "trial"}</span>
+                <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-white/10 text-slate-300">{t.plan || "trial"}</span>
                 {inactive && <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700 flex items-center gap-1"><ShieldAlert className="h-3 w-3" />Pasif</span>}
                 {!inactive && expired && <span className="text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700">Süresi Doldu</span>}
                 {!inactive && !expired && ends && <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-50 text-emerald-700">Bitiş: {new Date(ends).toLocaleDateString("tr-TR")}</span>}
               </div>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-                <div className="bg-slate-50 rounded p-2"><div className="text-xs text-slate-500">Kullanıcı</div><div className="font-semibold">{t.users_count}</div></div>
-                <div className="bg-slate-50 rounded p-2"><div className="text-xs text-slate-500">Servis</div><div className="font-semibold">{t.orders_count}</div></div>
+                <div className="bg-white/5 rounded p-2"><div className="text-xs text-slate-400">Kullanıcı</div><div className="font-semibold">{t.users_count}</div></div>
+                <div className="bg-white/5 rounded p-2"><div className="text-xs text-slate-400">Servis</div><div className="font-semibold">{t.orders_count}</div></div>
               </div>
-              {t.phone && <div className="text-xs text-slate-500 mt-2 font-mono">{t.phone}</div>}
+              {t.phone && <div className="text-xs text-slate-400 mt-2 font-mono">{t.phone}</div>}
               <div className="mt-3 pt-3 border-t flex items-center justify-between">
                 <Link to={`/admin/tenants/${t.id}`} className="text-xs text-brand-600 font-semibold flex items-center gap-1"><Settings2 className="h-3 w-3" />Firmayı yönet →</Link>
                 <div className="flex items-center gap-1">
-                  <button onClick={()=>openClone(t)} className="text-slate-500 hover:text-brand-600 p-1" title="Firmayı klonla" data-testid={`clone-tenant-${t.id}`}><Copy className="h-3.5 w-3.5" /></button>
+                  <button onClick={()=>openClone(t)} className="text-slate-400 hover:text-brand-600 p-1" title="Firmayı klonla" data-testid={`clone-tenant-${t.id}`}><Copy className="h-3.5 w-3.5" /></button>
                   <button onClick={()=>del(t)} className="text-red-500 hover:text-red-700 p-1" title="Firmayı sil" data-testid={`del-tenant-${t.id}`}><Trash2 className="h-3.5 w-3.5" /></button>
                 </div>
               </div>
             </CardContent>
           </Card>
         );})}
-        {tenants.length === 0 && <EmptyState className="col-span-full rounded-xl border border-dashed border-slate-300 bg-white" icon={Building2} title="Henüz firma yok. Yeni firma oluşturun." />}
+        {tenants.length === 0 && <EmptyState className="col-span-full rounded-xl border border-dashed border-white/10 bg-slate-900/70" icon={Building2} title="Henüz firma yok. Yeni firma oluşturun." />}
       </div>
 
       {/* Clone dialog */}
       <Dialog open={!!cloneSrc} onOpenChange={(o)=>{ if(!o) setCloneSrc(null); }}>
         <DialogContent className="max-w-xl">
           <DialogHeader><DialogTitle>Firmayı Klonla — {cloneSrc?.name}</DialogTitle></DialogHeader>
-          <p className="text-sm text-slate-500 -mt-2">Tema, PDF şablonu, arıza bölgeleri, banka/adres bilgileri kopyalanır. Müşteri, motosiklet ve servis kayıtları <b>kopyalanmaz</b>.</p>
+          <p className="text-sm text-slate-400 -mt-2">Tema, PDF şablonu, arıza bölgeleri, banka/adres bilgileri kopyalanır. Müşteri, motosiklet ve servis kayıtları <b>kopyalanmaz</b>.</p>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2"><Label>Yeni Firma Adı *</Label><Input value={cloneForm.new_name} onChange={(e)=>setCloneForm({...cloneForm, new_name:e.target.value})} data-testid="clone-name" /></div>
             <div className="col-span-2"><Label>Yönetici Ad *</Label><Input value={cloneForm.admin_name} onChange={(e)=>setCloneForm({...cloneForm, admin_name:e.target.value})} data-testid="clone-admin-name" /></div>

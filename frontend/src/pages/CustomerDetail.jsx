@@ -38,7 +38,7 @@ const TAG_OPTIONS = [
 ];
 
 const selectCls =
-  "h-10 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-slate-300 focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20";
+  "h-10 rounded-lg border border-white/10 bg-slate-900/70 px-3 text-sm text-white shadow-sm transition-[border-color,box-shadow] duration-150 hover:border-slate-300 focus-visible:border-brand-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/20";
 
 const TRANSACTION_LABEL = { charge: "Borç", payment: "Tahsilat", cancel: "İptal", adjust: "Düzeltme" };
 
@@ -54,7 +54,7 @@ export default function CustomerDetail() {
   const load = () => api.get(`/customers/${id}`).then((r) => setC(r.data))
     .catch(() => toast.error("Müşteri bilgileri yüklenemedi"));
   useEffect(() => { load(); }, [id]); // eslint-disable-line
-  if (!c) return <p className="text-sm text-slate-500">Yükleniyor…</p>;
+  if (!c) return <p className="text-sm text-slate-400">Yükleniyor…</p>;
 
   const canEdit = (note) => user?.role === "admin" || user?.role === "super_admin" || note.author === user?.email;
   const addNote = async () => {
@@ -134,13 +134,13 @@ export default function CustomerDetail() {
                             <Bike className="h-5 w-5" />
                           </span>
                           <div className="min-w-0">
-                            <div className="truncate font-heading font-semibold text-slate-900">{m.brand} {m.model}</div>
-                            <div className="text-xs text-slate-500">{m.type} · {m.year}</div>
+                            <div className="truncate font-heading font-semibold text-white">{m.brand} {m.model}</div>
+                            <div className="text-xs text-slate-400">{m.type} · {m.year}</div>
                           </div>
                         </div>
-                        <span className="shrink-0 rounded-md bg-slate-100 px-2 py-1 font-mono text-xs font-semibold text-slate-800">{m.plate}</span>
+                        <span className="shrink-0 rounded-md bg-white/10 px-2 py-1 font-mono text-xs font-semibold text-white">{m.plate}</span>
                       </div>
-                      <div className="mt-4 border-t border-slate-100 pt-3 text-xs text-slate-500 tabular-nums">
+                      <div className="mt-4 border-t border-white/10 pt-3 text-xs text-slate-400 tabular-nums">
                         {m.km?.toLocaleString("tr-TR")} km
                       </div>
                     </CardContent>
@@ -171,11 +171,11 @@ export default function CustomerDetail() {
                     {c.service_orders.map((o) => (
                       <TableRow key={o.id}>
                         <TableCell>
-                          <Link to={`/service-orders/${o.id}`} className="font-mono font-medium text-slate-900 hover:text-brand-600 hover:underline">{o.service_no}</Link>
+                          <Link to={`/service-orders/${o.id}`} className="font-mono font-medium text-white hover:text-brand-600 hover:underline">{o.service_no}</Link>
                         </TableCell>
                         <TableCell>{fmtDateShort(o.created_at)}</TableCell>
                         <TableCell>
-                          {o.brand} {o.model} <span className="ml-1 font-mono text-xs text-slate-500">({o.plate})</span>
+                          {o.brand} {o.model} <span className="ml-1 font-mono text-xs text-slate-400">({o.plate})</span>
                         </TableCell>
                         <TableCell><StatusBadge status={o.status} /></TableCell>
                         <TableCell className="text-right font-medium tabular-nums">{fmtMoney(o.grand_total)}</TableCell>
@@ -208,7 +208,7 @@ export default function CustomerDetail() {
                       <TableRow key={t.id}>
                         <TableCell>{fmtDateShort(t.created_at)}</TableCell>
                         <TableCell>{TRANSACTION_LABEL[t.type] || "Düzeltme"}</TableCell>
-                        <TableCell className="text-slate-600">{t.description}</TableCell>
+                        <TableCell className="text-slate-300">{t.description}</TableCell>
                         <TableCell className={`text-right font-medium tabular-nums ${t.amount > 0 ? "text-red-600" : "text-emerald-600"}`}>
                           {fmtMoney(t.amount)}
                         </TableCell>
@@ -257,14 +257,14 @@ export default function CustomerDetail() {
                   return (
                     <div
                       key={n.id}
-                      className="rounded-lg border border-slate-200 bg-white p-4"
+                      className="rounded-lg border border-white/10 bg-slate-900/70 p-4"
                       style={meta ? { borderLeft: `4px solid ${meta.stripe}` } : undefined}
                       data-testid={`note-${n.id}`}
                     >
-                      <div className="mb-2 flex items-start justify-between gap-3 text-xs text-slate-500">
+                      <div className="mb-2 flex items-start justify-between gap-3 text-xs text-slate-400">
                         <div className="flex flex-wrap items-center gap-2">
                           {meta && <span className={`rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.cls}`}>{meta.label}</span>}
-                          <span className="font-semibold text-slate-700">{n.author_name || n.author}</span>
+                          <span className="font-semibold text-slate-200">{n.author_name || n.author}</span>
                           <span aria-hidden="true">·</span>
                           <span>{fmtDT(n.at)}</span>
                           {n.updated_at && <span className="italic">(düzenlendi {fmtDT(n.updated_at)})</span>}
@@ -273,7 +273,7 @@ export default function CustomerDetail() {
                           <div className="flex shrink-0 gap-1">
                             <button
                               onClick={() => { setEditingId(n.id); setEditText(n.text); setEditTag(n.tag || ""); }}
-                              className="rounded-md p-1.5 text-slate-500 transition-colors duration-150 hover:bg-slate-100 hover:text-brand-600"
+                              className="rounded-md p-1.5 text-slate-400 transition-colors duration-150 hover:bg-white/10 hover:text-brand-600"
                               aria-label="Notu düzenle"
                               data-testid={`note-edit-${n.id}`}
                             >
@@ -281,7 +281,7 @@ export default function CustomerDetail() {
                             </button>
                             <button
                               onClick={() => removeNote(n.id)}
-                              className="rounded-md p-1.5 text-slate-500 transition-colors duration-150 hover:bg-red-50 hover:text-red-600"
+                              className="rounded-md p-1.5 text-slate-400 transition-colors duration-150 hover:bg-red-50 hover:text-red-600"
                               aria-label="Notu sil"
                               data-testid={`note-del-${n.id}`}
                             >
@@ -320,7 +320,7 @@ export default function CustomerDetail() {
                           </div>
                         </div>
                       ) : (
-                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-slate-800">{n.text}</div>
+                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-white">{n.text}</div>
                       )}
                     </div>
                   );
