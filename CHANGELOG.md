@@ -3,6 +3,13 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.22 — Yalnızca koyu tema ve yeni yükleme animasyonu
+- Açık tema ve tema değiştirme düğmesi kaldırıldı; uygulama her zaman koyu temada açılır.
+- Yükleme animasyonu yenilendi: dönen gradyan halka, ters dönen kesikli halka, yörünge noktası ve nefes alan logo.
+- Panel yüklenirken animasyon sayfanın ortasında, düzeni bozmadan gösteriliyor.
+- Panel kartındaki arka plan nesnesi (3D zemin) kaldırıldı.
+- Yedek: önceki sürüm `backup/v2.21` dalında.
+
 ## v2.21 — Uygulama geneli ana sayfa efekti ve yükleme ekranı
 - Koyu temada tüm sayfa zemini ve kartlar ana sayfadaki efektle aynı görünüyor.
 - Panel karşılama kartı ana sayfadaki cam panel yüzeyine geçti.

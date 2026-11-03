@@ -15,6 +15,7 @@ import EmptyState from "../components/EmptyState";
 import Money from "../components/Money";
 import DashboardDebtorsTable from "../components/DashboardDebtorsTable";
 import DashboardHero from "../components/DashboardHero";
+import BrandLoader from "../components/BrandLoader";
 import { DashboardSection, SectionsPanel } from "../components/DashboardLayout";
 import {
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid,
@@ -111,7 +112,7 @@ export default function Dashboard() {
     (digest?.links || []).forEach((l, i) => setTimeout(() => window.open(l.url, "_blank"), i * 300));
   };
 
-  if (!data) return <p className="text-sm text-slate-500">Yükleniyor…</p>;
+  if (!data) return <BrandLoader inline label="Panel hazırlanıyor" />;
 
   const { kpi, monthly_revenue, status_distribution, top_operations, recent_orders, debtors } = data;
   const links = digest?.links || [];
