@@ -35,7 +35,7 @@ export default function PublicApproval() {
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
   if (!data) return (
-    <div className="emt-aurora min-h-screen flex items-center justify-center p-6">
+    <div className="emt-aurora emt-app min-h-screen flex items-center justify-center p-6">
       <Card className="glass-card max-w-md w-full"><CardContent className="p-8 text-center">
         <XCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
         <h1 className="font-heading text-xl font-bold">Geçersiz Bağlantı</h1>

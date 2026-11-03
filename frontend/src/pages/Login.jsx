@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import BrandLoader from "../components/BrandLoader";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { Button } from "../components/ui/button";
@@ -35,6 +36,12 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const [intro, setIntro] = useState(true);
+  useEffect(() => {
+    const t = setTimeout(() => setIntro(false), 1100);
+    return () => clearTimeout(t);
+  }, []);
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -61,7 +68,9 @@ export default function Login() {
   };
 
   return (
-    <div className="emt-night min-h-screen lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+    <>
+    {intro && <BrandLoader label="Giriş ekranı açılıyor" />}
+    <div className="emt-night emt-enter min-h-screen lg:grid lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       {/* Marka paneli (yalnızca masaüstü) */}
       <aside className="relative hidden flex-col justify-between overflow-hidden border-r border-white/10 p-12 text-white lg:flex" data-testid="login-brand-panel">
         {/* Dekoratif motosiklet görseli: sol panelin altında, düşük opaklıkta */}
@@ -231,5 +240,6 @@ export default function Login() {
         </div>
       </main>
     </div>
+    </>
   );
 }

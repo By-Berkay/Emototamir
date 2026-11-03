@@ -46,7 +46,7 @@ export default function QuotePublic() {
   };
 
   if (err) return (
-    <div className="emt-aurora min-h-screen flex items-center justify-center p-6">
+    <div className="emt-aurora emt-app min-h-screen flex items-center justify-center p-6">
       <Card className="glass-card max-w-md w-full"><CardContent className="p-8 text-center">
         <XCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
         <h1 className="font-heading text-2xl font-bold mb-2">Teklif Bulunamadı</h1>
@@ -63,7 +63,7 @@ export default function QuotePublic() {
   const brandColor = t.primary_color || "#F97316";
 
   return (
-    <div className="emt-aurora min-h-screen py-8 px-4" data-testid="quote-public">
+    <div className="emt-aurora emt-app min-h-screen py-8 px-4" data-testid="quote-public">
       <div className="max-w-3xl mx-auto space-y-4">
         {/* Header */}
         <Card className="glass-card">

@@ -40,11 +40,12 @@ import InspectionDetail from "./pages/InspectionDetail";
 import Landing from "./pages/Landing";
 import AdminLanding from "./pages/AdminLanding";
 import AdminReport3D from "./pages/AdminReport3D";
+import BrandLoader from "./components/BrandLoader";
 import "./App.css";
 
 function Protected({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
+  if (loading) return <BrandLoader />;
   if (!user) return <Navigate to="/login" replace />;
   return children;
 }
@@ -58,7 +59,7 @@ function IndexRoute() {
 // Kök adres: misafirlere fiyat/paket vitrini, giriş yapanlara panel.
 function RootGate() {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
+  if (loading) return <BrandLoader />;
   if (!user) return <Landing />;
   return <Navigate to={user.role === "super_admin" ? "/admin/tenants" : "/dashboard"} replace />;
 }

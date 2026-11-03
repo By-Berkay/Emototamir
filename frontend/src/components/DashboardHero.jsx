@@ -54,7 +54,7 @@ export default function DashboardHero({ kpi, tenantName, userName }) {
   return (
     <section
       aria-label="Karşılama"
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white shadow-card"
+      className="emt-glass-dark relative overflow-hidden rounded-3xl text-white"
       data-testid="dashboard-hero"
     >
       <style>{CSS}</style>
