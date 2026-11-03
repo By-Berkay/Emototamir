@@ -3885,6 +3885,88 @@ async def _landing_doc() -> Dict[str, Any]:
     doc = await db.site_content.find_one({"_id": "landing"}, {"_id": 0})
     return doc or {**DEFAULT_LANDING, "updated_at": None}
 
+# ---------- Tasarım / vitrin görselleri (yalnızca süper admin yükler) ----------
+SITE_ASSET_SLOTS = {
+    "logo": {"label": "Ana logo", "hint": "Sol üst köşe. Şeffaf PNG önerilir."},
+    "login_hero": {"label": "Giriş ekranı görseli", "hint": "Giriş kartının arkasındaki motosiklet / sahne görseli."},
+    "landing_hero": {"label": "Vitrin ana görseli", "hint": "Ana sayfadaki büyük motosiklet görseli."},
+    "dashboard_hero": {"label": "Panel üst banner", "hint": "Panelin sağ üstündeki motosiklet görseli."},
+    "customers_hero": {"label": "Müşteriler banner", "hint": "Müşteri listesi üst görseli."},
+    "motorcycles_hero": {"label": "Motosikletler banner", "hint": "Motosiklet listesi üst görseli."},
+    "motorcycle_detail": {"label": "Motosiklet detay görseli", "hint": "Motosiklet detayındaki büyük görsel."},
+    "services_hero": {"label": "Servis kayıtları banner", "hint": "Servis listesi üst görseli."},
+    "service_detail_hero": {"label": "İş emri detay banner", "hint": "İş emri detayındaki motosiklet görseli."},
+    "inspection_hero": {"label": "Ekspertiz banner", "hint": "Ekspertiz ve teklif üst görseli."},
+    "accounts_hero": {"label": "Cari hesap banner", "hint": "Cari hesap ve tahsilat üst görseli."},
+    "reports_hero": {"label": "Raporlar banner", "hint": "Raporlar üst görseli."},
+    "promo_rider": {"label": "Kenar promo görseli", "hint": "Sol menü altındaki kask / sürücü görseli (dikey)."},
+}
+SITE_ASSET_MAX_BYTES = 8 * 1024 * 1024
+SITE_ASSET_TYPES = {"image/png", "image/jpeg", "image/webp"}
+
+async def _site_assets_map() -> Dict[str, Any]:
+    doc = await db.site_content.find_one({"_id": "assets"}, {"_id": 0}) or {}
+    return doc.get("slots", {}) or {}
+
+@api.get("/public/site-assets")
+async def public_site_assets():
+    slots = await _site_assets_map()
+    return {k: {"updated_at": slots[k].get("updated_at")} for k in SITE_ASSET_SLOTS if k in slots}
+
+@api.get("/public/site-assets/{slot}")
+async def public_site_asset(slot: str):
+    if slot not in SITE_ASSET_SLOTS:
+        raise HTTPException(404, "Görsel bulunamadı")
+    meta = (await _site_assets_map()).get(slot)
+    if not meta:
+        raise HTTPException(404, "Görsel bulunamadı")
+    try:
+        data, ct = await get_object(meta["path"])
+    except FileNotFoundError:
+        raise HTTPException(404, "Görsel bulunamadı")
+    return Response(content=data, media_type=meta.get("content_type") or ct,
+                    headers={"Cache-Control": "public, max-age=300"})
+
+@api.get("/admin/site-assets")
+async def admin_site_assets(user=Depends(require_super_admin)):
+    slots = await _site_assets_map()
+    return [
+        {"slot": k, "label": v["label"], "hint": v["hint"], "has_image": k in slots,
+         "updated_at": (slots.get(k) or {}).get("updated_at")}
+        for k, v in SITE_ASSET_SLOTS.items()
+    ]
+
+@api.post("/admin/site-assets/{slot}")
+async def admin_upload_site_asset(slot: str, file: UploadFile = File(...), user=Depends(require_super_admin)):
+    if slot not in SITE_ASSET_SLOTS:
+        raise HTTPException(404, "Geçersiz görsel alanı")
+    if (file.content_type or "") not in SITE_ASSET_TYPES:
+        raise HTTPException(400, "Yalnızca PNG, JPG veya WEBP yüklenebilir")
+    data = await file.read()
+    if not data:
+        raise HTTPException(400, "Dosya boş")
+    if len(data) > SITE_ASSET_MAX_BYTES:
+        raise HTTPException(400, "Dosya en fazla 8 MB olabilir")
+    result = await put_object(f"{APP_NAME}/site/{slot}", data, file.content_type)
+    meta = {"path": result["path"], "content_type": file.content_type, "updated_at": now_iso(), "updated_by": user["email"]}
+    await db.site_content.update_one({"_id": "assets"}, {"$set": {f"slots.{slot}": meta}}, upsert=True)
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": None, "user": user["email"], "action": "site_asset.upload",
+        "entity_id": slot, "at": now_iso(),
+    })
+    return {"ok": True, "slot": slot, "updated_at": meta["updated_at"]}
+
+@api.delete("/admin/site-assets/{slot}")
+async def admin_delete_site_asset(slot: str, user=Depends(require_super_admin)):
+    if slot not in SITE_ASSET_SLOTS:
+        raise HTTPException(404, "Geçersiz görsel alanı")
+    await db.site_content.update_one({"_id": "assets"}, {"$unset": {f"slots.{slot}": ""}})
+    await db.audit_logs.insert_one({
+        "id": uid(), "tenant_id": None, "user": user["email"], "action": "site_asset.delete",
+        "entity_id": slot, "at": now_iso(),
+    })
+    return {"ok": True}
+
 @api.get("/public/landing")
 async def public_landing():
     doc = await _landing_doc()

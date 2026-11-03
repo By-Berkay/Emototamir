@@ -471,3 +471,26 @@ main table tbody tr:hover {
 @media (prefers-reduced-motion: reduce) {
   .emt-ring-rev, .emt-orbit, .emt-breathe, .emt-glow { animation: none !important; }
 }
+
+/* ---- Tasarım kiti: tablolar (koyu tema) ---- */
+.emt-table-wrap { background: rgba(10, 17, 30, 0.55); }
+.emt-table thead th {
+  background: rgba(255, 255, 255, 0.04);
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 10px 14px;
+  white-space: nowrap;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.emt-table tbody td {
+  color: #e2e8f0;
+  padding: 11px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  vertical-align: middle;
+}
+.emt-table tbody tr { transition: background-color 150ms ease; }
+.emt-table tbody tr:hover { background: rgba(249, 115, 22, 0.06); }
+.emt-table tbody tr:last-child td { border-bottom: 0; }

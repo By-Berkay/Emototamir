@@ -44,14 +44,14 @@ function toForm(p) {
 
 function LinkToggle({ id, checked, onChange, disabled, label }) {
   return (
-    <label htmlFor={id} className="flex cursor-pointer select-none items-center gap-2 text-sm text-slate-700">
+    <label htmlFor={id} className="flex cursor-pointer select-none items-center gap-2 text-sm text-slate-200">
       <input
         id={id}
         type="checkbox"
         checked={checked}
         disabled={disabled}
         onChange={(e) => onChange(e.target.checked)}
-        className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500/40"
+        className="h-4 w-4 rounded border-white/10 text-brand-600 focus:ring-brand-500/40"
         data-testid={`chk-${id}`}
       />
       {checked ? <Link2 className="h-4 w-4 text-brand-600" aria-hidden="true" /> : <Link2Off className="h-4 w-4 text-slate-400" aria-hidden="true" />}
@@ -265,7 +265,7 @@ export default function Profile() {
                   )}
                 </div>
                 <textarea id="p-address" rows={2} value={form.address} onChange={set("address")} disabled={isLocked("address")}
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-500"
+                  className="w-full rounded-md border border-white/10 bg-slate-900/70 px-3 py-2 text-sm disabled:bg-slate-50 disabled:text-slate-500"
                   data-testid="input-profile-address" />
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div>
@@ -317,10 +317,10 @@ export default function Profile() {
                 <CardTitle className="text-base">Firma kaydı (salt okunur)</CardTitle>
                 <CardDescription>Firma bilgilerini yalnızca firma yöneticisi değiştirebilir.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-2 text-sm text-slate-700">
-                <p><span className="text-slate-500">Telefon:</span> {profile.firm.phone || "—"}</p>
-                <p><span className="text-slate-500">E-posta:</span> {profile.firm.email || "—"}</p>
-                <p><span className="text-slate-500">Adres:</span> {[profile.firm.address, profile.firm.district, profile.firm.city].filter(Boolean).join(", ") || "—"}</p>
+              <CardContent className="space-y-2 text-sm text-slate-200">
+                <p><span className="text-slate-400">Telefon:</span> {profile.firm.phone || "—"}</p>
+                <p><span className="text-slate-400">E-posta:</span> {profile.firm.email || "—"}</p>
+                <p><span className="text-slate-400">Adres:</span> {[profile.firm.address, profile.firm.district, profile.firm.city].filter(Boolean).join(", ") || "—"}</p>
                 <Button asChild variant="outline" size="sm" className="mt-2">
                   <Link to="/settings">Firma bilgilerine git</Link>
                 </Button>
@@ -353,7 +353,7 @@ export default function Profile() {
           />
           {loginEmail.trim() && loginEmail.trim().toLowerCase() !== profile.email && (
             <div className="mt-2 space-y-2 rounded-md border border-amber-300/60 bg-amber-50 p-3 dark:border-amber-400/30 dark:bg-amber-400/10">
-              <p className="text-xs text-slate-600 dark:text-slate-300">
+              <p className="text-xs text-slate-300 dark:text-slate-300">
                 Giriş e-postanız değişecek. Onaylamak için mevcut şifrenizi girin.
               </p>
               <Input
@@ -375,7 +375,7 @@ export default function Profile() {
               </Button>
             </div>
           )}
-          <p className="mt-1 text-xs text-slate-500">Giriş e-postanız aynı zamanda giriş kullanıcı adınızdır.</p>
+          <p className="mt-1 text-xs text-slate-400">Giriş e-postanız aynı zamanda giriş kullanıcı adınızdır.</p>
         </div>
             </CardContent>
           </Card>

@@ -1,25 +1,83 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import api, { openAuthedPdf, fmtMoney, fmtDate, fmtDateShort, STATUS_META, STATUS_LIST } from "../lib/api";
+import { FileDown, MessageCircle, Pencil, Trash2, Copy, Bike, Gauge, Fuel, Wallet } from "lucide-react";
+import api, { openAuthedPdf, fmtDate, fmtDateShort, STATUS_META, STATUS_LIST } from "../lib/api";
 import { useAuth } from "../context/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "../components/ui/tabs";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Label } from "../components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "../components/ui/dialog";
-import PageHeader from "../components/PageHeader";
-import PageVisual from "../components/PageVisual";
-import { Wrench as PvIcon } from "lucide-react";
-import StatCard from "../components/StatCard";
-import StatusBadge from "../components/StatusBadge";
+import { HeroBanner, Panel, StatusBadge, DataTable } from "../components/design/kit";
+import Money from "../components/Money";
 import SignaturePad from "../components/SignaturePad";
 import PhotoUploader from "../components/PhotoUploader";
 import { documentTotals, lineAmounts, DEFAULT_VAT } from "../lib/pricing";
-import DocumentTotals from "../components/DocumentTotals";
 import { toast } from "sonner";
-import { FileDown, MessageCircle, Pencil, Trash2, Copy } from "lucide-react";
+
+/* Durum -> rozet tonu eşlemesi (yalnızca sunumda kullanılır). */
+const STATUS_TONE = {
+  new: "info",
+  diagnosed: "violet",
+  pricing: "neutral",
+  awaiting_approval: "warning",
+  approved: "success",
+  in_repair: "brand",
+  parts_waiting: "warning",
+  completed: "success",
+  awaiting_delivery: "info",
+  delivered: "success",
+  cancelled: "danger",
+};
+
+const OUTLINE_BTN = "border-white/10 bg-white/5 text-white hover:bg-white/10 hover:text-white";
+
+/* Ad soyaddan avatar baş harfleri. */
+const initialsOf = (name = "") =>
+  name.split(" ").filter(Boolean).slice(0, 2).map((p) => p[0]).join("").toUpperCase() || "?";
+
+/* Tek satırlık "anahtar / değer" özet satırı. */
+const SumRow = ({ label, value, className = "" }) => (
+  <div className={`flex items-center justify-between gap-4 text-sm ${className}`}>
+    <span className="text-slate-400">{label}</span>
+    <span className="tabular-nums text-white">{value}</span>
+  </div>
+);
+
+/* Kalem tablosu (hizmet / parça). */
+const ItemsTable = ({ rows, emptyText }) => (
+  <DataTable>
+    <thead>
+      <tr>
+        <th>Açıklama</th>
+        <th className="text-right">Adet</th>
+        <th className="text-right">Birim</th>
+        <th className="text-right">Toplam</th>
+      </tr>
+    </thead>
+    <tbody>
+      {rows.map((it) => (
+        <tr key={it.id}>
+          <td>
+            <div className="text-white">{it.name}</div>
+            <div className="text-[11px] text-slate-400">
+              {it.price_mode === "excl" ? "KDV hariç" : "KDV dahil"} · %{it.vat ?? DEFAULT_VAT}
+            </div>
+          </td>
+          <td className="text-right tabular-nums">{it.qty}</td>
+          <td className="text-right"><Money value={it.unit_price} /></td>
+          <td className="text-right font-semibold"><Money value={lineAmounts(it).gross} /></td>
+        </tr>
+      ))}
+      {rows.length === 0 && (
+        <tr>
+          <td colSpan={4} className="px-4 py-6 text-center text-slate-400">{emptyText}</td>
+        </tr>
+      )}
+    </tbody>
+  </DataTable>
+);
 
 export default function ServiceOrderDetail() {
   const { id } = useParams();
@@ -38,9 +96,32 @@ export default function ServiceOrderDetail() {
     .catch(() => toast.error("Servis kaydı yüklenemedi"));
   useEffect(() => { load(); }, [id]);
 
-  if (!o) return <div>Yükleniyor…</div>;
+  if (!o) return <div className="text-slate-300">Yükleniyor…</div>;
   const remaining = (o.grand_total || 0) - (o.paid_total || 0);
   const token = localStorage.getItem("token");
+
+  const items = o.items || [];
+  const serviceItems = items.filter((it) => it.kind !== "part");
+  const partItems = items.filter((it) => it.kind === "part");
+  const t = documentTotals({
+    items,
+    labor_total: o.labor_total,
+    labor_price_mode: o.labor_price_mode || "incl",
+    labor_vat: o.labor_vat ?? DEFAULT_VAT,
+    discount: o.discount,
+  });
+  const timeline = [
+    { key: "created", at: o.created_at, label: "Kayıt oluşturuldu" },
+    ...(o.status_history || []).map((h, i) => ({
+      key: `h-${i}`,
+      at: h.at,
+      label: STATUS_META[h.status]?.label || h.status,
+      by: h.by,
+      note: h.note,
+    })),
+  ];
+  const approvalTone = o.approval_status === "approved" ? "success" : o.approval_status === "rejected" ? "danger" : "warning";
+  const approvalLabel = o.approval_status === "approved" ? "Onayladı" : o.approval_status === "rejected" ? "Reddetti" : "Beklemede";
 
   const changeStatus = async (s) => {
     try {
@@ -95,85 +176,105 @@ export default function ServiceOrderDetail() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader visual={<PageVisual icon={PvIcon} />}
-        title={
-          <span className="inline-flex flex-wrap items-center gap-3">
-            <span className="font-mono">{o.service_no}</span>
-            <StatusBadge status={o.status} />
-            {o.approval_status && (
-              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${o.approval_status==="approved" ? "bg-emerald-50 text-emerald-700 border-emerald-200" : o.approval_status==="rejected" ? "bg-red-50 text-red-700 border-red-200" : "bg-yellow-50 text-yellow-700 border-yellow-200"}`}>
-                Müşteri: {o.approval_status === "approved" ? "Onayladı" : o.approval_status === "rejected" ? "Reddetti" : "Beklemede"}
-              </span>
-            )}
+    <div className="space-y-6 text-white">
+      <HeroBanner
+        eyebrow="Servis kaydı"
+        title={`İş Emri #${o.service_no}`}
+        slot="service_detail_hero"
+        fallback={null}
+        subtitle={
+          <span className="inline-flex flex-wrap items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-orange-500/15 text-xs font-bold text-orange-300 ring-1 ring-orange-500/30">
+              {initialsOf(o.customer_name)}
+            </span>
+            <Link to={`/customers/${o.customer_id}`} className="font-semibold text-white hover:underline">{o.customer_name}</Link>
+            {o.customer_phone && <span className="font-mono text-xs text-slate-400">{o.customer_phone}</span>}
           </span>
         }
-        description={fmtDate(o.created_at)}
         actions={
-        <div className="flex gap-2 flex-wrap">
-          <Select value={o.status} onValueChange={changeStatus}>
-            <SelectTrigger className="w-48" data-testid="change-status"><SelectValue /></SelectTrigger>
-            <SelectContent>{STATUS_LIST.map(s => <SelectItem key={s} value={s}>{STATUS_META[s].label}</SelectItem>)}</SelectContent>
-          </Select>
-          <Button onClick={() => openAuthedPdf(`/service-orders/${id}/pdf/kabul`)} variant="outline" data-testid="btn-pdf-kabul"><FileDown className="h-4 w-4 mr-1" />Kabul PDF</Button>
-          <Button onClick={() => openAuthedPdf(`/service-orders/${id}/pdf/teslim`)} variant="outline" data-testid="btn-pdf-teslim"><FileDown className="h-4 w-4 mr-1" />Teslim PDF</Button>
-          <Button variant="outline" onClick={openWhatsApp} data-testid="btn-whatsapp"><MessageCircle className="h-4 w-4 mr-1 text-emerald-600" />WhatsApp Onay</Button>
-          <Dialog open={payOpen} onOpenChange={setPayOpen}>
-            <DialogTrigger asChild>
-              <Button className="bg-emerald-600 hover:bg-emerald-700" data-testid="btn-collect">₺ Tahsilat Yap</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Tahsilat</DialogTitle></DialogHeader>
-              <div className="space-y-3">
-                <div className="text-sm text-slate-600">Kalan: <span className="font-bold text-red-600">{fmtMoney(remaining)}</span></div>
-                <div><Label>Tutar</Label><Input type="number" value={payAmount} onChange={(e)=>setPayAmount(e.target.value)} data-testid="pay-amount" /></div>
-                <div><Label>Ödeme Yöntemi</Label>
-                  <Select value={payMethod} onValueChange={setPayMethod}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="cash">Nakit</SelectItem>
-                      <SelectItem value="card">Kredi Kartı</SelectItem>
-                      <SelectItem value="transfer">Havale/EFT</SelectItem>
-                      <SelectItem value="other">Diğer</SelectItem>
-                    </SelectContent>
-                  </Select>
+          <>
+            <Link
+              to={`/motorcycles/${o.motorcycle_id}`}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-200 ring-1 ring-white/10 hover:bg-white/10"
+            >
+              <Bike className="h-3.5 w-3.5 text-orange-400" />
+              {o.brand} {o.model}
+              <span className="font-mono text-slate-400">· {o.plate}</span>
+            </Link>
+            <span data-testid={`status-badge-${o.status}`}>
+              <StatusBadge tone={STATUS_TONE[o.status] || "neutral"}>{STATUS_META[o.status]?.label || o.status}</StatusBadge>
+            </span>
+            {o.approval_status && (
+              <StatusBadge tone={approvalTone}>Müşteri: {approvalLabel}</StatusBadge>
+            )}
+            <span className="self-center text-xs text-slate-400">{fmtDate(o.created_at)}</span>
+          </>
+        }
+        children={
+          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-white/10 pt-4">
+            <Select value={o.status} onValueChange={changeStatus}>
+              <SelectTrigger className="w-48 border-white/10 bg-white/5 text-white" data-testid="change-status"><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUS_LIST.map(s => <SelectItem key={s} value={s}>{STATUS_META[s].label}</SelectItem>)}</SelectContent>
+            </Select>
+            <Button variant="outline" className={OUTLINE_BTN} onClick={() => openAuthedPdf(`/service-orders/${id}/pdf/kabul`)} data-testid="btn-pdf-kabul"><FileDown className="h-4 w-4 mr-1" />Kabul PDF</Button>
+            <Button variant="outline" className={OUTLINE_BTN} onClick={() => openAuthedPdf(`/service-orders/${id}/pdf/teslim`)} data-testid="btn-pdf-teslim"><FileDown className="h-4 w-4 mr-1" />Teslim PDF</Button>
+            <Button variant="outline" className={OUTLINE_BTN} onClick={openWhatsApp} data-testid="btn-whatsapp"><MessageCircle className="h-4 w-4 mr-1 text-emerald-400" />WhatsApp Onay</Button>
+            <Dialog open={payOpen} onOpenChange={setPayOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" data-testid="btn-collect">₺ Tahsilat Yap</Button>
+              </DialogTrigger>
+              <DialogContent className="border-white/10 bg-slate-900 text-white">
+                <DialogHeader><DialogTitle>Tahsilat</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div className="text-sm text-slate-300">Kalan: <span className="font-bold text-rose-300"><Money value={remaining} /></span></div>
+                  <div><Label className="text-slate-300">Tutar</Label><Input type="number" value={payAmount} onChange={(e)=>setPayAmount(e.target.value)} className="border-white/10 bg-white/5 text-white" data-testid="pay-amount" /></div>
+                  <div><Label className="text-slate-300">Ödeme Yöntemi</Label>
+                    <Select value={payMethod} onValueChange={setPayMethod}>
+                      <SelectTrigger className="border-white/10 bg-white/5 text-white"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="cash">Nakit</SelectItem>
+                        <SelectItem value="card">Kredi Kartı</SelectItem>
+                        <SelectItem value="transfer">Havale/EFT</SelectItem>
+                        <SelectItem value="other">Diğer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={()=>setPayOpen(false)}>İptal</Button>
-                <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={doPayment} disabled={paying} data-testid="pay-submit">Kaydet</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-          {isAdmin && (
-            <>
-              <Button variant="outline" onClick={()=>nav(`/service-orders/${id}/edit`)} data-testid="btn-edit-order"><Pencil className="h-4 w-4 mr-1" />Düzenle</Button>
-              <Button variant="outline" onClick={del} className="text-red-600 hover:text-red-700 border-red-200" data-testid="btn-delete-order"><Trash2 className="h-4 w-4 mr-1" />Sil</Button>
-            </>
-          )}
-        </div>
+                <DialogFooter>
+                  <Button variant="outline" className={OUTLINE_BTN} onClick={()=>setPayOpen(false)}>İptal</Button>
+                  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white" onClick={doPayment} disabled={paying} data-testid="pay-submit">Kaydet</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            {isAdmin && (
+              <>
+                <Button variant="outline" className={OUTLINE_BTN} onClick={()=>nav(`/service-orders/${id}/edit`)} data-testid="btn-edit-order"><Pencil className="h-4 w-4 mr-1" />Düzenle</Button>
+                <Button variant="outline" onClick={del} className="border-rose-500/30 bg-transparent text-rose-300 hover:bg-rose-500/10 hover:text-rose-200" data-testid="btn-delete-order"><Trash2 className="h-4 w-4 mr-1" />Sil</Button>
+              </>
+            )}
+          </div>
         }
       />
 
       {/* WhatsApp dialog */}
       <Dialog open={waOpen} onOpenChange={setWaOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg border-white/10 bg-slate-900 text-white">
           <DialogHeader><DialogTitle>WhatsApp Onay Bağlantısı</DialogTitle></DialogHeader>
           {waData && (
             <div className="space-y-4">
               <div>
-                <Label>Onay Bağlantısı</Label>
+                <Label className="text-slate-300">Onay Bağlantısı</Label>
                 <div className="flex gap-2 mt-1">
-                  <Input value={waData.approval_url} readOnly className="font-mono text-xs" data-testid="approval-link" />
-                  <Button variant="outline" onClick={copyLink} data-testid="btn-copy-approval"><Copy className="h-4 w-4" /></Button>
+                  <Input value={waData.approval_url} readOnly className="font-mono text-xs border-white/10 bg-white/5 text-white" data-testid="approval-link" />
+                  <Button variant="outline" className={OUTLINE_BTN} onClick={copyLink} data-testid="btn-copy-approval"><Copy className="h-4 w-4" /></Button>
                 </div>
               </div>
               <div>
-                <Label>WhatsApp Mesajı (önizleme)</Label>
-                <div className="text-sm bg-slate-50 border rounded-md p-3 whitespace-pre-wrap">{waData.message}</div>
+                <Label className="text-slate-300">WhatsApp Mesajı (önizleme)</Label>
+                <div className="text-sm bg-white/5 border border-white/10 rounded-md p-3 whitespace-pre-wrap text-slate-200">{waData.message}</div>
               </div>
               <a href={waData.whatsapp_url} target="_blank" rel="noreferrer">
-                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 h-11" data-testid="btn-open-whatsapp">
+                <Button className="w-full bg-emerald-600 hover:bg-emerald-700 text-white h-11" data-testid="btn-open-whatsapp">
                   <MessageCircle className="h-4 w-4 mr-2" />WhatsApp'ta Aç
                 </Button>
               </a>
@@ -182,127 +283,163 @@ export default function ServiceOrderDetail() {
         </DialogContent>
       </Dialog>
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card className="border-slate-200"><CardContent className="p-5">
-          <div className="text-xs uppercase text-slate-500">Müşteri</div>
-          <Link to={`/customers/${o.customer_id}`} className="font-semibold hover:underline">{o.customer_name}</Link>
-          <div className="text-sm text-slate-600 font-mono">{o.customer_phone}</div>
-        </CardContent></Card>
-        <Card className="border-slate-200"><CardContent className="p-5">
-          <div className="text-xs uppercase text-slate-500">Motosiklet</div>
-          <Link to={`/motorcycles/${o.motorcycle_id}`} className="font-semibold hover:underline">{o.brand} {o.model}</Link>
-          <div className="flex items-center gap-2 text-sm text-slate-600">
-            <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">{o.plate}</span>
-            <span>{o.km?.toLocaleString("tr-TR")} km</span>
-          </div>
-        </CardContent></Card>
-        <StatCard
-          label="Ödeme Durumu"
-          value={fmtMoney(o.grand_total)}
-          hint={<>Ödenen: {fmtMoney(o.paid_total)} · Kalan: <span className={remaining>0.01?"text-red-600 font-bold":"text-emerald-600"}>{fmtMoney(remaining)}</span></>}
-          tone={remaining>0.01?"red":"emerald"}
-        />
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+        {/* Sol kolon (2/3): arıza, yapılan işlemler, parçalar */}
+        <div className="space-y-6 xl:col-span-2">
+          <Panel title="Arıza / talep" subtitle="Müşteri şikayeti ve tespit edilen arıza">
+            <div className="grid gap-5 md:grid-cols-2">
+              <div>
+                <h4 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Müşteri Şikayeti</h4>
+                <p className="whitespace-pre-line text-sm text-slate-200">{o.complaint || "-"}</p>
+              </div>
+              <div>
+                <h4 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Arıza Tespiti</h4>
+                <p className="whitespace-pre-line text-sm text-slate-200">{o.diagnosis || "-"}</p>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel
+            title="Yapılan işlemler"
+            subtitle={`${serviceItems.length} hizmet kalemi`}
+            action={isAdmin && (
+              <Button variant="outline" className={OUTLINE_BTN} onClick={()=>nav(`/service-orders/${id}/edit`)}><Pencil className="h-4 w-4 mr-1" />Yapılan İşleri Düzenle</Button>
+            )}
+          >
+            {o.operations && <p className="mb-4 whitespace-pre-line text-sm text-slate-200">{o.operations}</p>}
+            <ItemsTable rows={serviceItems} emptyText="Hizmet kalemi eklenmedi" />
+          </Panel>
+
+          <Panel title="Kullanılan parçalar" subtitle={`${partItems.length} parça kalemi`}>
+            <ItemsTable rows={partItems} emptyText="Parça eklenmedi" />
+          </Panel>
+        </div>
+
+        {/* Sağ kolon (1/3): özet, teknik durum, notlar, süreç */}
+        <div className="space-y-6">
+          <Panel title="Özet">
+            <div className="space-y-2.5">
+              <SumRow label="Parça toplamı" value={<Money value={t.parts_total} />} />
+              <SumRow label="Hizmet toplamı" value={<Money value={t.services_total} />} />
+              <SumRow label="İşçilik" value={<Money value={t.labor_gross} />} />
+              <div className="space-y-2.5 border-t border-white/10 pt-2.5">
+                <SumRow label="Ara toplam (KDV dahil)" value={<Money value={t.subtotal} />} />
+                {Number(t.discount) > 0 && <SumRow label="İskonto" value={<span className="text-rose-300">-<Money value={t.discount} /></span>} />}
+              </div>
+              <div className="space-y-2.5 border-t border-white/10 pt-2.5">
+                <SumRow label="KDV toplamı" value={<Money value={t.vat_total} />} />
+                <SumRow label="KDV hariç tutar" value={<Money value={t.net_total} />} />
+              </div>
+              <div className="flex items-center justify-between border-t border-white/10 pt-3">
+                <span className="font-semibold text-white">Genel toplam</span>
+                <span className="font-heading text-xl font-bold text-orange-400"><Money value={t.grand_total} /></span>
+              </div>
+              <div className="space-y-2.5 border-t border-white/10 pt-2.5">
+                <SumRow label="Tahsil edilen" value={<span className="text-emerald-300"><Money value={o.paid_total} /></span>} />
+                <SumRow label="Kalan" value={<span className={remaining > 0.01 ? "font-semibold text-rose-300" : "text-emerald-300"}><Money value={Math.max(0, remaining)} /></span>} />
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Teknik durum" subtitle="Araç bilgileri ve arıza bölgeleri">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-slate-400"><Gauge className="h-3.5 w-3.5" />Kilometre</div>
+                  <div className="mt-1 font-semibold text-white">{o.km != null ? `${o.km.toLocaleString("tr-TR")} km` : "-"}</div>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-slate-400"><Fuel className="h-3.5 w-3.5" />Yakıt</div>
+                  <div className="mt-1 font-semibold text-white">{o.fuel_level || "-"}</div>
+                </div>
+              </div>
+              <div>
+                <h4 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Aksesuarlar</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {(o.accessories || []).map((a) => (
+                    <span key={a} className="rounded-full bg-white/5 px-2.5 py-0.5 text-xs text-slate-200 ring-1 ring-white/10">{a}</span>
+                  ))}
+                  {(!o.accessories || o.accessories.length === 0) && <span className="text-xs text-slate-400">-</span>}
+                </div>
+              </div>
+              <div>
+                <h4 className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Arızalı bölgeler</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {(o.fault_zones || []).map((f) => (
+                    <span key={f} className="rounded-full bg-rose-500/15 px-2.5 py-0.5 text-xs text-rose-300 ring-1 ring-rose-500/30">{f}</span>
+                  ))}
+                  {(!o.fault_zones || o.fault_zones.length === 0) && <span className="text-xs text-slate-400">-</span>}
+                </div>
+              </div>
+            </div>
+          </Panel>
+
+          <Panel title="Servis notları">
+            <p className="whitespace-pre-line text-sm text-slate-200">{o.notes || "-"}</p>
+          </Panel>
+
+          <Panel title="Süreç" subtitle="Durum geçmişi">
+            <ol className="relative ml-2 space-y-5 border-l border-white/10 pl-6">
+              {timeline.map((step) => (
+                <li key={step.key} className="relative">
+                  <span className="absolute -left-[31px] top-1 h-3 w-3 rounded-full bg-orange-500 ring-4 ring-slate-900" aria-hidden="true" />
+                  <div className="text-sm font-medium text-white">{step.label}</div>
+                  <div className="text-xs text-slate-400">
+                    {step.at ? fmtDate(step.at) : "-"}{step.by ? ` · ${step.by}` : ""}
+                  </div>
+                  {step.note && <div className="mt-0.5 text-xs italic text-slate-400">"{step.note}"</div>}
+                </li>
+              ))}
+            </ol>
+          </Panel>
+        </div>
       </div>
 
-      <Tabs defaultValue="details">
-        <TabsList className="flex-wrap h-auto">
-          <TabsTrigger value="details">Genel</TabsTrigger>
-          <TabsTrigger value="items">Yapılan İşler ({o.items?.length || 0})</TabsTrigger>
+      {/* Alt sekmeler: fotoğraf, imza, tahsilatlar */}
+      <Tabs defaultValue="photos">
+        <TabsList className="flex h-auto flex-wrap border border-white/10 bg-white/5">
           <TabsTrigger value="photos" data-testid="tab-photos">Fotoğraflar ({o.photos?.length || 0})</TabsTrigger>
           <TabsTrigger value="signature" data-testid="tab-signature">İmza</TabsTrigger>
           <TabsTrigger value="payments">Ödemeler ({o.payments?.length || 0})</TabsTrigger>
-          <TabsTrigger value="history">Durum Geçmişi</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="details">
-          <Card className="border-slate-200"><CardContent className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div><h4 className="font-semibold mb-1 text-sm uppercase text-slate-500">Müşteri Şikayeti</h4><p className="text-sm">{o.complaint || "-"}</p></div>
-            <div><h4 className="font-semibold mb-1 text-sm uppercase text-slate-500">Arıza Tespiti</h4><p className="text-sm">{o.diagnosis || "-"}</p></div>
-            <div><h4 className="font-semibold mb-1 text-sm uppercase text-slate-500">Yapılan İşlemler</h4><p className="text-sm">{o.operations || "-"}</p></div>
-            <div><h4 className="font-semibold mb-1 text-sm uppercase text-slate-500">Notlar</h4><p className="text-sm">{o.notes || "-"}</p></div>
-            <div><h4 className="font-semibold mb-1 text-sm uppercase text-slate-500">Yakıt / Aksesuarlar</h4>
-              <p className="text-sm">Yakıt: {o.fuel_level}</p>
-              <div className="flex flex-wrap gap-1 mt-1">{(o.accessories||[]).map(a=><span key={a} className="text-xs bg-slate-100 px-2 py-0.5 rounded">{a}</span>)}</div>
-            </div>
-            <div><h4 className="font-semibold mb-1 text-sm uppercase text-slate-500">Arızalı Bölgeler</h4>
-              <div className="flex flex-wrap gap-1">{(o.fault_zones||[]).map(f=><span key={f} className="text-xs bg-red-50 text-red-700 border border-red-200 px-2 py-0.5 rounded">{f}</span>)}</div>
-            </div>
-          </CardContent></Card>
-        </TabsContent>
-
-        <TabsContent value="items">
-          <Card className="border-slate-200"><CardContent className="p-0">
-            <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="text-left px-4 py-2">Tür</th><th className="text-left px-4 py-2">Ad</th><th className="text-right px-4 py-2">Adet</th><th className="text-right px-4 py-2">Birim</th><th className="text-right px-4 py-2">Toplam</th></tr></thead>
-              <tbody>
-                {o.items.map(it=>(
-                  <tr key={it.id} className="border-t">
-                    <td className="px-4 py-2"><span className={`text-xs px-2 py-0.5 rounded ${it.kind==="part"?"bg-blue-50 text-blue-700":"bg-emerald-50 text-emerald-700"}`}>{it.kind==="part"?"Parça":"Hizmet"}</span></td>
-                    <td className="px-4 py-2">{it.name}</td>
-                    <td className="px-4 py-2 text-right">{it.qty}</td>
-                    <td className="px-4 py-2 text-right">{fmtMoney(it.unit_price)}<div className="text-[11px] text-slate-400">{it.price_mode === "excl" ? "KDV hariç" : "KDV dahil"} · %{it.vat ?? DEFAULT_VAT}</div></td>
-                    <td className="px-4 py-2 text-right font-medium">{fmtMoney(lineAmounts(it).gross)}</td>
-                  </tr>
-                ))}
-                <tr className="border-t bg-slate-50"><td colSpan={5} className="px-4 py-3">
-                  <div className="ml-auto max-w-sm"><DocumentTotals paid={o.paid_total} t={documentTotals({ items: o.items, labor_total: o.labor_total, labor_price_mode: o.labor_price_mode || "incl", labor_vat: o.labor_vat ?? DEFAULT_VAT, discount: o.discount })} /></div>
-                </td></tr>
-              </tbody>
-            </table>
-            </div>
-            {isAdmin && (
-              <div className="p-4 border-t bg-slate-50 flex justify-end">
-                <Button variant="outline" onClick={()=>nav(`/service-orders/${id}/edit`)}><Pencil className="h-4 w-4 mr-1" />Yapılan İşleri Düzenle</Button>
-              </div>
-            )}
-          </CardContent></Card>
-        </TabsContent>
-
         <TabsContent value="photos">
-          <Card className="border-slate-200"><CardContent className="p-5">
+          <div className="emt-glass-dark rounded-2xl border border-white/10 p-5">
             <PhotoUploader serviceOrderId={id} photos={o.photos || []} onChange={(photos)=>setO({...o, photos})} />
-          </CardContent></Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="signature">
-          <Card className="border-slate-200"><CardContent className="p-5">
+          <div className="emt-glass-dark rounded-2xl border border-white/10 p-5">
             <SignaturePad initial={o.customer_signature || ""} onSave={saveSignature} />
-            {o.signed_at && o.customer_signature && <div className="text-xs text-slate-500 mt-3">İmzalandı: {fmtDate(o.signed_at)}</div>}
-          </CardContent></Card>
+            {o.signed_at && o.customer_signature && <div className="mt-3 text-xs text-slate-400">İmzalandı: {fmtDate(o.signed_at)}</div>}
+          </div>
         </TabsContent>
 
         <TabsContent value="payments">
-          <Card className="border-slate-200"><CardContent className="p-0">
-            <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="text-left px-4 py-2">Tarih</th><th className="text-left px-4 py-2">Tahsilat No</th><th className="text-left px-4 py-2">Yöntem</th><th className="text-right px-4 py-2">Tutar</th></tr></thead>
-              <tbody>
-                {(o.payments || []).map(p=>(
-                  <tr key={p.id} className="border-t"><td className="px-4 py-2">{fmtDateShort(p.created_at)}</td><td className="px-4 py-2 font-mono text-xs">{p.payment_no}</td><td className="px-4 py-2">{p.method}</td><td className="px-4 py-2 text-right font-semibold text-emerald-600">{fmtMoney(p.amount)}</td></tr>
-                ))}
-                {(!o.payments || o.payments.length === 0) && <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-500">Henüz tahsilat yok</td></tr>}
-              </tbody>
-            </table>
-            </div>
-          </CardContent></Card>
-        </TabsContent>
-
-        <TabsContent value="history">
-          <Card className="border-slate-200"><CardContent className="p-5">
-            <ul className="space-y-3">
-              {(o.status_history||[]).map((h, i) => (
-                <li key={i} className="flex items-center gap-3 flex-wrap">
-                  <span className="h-2 w-2 bg-brand-500 rounded-full"></span>
-                  <StatusBadge status={h.status} />
-                  <span className="text-sm text-slate-600">{fmtDate(h.at)}</span>
-                  <span className="text-xs text-slate-500">— {h.by}</span>
-                  {h.note && <span className="text-xs text-slate-500 italic">"{h.note}"</span>}
-                </li>
+          <DataTable>
+            <thead>
+              <tr>
+                <th>Tarih</th>
+                <th>Tahsilat No</th>
+                <th>Yöntem</th>
+                <th className="text-right">Tutar</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(o.payments || []).map((p) => (
+                <tr key={p.id}>
+                  <td className="text-slate-300">{fmtDateShort(p.created_at)}</td>
+                  <td className="font-mono text-xs text-slate-300">{p.payment_no}</td>
+                  <td className="text-slate-300">{p.method}</td>
+                  <td className="text-right font-semibold text-emerald-300"><Money value={p.amount} /></td>
+                </tr>
               ))}
-            </ul>
-          </CardContent></Card>
+              {(!o.payments || o.payments.length === 0) && (
+                <tr><td colSpan={4} className="px-4 py-6 text-center text-slate-400">Henüz tahsilat yok</td></tr>
+              )}
+            </tbody>
+          </DataTable>
         </TabsContent>
       </Tabs>
     </div>
