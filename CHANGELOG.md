@@ -3,6 +3,10 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.25 — v2.24 tasarım yenilemesi geri alındı
+- v2.24 tasarım yenilemesi (tüm sayfalar, kabuk, süper admin görsel yönetimi) geri alındı.
+- Yükleme animasyonu, koyu tema, opaklık ve paket yetkileri korundu.
+
 ## v2.23 — Firma paket yetkileri, şeffaflık ve yükleme ortası
 - Süper admin firma ekranındaki "Abonelik" sekmesine "Paket yetkileri" eklendi: firmanın açabildiği modüller ve modül başına kayıt limitleri (boşsa sınırsız).
 - Sunucu, paket dışı modüllere API isteklerini reddediyor ve limit dolunca yeni kaydı engelliyor.
