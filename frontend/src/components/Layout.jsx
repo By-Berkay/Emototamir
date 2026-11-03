@@ -9,7 +9,6 @@ import {
 import { Input } from "./ui/input";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Lock, LockOpen } from "lucide-react";
-import ThemeToggle from "./ThemeToggle";
 import AuthedImage from "./AuthedImage";
 
 const ROLE_LABELS = {
@@ -247,7 +246,6 @@ export default function Layout() {
             <div className="flex-1" />
           )}
           <div className="ml-auto flex items-center gap-3">
-            <ThemeToggle />
             {user?.role === "admin" && <AdminLockButton />}
             {!isSuper && (
               <Link

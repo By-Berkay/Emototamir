@@ -452,3 +452,22 @@ main table tbody tr:hover {
 @media (prefers-reduced-motion: reduce) {
   .emt-ring, .emt-sweep, .emt-enter { animation: none !important; }
 }
+
+/* Marka yükleme animasyonu (BrandLoader) */
+@keyframes emt-ring-rev { to { transform: rotate(-360deg); } }
+@keyframes emt-orbit { to { transform: rotate(360deg); } }
+@keyframes emt-breathe {
+  0%, 100% { transform: scale(0.94); }
+  50% { transform: scale(1.04); }
+}
+@keyframes emt-glow {
+  0%, 100% { opacity: 0.45; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+.emt-ring-rev { animation: emt-ring-rev 9s linear infinite; }
+.emt-orbit { animation: emt-orbit 2.4s linear infinite; }
+.emt-breathe { animation: emt-breathe 2.8s ease-in-out infinite; }
+.emt-glow { animation: emt-glow 2.8s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .emt-ring-rev, .emt-orbit, .emt-breathe, .emt-glow { animation: none !important; }
+}

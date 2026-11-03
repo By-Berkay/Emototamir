@@ -83,8 +83,6 @@ export default function DashboardHero({ kpi, tenantName, userName }) {
         </div>
 
         <div className="dh-stage relative h-56 w-full max-w-xs shrink-0 sm:h-64 md:h-72 md:w-80 md:max-w-none" aria-hidden="true">
-          {/* 3D zemin */}
-          <div className="dh-floor absolute bottom-6 left-1/2 h-24 w-[85%] -translate-x-1/2 rounded-[50%] border border-white/10" />
           {/* dönen motosiklet */}
           <div className="dh-bike absolute inset-x-[8%] bottom-10 top-6">
             <MotorcycleSvg />
