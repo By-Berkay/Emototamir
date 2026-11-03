@@ -72,7 +72,7 @@ function TableCard({ title, description, onExport, footer, children }) {
       <CardHeader className="flex-row items-start justify-between gap-2">
         <div className="min-w-0">
           <CardTitle className="text-base">{title}</CardTitle>
-          {description && <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{description}</p>}
+          {description && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{description}</p>}
         </div>
         {onExport && (
           <Button variant="outline" size="sm" onClick={onExport}>
@@ -83,7 +83,7 @@ function TableCard({ title, description, onExport, footer, children }) {
       <CardContent className="flex-1 p-0">
         <div className="overflow-x-auto">{children}</div>
       </CardContent>
-      {footer && <div className="border-t border-white/10 px-4 py-2.5 text-sm dark:border-white/10">{footer}</div>}
+      {footer && <div className="border-t border-slate-100 px-4 py-2.5 text-sm dark:border-white/10">{footer}</div>}
     </Card>
   );
 }
@@ -91,7 +91,7 @@ function TableCard({ title, description, onExport, footer, children }) {
 function RankTable({ columns, rows, rowKey, renderRow, empty = "Kayıt yok" }) {
   return (
     <table className="min-w-full text-sm">
-      <thead className="bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-400 dark:bg-white/[0.03] dark:text-slate-400">
+      <thead className="bg-slate-50/80 text-[11px] uppercase tracking-wider text-slate-500 dark:bg-white/[0.03] dark:text-slate-400">
         <tr>
           {columns.map((c) => (
             <th key={c.label} className={`px-4 py-2.5 font-semibold ${c.right ? "text-right" : "text-left"}`}>{c.label}</th>
@@ -100,10 +100,10 @@ function RankTable({ columns, rows, rowKey, renderRow, empty = "Kayıt yok" }) {
       </thead>
       <tbody>
         {rows.length === 0 ? (
-          <tr><td colSpan={columns.length} className="px-4 py-8 text-center text-slate-400">{empty}</td></tr>
+          <tr><td colSpan={columns.length} className="px-4 py-8 text-center text-slate-500">{empty}</td></tr>
         ) : (
           rows.map((row, i) => (
-            <tr key={rowKey(row)} className="border-t border-white/10 transition-colors hover:bg-brand-50/40 dark:border-white/5 dark:hover:bg-white/[0.03]">
+            <tr key={rowKey(row)} className="border-t border-slate-100 transition-colors hover:bg-brand-50/40 dark:border-white/5 dark:hover:bg-white/[0.03]">
               {renderRow(row, i)}
             </tr>
           ))
@@ -141,7 +141,7 @@ export default function Reports() {
     name: PAYMENT_LABELS[m.method] || m.method, value: m.amount ?? 0, count: m.count, color: PALETTE[i % PALETTE.length],
   })), [A]);
 
-  if (!r) return <p className="text-sm text-slate-400">Yükleniyor…</p>;
+  if (!r) return <p className="text-sm text-slate-500">Yükleniyor…</p>;
 
   const pl = r.profit_loss;
   const topCustMax = Math.max(0, ...r.top_customers.map((c) => c.spent || 0));
@@ -166,7 +166,7 @@ export default function Reports() {
         title="Ciro ve tahsilat"
         description="Son 12 ay, servis açılış tarihine göre"
         footer={bestMonth && bestMonth.revenue > 0 ? <>En yüksek ciro: <strong>{monthLabel(bestMonth.month)}</strong> · {locked ? "gizli" : fmtMoney(bestMonth.revenue)}</> : "Henüz ciro kaydı yok"}
-        actions={<span className="flex items-center gap-3 text-xs text-slate-400"><i className="h-2 w-2 rounded-full bg-orange-500" />Ciro<i className="h-2 w-2 rounded-full bg-cyan-400" />Tahsilat</span>}
+        actions={<span className="flex items-center gap-3 text-xs text-slate-500"><i className="h-2 w-2 rounded-full bg-orange-500" />Ciro<i className="h-2 w-2 rounded-full bg-cyan-400" />Tahsilat</span>}
       >
         {locked ? <LockedChart /> : <TrendArea data={trend} />}
       </ChartPanel>
@@ -181,14 +181,14 @@ export default function Reports() {
               {statusData.map((s) => (
                 <li key={s.name} className="text-sm">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-2 text-slate-200 dark:text-slate-300"><i className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />{s.name}</span>
+                    <span className="flex items-center gap-2 text-slate-700 dark:text-slate-300"><i className="h-2.5 w-2.5 rounded-full" style={{ background: s.color }} />{s.name}</span>
                     <span className="font-semibold tabular-nums">{s.value}</span>
                   </div>
                 </li>
               ))}
             </ul>
           </>
-        ) : <p className="py-10 text-center text-sm text-slate-400">Veri yok</p>}
+        ) : <p className="py-10 text-center text-sm text-slate-500">Veri yok</p>}
       </ChartPanel>
     ),
 
@@ -229,20 +229,20 @@ export default function Reports() {
               ))}
             </ul>
           </>
-        ) : <p className="py-10 text-center text-sm text-slate-400">Tahsilat kaydı yok</p>}
+        ) : <p className="py-10 text-center text-sm text-slate-500">Tahsilat kaydı yok</p>}
       </ChartPanel>
     ),
 
     profit: (
       <ChartPanel title="Kâr ve zarar" description="Brüt kâr hesabı">
-        <dl className="divide-y divide-white/10 text-sm dark:divide-white/10">
+        <dl className="divide-y divide-slate-100 text-sm dark:divide-white/10">
           {PROFIT_ROWS.map((row) => {
             const v = pl[row.key] ?? 0;
             const max = Math.max(Math.abs(pl.parts_revenue || 0), Math.abs(pl.services_revenue || 0), Math.abs(pl.labor_revenue || 0), 1);
             return (
               <div key={row.key} className="py-2.5">
                 <div className="flex items-center justify-between gap-3">
-                  <dt className="text-slate-300 dark:text-slate-300">{row.label}</dt>
+                  <dt className="text-slate-600 dark:text-slate-300">{row.label}</dt>
                   <dd className="font-medium"><Money value={pl[row.key]} /></dd>
                 </div>
                 {!locked && <div className="mt-1.5"><Bar value={Math.abs(v)} max={max} color={row.key.includes("cost") ? "#ef4444" : "#10b981"} /></div>}
@@ -251,8 +251,8 @@ export default function Reports() {
           })}
         </dl>
         <div className="mt-auto rounded-lg bg-gradient-to-br from-brand-50 to-cyan-50 p-4 dark:from-white/5 dark:to-white/[0.03]">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400">Brüt kâr</p>
-          <p className="font-heading mt-1 text-2xl font-bold text-white dark:text-white"><Money value={pl.gross_profit} /></p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Brüt kâr</p>
+          <p className="font-heading mt-1 text-2xl font-bold text-slate-900 dark:text-white"><Money value={pl.gross_profit} /></p>
         </div>
       </ChartPanel>
     ),
@@ -276,7 +276,7 @@ export default function Reports() {
                 <div className="flex items-center gap-3">
                   <Initials name={c.customer_name} />
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-white dark:text-slate-100">{c.customer_name}</p>
+                    <p className="truncate font-medium text-slate-900 dark:text-slate-100">{c.customer_name}</p>
                     {!locked && <div className="mt-1 w-32"><Bar value={c.spent} max={topCustMax} /></div>}
                   </div>
                 </div>
@@ -305,7 +305,7 @@ export default function Reports() {
             <>
               <td className="px-4 py-3"><RankBadge n={i + 1} /></td>
               <td className="px-4 py-3">
-                <p className="font-medium text-white dark:text-slate-100">{s.name}</p>
+                <p className="font-medium text-slate-900 dark:text-slate-100">{s.name}</p>
                 {!locked && <div className="mt-1 w-40"><Bar value={s.revenue} max={topSvcMax} color="#22d3ee" /></div>}
               </td>
               <td className="px-4 py-3 text-right tabular-nums">{s.count}</td>
@@ -324,11 +324,11 @@ export default function Reports() {
           { key: "name", label: "Parça" }, { key: "qty", label: "Adet" }, { key: "revenue", label: "Ciro" },
         ])}
       >
-        <ul className="divide-y divide-white/10 dark:divide-white/5">
-          {r.top_parts.length === 0 && <li className="px-4 py-8 text-center text-sm text-slate-400">Kayıt yok</li>}
+        <ul className="divide-y divide-slate-100 dark:divide-white/5">
+          {r.top_parts.length === 0 && <li className="px-4 py-8 text-center text-sm text-slate-500">Kayıt yok</li>}
           {r.top_parts.map((p, i) => (
             <li key={p.name} className="flex items-center gap-3 px-4 py-3">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-slate-400 dark:bg-white/10 dark:text-slate-300"><Package className="h-4 w-4" /></span>
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-white/10 dark:text-slate-300"><Package className="h-4 w-4" /></span>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center justify-between gap-2">
                   <p className="truncate text-sm font-medium">{p.name}</p>
@@ -352,8 +352,8 @@ export default function Reports() {
           </button>
         ) : null}
       >
-        <ul className="divide-y divide-white/10 dark:divide-white/5">
-          {r.critical_stock.length === 0 && <li className="px-4 py-8 text-center text-sm text-slate-400">Tüm stoklar iyi durumda</li>}
+        <ul className="divide-y divide-slate-100 dark:divide-white/5">
+          {r.critical_stock.length === 0 && <li className="px-4 py-8 text-center text-sm text-slate-500">Tüm stoklar iyi durumda</li>}
           {(showAllStock ? r.critical_stock : r.critical_stock.slice(0, 8)).map((p) => {
             const pct = p.min_stock > 0 ? Math.min(100, Math.round((p.stock / p.min_stock) * 100)) : 0;
             return (
@@ -364,7 +364,7 @@ export default function Reports() {
                 </div>
                 <div className="shrink-0 text-right text-xs">
                   <p className="text-base font-bold text-red-600 tabular-nums">{p.stock}</p>
-                  <p className="text-slate-400">min {p.min_stock}</p>
+                  <p className="text-slate-500">min {p.min_stock}</p>
                 </div>
               </li>
             );

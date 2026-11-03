@@ -63,11 +63,11 @@ function TenantCard({ t }) {
     ["Servis", count(t.orders)],
   ];
   return (
-    <div className="r3d-card rounded-xl border border-slate-200/80 bg-slate-900/70 p-5 shadow-card" data-testid={`tenant-${t.id}`}>
+    <div className="r3d-card rounded-xl border border-slate-200/80 bg-white p-5 shadow-card" data-testid={`tenant-${t.id}`}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-heading text-base font-bold text-white">{t.name}</p>
-          <p className="mt-0.5 text-xs text-slate-400">Plan: {t.plan || "-"} · Bitiş: {fmtDateShort(t.ends_at)}</p>
+          <p className="truncate font-heading text-base font-bold text-slate-900">{t.name}</p>
+          <p className="mt-0.5 text-xs text-slate-500">Plan: {t.plan || "-"} · Bitiş: {fmtDateShort(t.ends_at)}</p>
         </div>
         <span
           className={`shrink-0 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold ${
@@ -80,21 +80,21 @@ function TenantCard({ t }) {
 
       <dl className="mt-4 grid grid-cols-3 gap-2 text-center">
         {rows.map(([k, v]) => (
-          <div key={k} className="rounded-lg bg-white/5 px-2 py-2">
-            <dt className="text-[11px] text-slate-400">{k}</dt>
-            <dd className="font-mono text-sm font-semibold text-white">{v}</dd>
+          <div key={k} className="rounded-lg bg-slate-50 px-2 py-2">
+            <dt className="text-[11px] text-slate-500">{k}</dt>
+            <dd className="font-mono text-sm font-semibold text-slate-900">{v}</dd>
           </div>
         ))}
       </dl>
 
-      <div className="mt-4 space-y-1.5 border-t border-white/10 pt-3 text-sm">
+      <div className="mt-4 space-y-1.5 border-t border-slate-100 pt-3 text-sm">
         <div className="flex items-center justify-between">
-          <span className="text-slate-400">Ciro</span>
-          <span className="font-mono font-medium text-white">{fmtMoney(t.revenue)}</span>
+          <span className="text-slate-500">Ciro</span>
+          <span className="font-mono font-medium text-slate-900">{fmtMoney(t.revenue)}</span>
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-slate-400">Alacak</span>
-          <span className={`font-mono font-medium ${Number(t.receivables) > 0 ? "text-red-600" : "text-white"}`}>
+          <span className="text-slate-500">Alacak</span>
+          <span className={`font-mono font-medium ${Number(t.receivables) > 0 ? "text-red-600" : "text-slate-900"}`}>
             {fmtMoney(t.receivables)}
           </span>
         </div>
@@ -177,7 +177,7 @@ function RevenueChart3D({ monthly }) {
         </div>
         <div className="flex">
           {monthly.map((m) => (
-            <div key={m.month} className="shrink-0 text-center text-[11px] text-slate-400" style={{ width: SLOT }}>
+            <div key={m.month} className="shrink-0 text-center text-[11px] text-slate-500" style={{ width: SLOT }}>
               {monthLabel(m.month)}
             </div>
           ))}
@@ -232,7 +232,7 @@ export default function AdminReport3D() {
     return (
       <div>
         {header}
-        <p className="text-sm text-slate-400">Rapor yükleniyor…</p>
+        <p className="text-sm text-slate-500">Rapor yükleniyor…</p>
       </div>
     );
   }
@@ -301,8 +301,8 @@ export default function AdminReport3D() {
       {/* 3) Firmalar */}
       <section aria-label="Firmalar" className="space-y-4">
         <div>
-          <h2 className="font-heading text-lg font-bold text-white">Firmalar</h2>
-          <p className="text-sm text-slate-400">{tenants.length} firma</p>
+          <h2 className="font-heading text-lg font-bold text-slate-900">Firmalar</h2>
+          <p className="text-sm text-slate-500">{tenants.length} firma</p>
         </div>
         {tenants.length ? (
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -356,13 +356,13 @@ export default function AdminReport3D() {
                     const balance = Number(c.balance || 0);
                     return (
                       <TableRow key={c.id}>
-                        <TableCell className="font-medium text-white">{c.name}</TableCell>
-                        <TableCell className="font-mono text-slate-300">{c.phone || "-"}</TableCell>
-                        <TableCell className="text-slate-300">{c.tenant || "-"}</TableCell>
-                        <TableCell className={`text-right font-mono font-medium tabular-nums ${balance > 0 ? "text-red-600" : "text-white"}`}>
+                        <TableCell className="font-medium text-slate-900">{c.name}</TableCell>
+                        <TableCell className="font-mono text-slate-600">{c.phone || "-"}</TableCell>
+                        <TableCell className="text-slate-600">{c.tenant || "-"}</TableCell>
+                        <TableCell className={`text-right font-mono font-medium tabular-nums ${balance > 0 ? "text-red-600" : "text-slate-900"}`}>
                           {fmtMoney(balance)}
                         </TableCell>
-                        <TableCell className="whitespace-nowrap text-slate-300">{fmtDateShort(c.created_at)}</TableCell>
+                        <TableCell className="whitespace-nowrap text-slate-600">{fmtDateShort(c.created_at)}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -398,13 +398,13 @@ export default function AdminReport3D() {
               [Database, "Dosya", count(sys.files)],
               [ClipboardList, "Denetim kaydı", count(sys.audit_entries)],
             ].map(([Icon, k, v]) => (
-              <div key={k} className="flex items-center gap-3 rounded-lg border border-white/10 bg-slate-50/60 p-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-900/70 text-slate-400 shadow-card">
+              <div key={k} className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50/60 p-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white text-slate-500 shadow-card">
                   <Icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <dt className="text-xs text-slate-400">{k}</dt>
-                  <dd className="truncate font-mono font-semibold text-white">{v}</dd>
+                  <dt className="text-xs text-slate-500">{k}</dt>
+                  <dd className="truncate font-mono font-semibold text-slate-900">{v}</dd>
                 </div>
               </div>
             ))}

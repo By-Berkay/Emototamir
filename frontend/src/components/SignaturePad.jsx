@@ -18,8 +18,8 @@ export default function SignaturePad({ initial = "", onSave }) {
   if (saved) {
     return (
       <div className="space-y-2">
-        <div className="text-xs uppercase tracking-wider text-slate-400">Müşteri İmzası</div>
-        <div className="border border-white/10 bg-slate-900/70 rounded-md p-3 inline-block">
+        <div className="text-xs uppercase tracking-wider text-slate-500">Müşteri İmzası</div>
+        <div className="border border-slate-200 bg-white rounded-md p-3 inline-block">
           <img src={saved} alt="imza" className="max-h-24" />
         </div>
         <div>
@@ -33,8 +33,8 @@ export default function SignaturePad({ initial = "", onSave }) {
 
   return (
     <div className="space-y-2">
-      <div className="text-xs uppercase tracking-wider text-slate-400">Müşteri İmzası (parmak veya mouse ile çizin)</div>
-      <div className="border-2 border-dashed border-white/10 rounded-md bg-white/5 inline-block">
+      <div className="text-xs uppercase tracking-wider text-slate-500">Müşteri İmzası (parmak veya mouse ile çizin)</div>
+      <div className="border-2 border-dashed border-slate-300 rounded-md bg-slate-50 inline-block">
         <SignatureCanvas
           ref={ref}
           penColor="#0F172A"

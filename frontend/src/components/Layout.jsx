@@ -4,14 +4,13 @@ import { useAuth } from "../context/AuthContext";
 import {
   LayoutDashboard, Users, Bike, Wrench, ClipboardList, ClipboardCheck, Wallet, Receipt,
   BarChart3, Settings, LogOut, Menu, Search, X, BellRing, Building2, History, FileText,
-  Trash2, KeyRound, Plus, UserRound, ArrowLeftRight, Banknote, ImagePlus, Sparkles,
+  Trash2, KeyRound, Plus, UserRound, ArrowLeftRight, Banknote,
 } from "lucide-react";
 import { Input } from "./ui/input";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Lock, LockOpen } from "lucide-react";
 import AuthedImage from "./AuthedImage";
 import { moduleAllowed } from "../lib/modules";
-import { useSiteAsset } from "../lib/siteAssets";
 
 const ROLE_LABELS = {
   super_admin: "Süper Admin",
@@ -72,7 +71,6 @@ const NAV_SUPER = [
       { to: "/admin/tenants", label: "Firma Yönetimi", icon: Building2, end: true },
       { to: "/admin/report", label: "3D Rapor", icon: BarChart3 },
       { to: "/admin/landing", label: "Vitrin & Planlar", icon: BarChart3 },
-      { to: "/admin/gorseller", label: "Görsel Yönetimi", icon: ImagePlus },
       { to: "/admin/audit-logs", label: "Denetim Kayıtları", icon: History },
       { to: "/profil", label: "Profilim", icon: UserRound },
     ],
@@ -99,8 +97,6 @@ export default function Layout() {
   const { pathname } = useLocation();
   const groups = user?.role === "super_admin" ? NAV_SUPER : NAV_TENANT;
   const isSuper = user?.role === "super_admin";
-  const brandLogo = useSiteAsset("logo", "/visuals/emoto-logo.png");
-  const promoImage = useSiteAsset("promo_rider", null);
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -125,17 +121,17 @@ export default function Layout() {
     <div className="emt-aurora emt-app flex min-h-screen">
       {/* Kenar çubuğu */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col border-r border-white/10 bg-slate-950/95 text-slate-300 shadow-2xl shadow-black/40 backdrop-blur-xl transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-300 shadow-2xl shadow-black/30 transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${
           open ? "translate-x-0" : "-translate-x-full"
         }`}
         data-testid="sidebar"
       >
-        <div className="border-b border-white/10 px-4 py-4" data-testid="sidebar-brand">
+        <div className="border-b border-white/5 px-4 py-4" data-testid="sidebar-brand">
           <div className="flex justify-center">
             {tenant?.logo_path ? (
-              <AuthedImage path={tenant.logo_path} alt={tenant?.name || "Logo"} className="h-20 w-auto max-w-full object-contain p-1" />
+              <AuthedImage path={tenant.logo_path} alt={tenant?.name || "Logo"} className="h-24 w-auto max-w-full object-contain p-2" />
             ) : (
-              <img src={brandLogo} alt="E-Moto Tamir" width="1536" height="1024" className="h-20 w-auto max-w-full object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,0.5)]" />
+              <img src="/visuals/emoto-logo.png" alt="E-Moto Tamir" width="1536" height="1024" className="h-24 w-auto max-w-full object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,0.5)]" />
             )}
           </div>
           <div className="mt-3 flex items-start gap-2">
@@ -164,7 +160,7 @@ export default function Layout() {
             if (!items.length) return null;
             return (
               <div key={group.title} className="mb-5">
-                <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
+                <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                   {group.title}
                 </p>
                 <ul className="space-y-0.5">
@@ -176,9 +172,9 @@ export default function Layout() {
                         onClick={() => setOpen(false)}
                         className={({ isActive }) => {
                           const active = n.match ? n.match(pathname) : isActive;
-                          return `group relative flex items-center gap-3 rounded-xl px-3 py-2 text-sm transition-[background-color,color,box-shadow] duration-150 ${
+                          return `group relative flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-[background-color,color] duration-150 ${
                             active
-                              ? "bg-orange-500 font-semibold text-white shadow-[0_10px_24px_-8px_rgba(249,115,22,0.75)]"
+                              ? "bg-gradient-to-r from-brand-500/20 to-transparent font-medium text-white ring-1 ring-brand-500/20"
                               : "text-slate-400 hover:bg-white/5 hover:text-slate-100"
                           }`;
                         }}
@@ -188,7 +184,12 @@ export default function Layout() {
                           const active = n.match ? n.match(pathname) : isActive;
                           return (
                             <>
-                              <n.icon className={`h-[18px] w-[18px] shrink-0 ${active ? "text-white" : "text-slate-400 group-hover:text-white"}`} />
+                              {active && (
+                                <span className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-r bg-brand-500" aria-hidden="true" />
+                              )}
+                              <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-all duration-150 ${active ? "bg-brand-500 text-white shadow-[0_0_14px_rgba(249,115,22,0.5)]" : "bg-white/5 text-slate-400 group-hover:text-white"}`}>
+                                <n.icon className="h-4 w-4" />
+                              </span>
                               <span className="truncate">{n.label}</span>
                             </>
                           );
@@ -202,18 +203,7 @@ export default function Layout() {
           })}
         </nav>
 
-        <div className="relative mx-3 mb-3 overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-orange-500/20 via-slate-900 to-slate-950 p-4" data-testid="sidebar-promo">
-          {promoImage && (
-            <img src={promoImage} alt="" className="pointer-events-none absolute -right-3 bottom-0 h-28 w-auto object-contain opacity-90" />
-          )}
-          <div className="relative max-w-[70%]">
-            <Sparkles className="mb-2 h-4 w-4 text-orange-400" />
-            <p className="text-[13px] font-semibold leading-snug text-white">Daha güçlü bir servis deneyimi</p>
-            <p className="mt-1 text-[11px] text-slate-400">Tüm servis süreçlerinizi tek panelden yönetin.</p>
-          </div>
-        </div>
-
-        <div className="mx-3 mb-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+        <div className="m-3 rounded-xl border border-white/10 bg-white/[0.04] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
           <Link to="/profil" className="flex items-center gap-3 rounded-lg p-1 -m-1 transition-colors hover:bg-white/5" data-testid="sidebar-profile-link">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-700 text-xs font-semibold text-white">
               {user?.avatar_path ? <AuthedImage path={user.avatar_path} alt="" className="h-full w-full object-cover" /> : initials(user?.name)}
@@ -235,9 +225,9 @@ export default function Layout() {
 
       {/* Ana alan */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-white/10 bg-slate-950/75 px-4 backdrop-blur-xl lg:px-8">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200/80 bg-white/85 px-4 backdrop-blur-md lg:px-8">
           <button
-            className="rounded-lg p-2 text-slate-300 hover:bg-white/10 lg:hidden"
+            className="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
             onClick={() => setOpen(true)}
             aria-label="Menüyü aç"
             data-testid="open-sidebar"
@@ -249,52 +239,42 @@ export default function Layout() {
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
-                placeholder="Müşteri, plaka, şasi veya servis no ara…"
+                placeholder="Plaka, şasi, müşteri veya servis no ara…"
                 value={q}
                 onChange={(e) => setQ(e.target.value)}
-                className="h-10 border-white/10 bg-white/5 pl-9 pr-14 text-slate-100 placeholder:text-slate-500 hover:border-white/20 focus-visible:bg-white/10"
+                className="h-10 border-transparent bg-slate-100/80 pl-9 hover:border-transparent focus-visible:bg-white"
                 data-testid="global-search"
                 aria-label="Genel arama"
               />
-              <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 sm:block">⌘K</kbd>
             </div>
           </form>
           ) : (
             <div className="flex-1" />
           )}
-          <div className="ml-auto flex items-center gap-2.5">
+          <div className="ml-auto flex items-center gap-3">
             {user?.role === "admin" && <AdminLockButton />}
             {!isSuper && (
               <Link
                 to="/service-orders/new"
-                className="hidden items-center gap-1.5 rounded-xl bg-orange-500 px-3.5 py-2 text-sm font-semibold text-white shadow-[0_8px_20px_-8px_rgba(249,115,22,0.9)] transition-colors duration-150 hover:bg-orange-600 sm:inline-flex"
+                className="hidden items-center gap-1.5 rounded-lg bg-brand-500 px-3.5 py-2 text-sm font-medium text-white shadow-sm transition-colors duration-150 hover:bg-brand-600 sm:inline-flex"
                 data-testid="btn-header-new-order"
               >
-                <Plus className="h-4 w-4" /> Yeni İş Emri
-              </Link>
-            )}
-            {!isSuper && (
-              <Link
-                to="/reminders"
-                className="relative flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-slate-300 transition-colors hover:bg-white/10 hover:text-white"
-                aria-label="Bildirimler ve bakım hatırlatmaları"
-                title="Bakım hatırlatmaları"
-              >
-                <BellRing className="h-4 w-4" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-orange-500 ring-2 ring-slate-950" aria-hidden="true" />
+                <Plus className="h-4 w-4" /> Yeni iş emri
               </Link>
             )}
             <Link
               to="/profil"
-              className="hidden items-center gap-3 rounded-xl border border-white/10 bg-white/5 py-1 pl-3 pr-1.5 transition-colors hover:bg-white/10 sm:flex"
+              className="hidden items-center gap-3 rounded-lg border-l border-slate-200 py-1 pl-3 pr-1 transition-colors hover:bg-slate-100 sm:flex"
               title="Profilim ve giriş bilgileri"
               data-testid="header-profile-link"
             >
               <div className="flex flex-col items-end leading-tight">
-                <span className="text-sm font-semibold text-white">{user?.name}</span>
-                <span className="text-[11px] text-slate-400">{ROLE_LABELS[user?.role] || user?.role}</span>
+                <span className="text-sm font-medium text-slate-800">{user?.name}</span>
+                <span className="text-[11px] uppercase tracking-wider text-slate-500">
+                  {ROLE_LABELS[user?.role] || user?.role}
+                </span>
               </div>
-              <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-orange-400 to-orange-600 text-xs font-semibold text-white">
+              <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-slate-900 text-xs font-semibold text-white">
                 {user?.avatar_path ? <AuthedImage path={user.avatar_path} alt="" className="h-full w-full object-cover" /> : initials(user?.name)}
               </span>
             </Link>
@@ -329,8 +309,8 @@ function AdminLockButton() {
       onClick={() => (unlocked ? lock() : openPin())}
       title={unlocked ? "Tutarları gizle" : "Yönetici görünümü (PIN)"}
       aria-label={unlocked ? "Tutarları gizle" : "Yönetici görünümünü aç"}
-      className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
-        unlocked ? "border-orange-500/40 bg-orange-500/15 text-orange-300" : "border-white/10 bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white"
+      className={`flex h-10 w-10 items-center justify-center rounded-lg border transition-colors ${
+        unlocked ? "border-brand-200 bg-brand-50 text-brand-600" : "border-slate-200 bg-white text-slate-500 hover:text-slate-800"
       }`}
       data-testid="btn-admin-lock"
     >

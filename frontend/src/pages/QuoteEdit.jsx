@@ -111,7 +111,7 @@ export default function QuoteEdit() {
         title={
           <span className="flex flex-wrap items-center gap-3">
             <span className="flex items-center gap-2"><FileText className="h-6 w-6 text-brand-500" />{isNew ? "Yeni Teklif" : quote?.quote_no}</span>
-            {quote && <span className="text-xs uppercase font-semibold px-2 py-1 rounded bg-white/10 text-slate-200">{STATUS_LABEL[quote.status] || quote.status}</span>}
+            {quote && <span className="text-xs uppercase font-semibold px-2 py-1 rounded bg-slate-100 text-slate-700">{STATUS_LABEL[quote.status] || quote.status}</span>}
           </span>
         }
       />
@@ -120,8 +120,8 @@ export default function QuoteEdit() {
         <Card className="border-brand-200 bg-brand-50">
           <CardContent className="p-4 flex items-center justify-between flex-wrap gap-3">
             <div>
-              <div className="text-xs uppercase text-slate-300">Müşteri Paylaşım Linki</div>
-              <div className="font-mono text-xs text-white break-all">{shareUrl}</div>
+              <div className="text-xs uppercase text-slate-600">Müşteri Paylaşım Linki</div>
+              <div className="font-mono text-xs text-slate-800 break-all">{shareUrl}</div>
             </div>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={()=>{navigator.clipboard.writeText(shareUrl); toast.success("Kopyalandı");}} data-testid="copy-share"><Copy className="h-3.5 w-3.5 mr-1" />Kopyala</Button>
@@ -171,7 +171,7 @@ export default function QuoteEdit() {
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-white/5 text-xs uppercase text-slate-400">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
                 <th className="text-left px-3 py-2">Tür</th>
                 <th className="text-left px-3 py-2">Ad</th>
@@ -195,7 +195,7 @@ export default function QuoteEdit() {
                   <td className="px-3 py-2 text-right">{editable && <button onClick={()=>removeItem(i)} className="text-red-500"><Trash2 className="h-4 w-4" /></button>}</td>
                 </tr>
               ))}
-              {items.length === 0 && <tr><td colSpan={8} className="text-center py-6 text-slate-400">Henüz kalem eklenmedi.</td></tr>}
+              {items.length === 0 && <tr><td colSpan={8} className="text-center py-6 text-slate-500">Henüz kalem eklenmedi.</td></tr>}
             </tbody>
           </table>
         </CardContent>
@@ -213,7 +213,7 @@ export default function QuoteEdit() {
 
       <div className="flex justify-end gap-2">
         {quote && quote.approval && (
-          <div className="mr-auto text-xs text-slate-400">
+          <div className="mr-auto text-xs text-slate-500">
             {quote.approval.action === "approve" ? "✓ Onaylayan" : "✗ Reddeden"}: <b>{quote.approval.name}</b> · {new Date(quote.approval.at).toLocaleString("tr-TR")}
             {quote.approval.note && <div className="italic">"{quote.approval.note}"</div>}
           </div>

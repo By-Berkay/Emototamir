@@ -3,7 +3,7 @@ import Tilt3D from "./Tilt3D";
 
 const TONES = {
   brand: "bg-brand-50 text-brand-600",
-  slate: "bg-white/10 text-slate-300",
+  slate: "bg-slate-100 text-slate-600",
   emerald: "bg-emerald-50 text-emerald-600",
   amber: "bg-amber-50 text-amber-600",
   red: "bg-red-50 text-red-600",
@@ -18,9 +18,9 @@ export default function StatCard({ label, value, hint, icon: Icon, tone = "brand
       data-testid={testId}
     >
       <div className="min-w-0">
-        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{label}</p>
-        <p className="font-heading mt-2 truncate text-2xl font-bold tracking-tight text-white tabular-nums">{value}</p>
-        {hint && <p className="mt-1 text-xs text-slate-400">{hint}</p>}
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+        <p className="font-heading mt-2 truncate text-2xl font-bold tracking-tight text-slate-900 tabular-nums">{value}</p>
+        {hint && <p className="mt-1 text-xs text-slate-500">{hint}</p>}
       </div>
       {Icon && (
         <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${TONES[tone] || TONES.brand}`}>

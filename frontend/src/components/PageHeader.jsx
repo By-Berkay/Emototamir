@@ -14,8 +14,8 @@ export default function PageHeader({ eyebrow, title, description, actions, visua
         {eyebrow && (
           <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-brand-600 dark:text-brand-400">{eyebrow}</p>
         )}
-        <h1 className="font-heading text-2xl font-bold tracking-tight text-white dark:text-white sm:text-3xl">{title}</h1>
-        {description && <p className="mt-1 max-w-2xl text-sm text-slate-400 dark:text-slate-400">{description}</p>}
+        <h1 className="font-heading text-2xl font-bold tracking-tight text-slate-900 dark:text-white sm:text-3xl">{title}</h1>
+        {description && <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">{description}</p>}
       </div>
       {visual && <div className="relative hidden h-16 w-48 shrink-0 xl:block" aria-hidden="true">{visual}</div>}
       {actions && <div className="relative flex flex-wrap items-center gap-2">{actions}</div>}

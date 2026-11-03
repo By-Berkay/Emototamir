@@ -22,8 +22,8 @@ export default function DashboardDebtorsTable({ debtors }) {
         <TableBody>
           {debtors.map((d) => (
             <TableRow key={d.customer_id} data-testid={`debtor-${d.customer_id}`}>
-              <TableCell className="font-medium text-white">{d.customer_name}</TableCell>
-              <TableCell className="text-right tabular-nums text-slate-300">{d.orders}</TableCell>
+              <TableCell className="font-medium text-slate-900">{d.customer_name}</TableCell>
+              <TableCell className="text-right tabular-nums text-slate-600">{d.orders}</TableCell>
               <TableCell className="text-right">
                 <Money value={d.balance} className="font-semibold text-red-600" />
               </TableCell>

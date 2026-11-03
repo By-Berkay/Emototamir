@@ -33,13 +33,13 @@ export default function PublicApproval() {
     } catch (e) { toast.error("İşlem başarısız"); } finally { setSubmitting(false); }
   };
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-400">Yükleniyor…</div>;
+  if (loading) return <div className="min-h-screen flex items-center justify-center text-slate-500">Yükleniyor…</div>;
   if (!data) return (
     <div className="emt-aurora emt-app min-h-screen flex items-center justify-center p-6">
       <Card className="glass-card max-w-md w-full"><CardContent className="p-8 text-center">
         <XCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
         <h1 className="font-heading text-xl font-bold">Geçersiz Bağlantı</h1>
-        <p className="text-sm text-slate-400 mt-2">Bu onay bağlantısı geçersiz ya da süresi dolmuş olabilir.</p>
+        <p className="text-sm text-slate-500 mt-2">Bu onay bağlantısı geçersiz ya da süresi dolmuş olabilir.</p>
       </CardContent></Card>
     </div>
   );
@@ -54,26 +54,26 @@ export default function PublicApproval() {
         <Card className="glass-card border-t-4 border-t-brand-500 shadow-card">
           <CardContent className="p-6 sm:p-8 space-y-6">
             <div>
-              <div className="text-xs uppercase tracking-wider text-slate-400 mb-1">Servis</div>
+              <div className="text-xs uppercase tracking-wider text-slate-500 mb-1">Servis</div>
               <div className="font-mono text-lg font-bold">{data.service_no}</div>
-              <div className="text-slate-200">{data.customer_name}</div>
-              <div className="text-sm text-slate-400 mt-1">{data.brand} {data.model} · <span className="font-mono">{data.plate}</span></div>
+              <div className="text-slate-700">{data.customer_name}</div>
+              <div className="text-sm text-slate-500 mt-1">{data.brand} {data.model} · <span className="font-mono">{data.plate}</span></div>
             </div>
 
-            {data.complaint && <div><div className="text-xs uppercase text-slate-400 mb-1">Müşteri Şikayeti</div><p className="text-sm">{data.complaint}</p></div>}
-            {data.diagnosis && <div><div className="text-xs uppercase text-slate-400 mb-1">Arıza Tespiti</div><p className="text-sm">{data.diagnosis}</p></div>}
+            {data.complaint && <div><div className="text-xs uppercase text-slate-500 mb-1">Müşteri Şikayeti</div><p className="text-sm">{data.complaint}</p></div>}
+            {data.diagnosis && <div><div className="text-xs uppercase text-slate-500 mb-1">Arıza Tespiti</div><p className="text-sm">{data.diagnosis}</p></div>}
 
             {data.items && data.items.length > 0 && (
               <div>
-                <div className="text-xs uppercase text-slate-400 mb-2">Yapılacak İşlemler & Parçalar</div>
-                <table className="min-w-full text-sm border-t border-b border-white/10">
-                  <thead className="text-xs text-slate-400"><tr>
+                <div className="text-xs uppercase text-slate-500 mb-2">Yapılacak İşlemler & Parçalar</div>
+                <table className="min-w-full text-sm border-t border-b border-slate-200">
+                  <thead className="text-xs text-slate-500"><tr>
                     <th className="text-left py-1.5">Ad</th><th className="text-right py-1.5">Adet</th>
                     <th className="text-right py-1.5">Birim</th><th className="text-right py-1.5">Toplam</th>
                   </tr></thead>
                   <tbody>
                     {data.items.map((it, i) => (
-                      <tr key={i} className="border-t border-white/10">
+                      <tr key={i} className="border-t border-slate-100">
                         <td className="py-1.5">{it.name} <span className="text-xs text-slate-400">({it.kind === "part" ? "Parça" : "Hizmet"})</span></td>
                         <td className="text-right py-1.5">{it.qty}</td>
                         <td className="text-right py-1.5">{fmtMoney(it.qty ? lineAmounts(it).gross / it.qty : it.unit_price)}</td>
@@ -85,7 +85,7 @@ export default function PublicApproval() {
               </div>
             )}
 
-            <div className="rounded-md bg-white/5 p-4 dark:bg-white/5">
+            <div className="rounded-md bg-slate-50 p-4 dark:bg-white/5">
               <DocumentTotals t={documentTotals({ items: data.items || [], labor_total: data.labor_total, labor_price_mode: data.labor_price_mode || "incl", labor_vat: data.labor_vat ?? 20, discount: data.discount })} />
             </div>
 
@@ -98,7 +98,7 @@ export default function PublicApproval() {
             ) : (
               <>
                 <div>
-                  <div className="text-xs uppercase text-slate-400 mb-1">Not (opsiyonel)</div>
+                  <div className="text-xs uppercase text-slate-500 mb-1">Not (opsiyonel)</div>
                   <Textarea rows={2} value={note} onChange={(e)=>setNote(e.target.value)} placeholder="Servise iletmek istediğiniz not…" data-testid="approval-note" />
                 </div>
                 <div className="grid grid-cols-2 gap-3">

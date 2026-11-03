@@ -23,11 +23,11 @@ export function SectionsPanel({ sections, hidden, onToggle, onReset }) {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-64 p-4">
-        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">Görünen bölümler</p>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Görünen bölümler</p>
         <ul className="space-y-3">
           {sections.map((s) => (
             <li key={s.id} className="flex items-center justify-between gap-3">
-              <Label htmlFor={`section-toggle-${s.id}`} className="cursor-pointer text-sm font-normal text-slate-200">
+              <Label htmlFor={`section-toggle-${s.id}`} className="cursor-pointer text-sm font-normal text-slate-700">
                 {s.label}
               </Label>
               <Switch

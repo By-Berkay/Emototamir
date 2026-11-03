@@ -82,10 +82,10 @@ export default function Trash() {
       />
 
       <Card>
-        <CardHeader className="pb-2"><CardTitle className="text-sm text-slate-300">{rows.length} kayıt</CardTitle></CardHeader>
+        <CardHeader className="pb-2"><CardTitle className="text-sm text-slate-600">{rows.length} kayıt</CardTitle></CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-white/5 text-xs uppercase text-slate-400">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
                 <th className="text-left px-4 py-2">Tür</th>
                 <th className="text-left px-4 py-2">Kayıt</th>
@@ -102,7 +102,7 @@ export default function Trash() {
                 const dl = daysLeft(r.purge_at);
                 const critical = dl !== null && dl <= 3;
                 return (
-                  <tr key={r.id} className="border-t hover:bg-white/10" data-testid={`trash-row-${r.id}`}>
+                  <tr key={r.id} className="border-t hover:bg-slate-50" data-testid={`trash-row-${r.id}`}>
                     <td className="px-4 py-2">
                       {r.type === "customer" ? (
                         <span className="inline-flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded"><UserIcon className="h-3 w-3" />Müşteri</span>
@@ -111,16 +111,16 @@ export default function Trash() {
                       )}
                     </td>
                     <td className="px-4 py-2 font-medium">{r.label}</td>
-                    <td className="px-4 py-2 text-xs text-slate-300">{r.deleted_by}</td>
-                    <td className="px-4 py-2 text-xs text-slate-400">{fmtDT(r.deleted_at)}</td>
+                    <td className="px-4 py-2 text-xs text-slate-600">{r.deleted_by}</td>
+                    <td className="px-4 py-2 text-xs text-slate-500">{fmtDT(r.deleted_at)}</td>
                     <td className="px-4 py-2">
-                      <span className={`text-xs font-semibold ${critical ? "text-red-600" : "text-slate-300"}`}>
+                      <span className={`text-xs font-semibold ${critical ? "text-red-600" : "text-slate-600"}`}>
                         {critical && <AlertTriangle className="h-3 w-3 inline mr-1" />}
                         {dl !== null ? `${dl} gün` : "-"}
                       </span>
                     </td>
-                    <td className="px-4 py-2 text-xs text-slate-300 max-w-xs truncate" title={r.reason}>{r.reason}</td>
-                    <td className="px-4 py-2 text-xs text-slate-400">
+                    <td className="px-4 py-2 text-xs text-slate-600 max-w-xs truncate" title={r.reason}>{r.reason}</td>
+                    <td className="px-4 py-2 text-xs text-slate-500">
                       {Object.entries(r.counts || {}).filter(([,v])=>v>0).map(([k,v])=>`${v} ${k}`).join(", ") || "—"}
                     </td>
                     <td className="px-4 py-2 text-right">

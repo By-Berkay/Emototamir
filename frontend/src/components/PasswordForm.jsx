@@ -81,7 +81,7 @@ export default function PasswordForm() {
               required
               data-testid="input-new-password"
             />
-            <p className="text-xs text-slate-400">En az {MIN_LEN} karakter.</p>
+            <p className="text-xs text-slate-500">En az {MIN_LEN} karakter.</p>
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="confirm_password">Yeni şifre (tekrar)</Label>
