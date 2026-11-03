@@ -13,7 +13,7 @@ export default function MotorcycleIllustration({ type = "Naked", className = "" 
   if (custom) {
     return (
       <div className={className}>
-        <AuthedImage path={custom} alt={type} className="w-full h-full object-contain rounded-md bg-white/10" />
+        <AuthedImage path={custom} alt={type} className="w-full h-full object-contain rounded-md bg-slate-100" />
       </div>
     );
   }

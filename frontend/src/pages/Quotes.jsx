@@ -13,7 +13,7 @@ import { FileText, Plus, ExternalLink, Copy, Send } from "lucide-react";
 import { toast } from "sonner";
 
 const STATUS_LABEL = {
-  draft: { label: "Taslak", cls: "bg-white/10 text-slate-200" },
+  draft: { label: "Taslak", cls: "bg-slate-100 text-slate-700" },
   sent: { label: "Gönderildi", cls: "bg-blue-100 text-blue-700" },
   approved: { label: "Onaylandı", cls: "bg-emerald-100 text-emerald-700" },
   rejected: { label: "Reddedildi", cls: "bg-red-100 text-red-700" },
@@ -87,7 +87,7 @@ export default function Quotes() {
 
       <Card><CardContent className="p-0 overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead className="bg-white/5 text-xs uppercase text-slate-400">
+          <thead className="bg-slate-50 text-xs uppercase text-slate-500">
             <tr>
               <th className="text-left px-4 py-2">Teklif No</th>
               <th className="text-left px-4 py-2">Müşteri</th>
@@ -100,9 +100,9 @@ export default function Quotes() {
           </thead>
           <tbody>
             {filtered.map(r => {
-              const st = STATUS_LABEL[r.status] || { label: r.status, cls: "bg-white/10" };
+              const st = STATUS_LABEL[r.status] || { label: r.status, cls: "bg-slate-100" };
               return (
-                <tr key={r.id} className="border-t hover:bg-white/10" data-testid={`quote-row-${r.id}`}>
+                <tr key={r.id} className="border-t hover:bg-slate-50" data-testid={`quote-row-${r.id}`}>
                   <td className="px-4 py-2"><Link to={`/quotes/${r.id}`} className="font-mono hover:underline">{r.quote_no}</Link></td>
                   <td className="px-4 py-2">{r.customer_name}</td>
                   <td className="px-4 py-2 text-xs">{r.motorcycle_label}</td>
@@ -111,8 +111,8 @@ export default function Quotes() {
                   <td className="px-4 py-2 text-xs">{new Date(r.created_at).toLocaleDateString("tr-TR")}</td>
                   <td className="px-4 py-2 text-right">
                     <div className="flex justify-end gap-1">
-                      <button title="Paylaşım linkini kopyala" onClick={()=>copyLink(r.share_token)} className="p-1.5 hover:bg-white/10 rounded" data-testid={`quote-copy-${r.id}`}><Copy className="h-3.5 w-3.5" /></button>
-                      <a title="Müşteri linkini aç" href={`/q/${r.share_token}`} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-white/10 rounded" data-testid={`quote-open-${r.id}`}><ExternalLink className="h-3.5 w-3.5" /></a>
+                      <button title="Paylaşım linkini kopyala" onClick={()=>copyLink(r.share_token)} className="p-1.5 hover:bg-slate-100 rounded" data-testid={`quote-copy-${r.id}`}><Copy className="h-3.5 w-3.5" /></button>
+                      <a title="Müşteri linkini aç" href={`/q/${r.share_token}`} target="_blank" rel="noreferrer" className="p-1.5 hover:bg-slate-100 rounded" data-testid={`quote-open-${r.id}`}><ExternalLink className="h-3.5 w-3.5" /></a>
                       {(r.status === "draft" || r.status === "rejected") && <button title="Gönderildi olarak işaretle" onClick={()=>send(r.id)} className="p-1.5 hover:bg-blue-100 rounded text-blue-600" data-testid={`quote-send-${r.id}`}><Send className="h-3.5 w-3.5" /></button>}
                       {(r.status === "approved" || r.status === "sent" || r.status === "draft") && <button title="İş Emrine Dönüştür" onClick={()=>convert(r.id)} className="text-xs px-2 py-1 rounded bg-indigo-600 text-white hover:bg-indigo-700" data-testid={`quote-convert-${r.id}`}>Dönüştür</button>}
                       {r.status !== "converted" && <button title="Sil" onClick={()=>del(r.id)} className="p-1.5 hover:bg-red-100 rounded text-red-600">×</button>}

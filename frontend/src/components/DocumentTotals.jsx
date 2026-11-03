@@ -10,7 +10,7 @@ import { fmtMoney } from "../lib/api";
 export default function DocumentTotals({ t, paid = 0, className = "" }) {
   const row = (label, value, tone = "") => (
     <div className={`flex justify-between gap-4 text-sm ${tone}`}>
-      <span className="text-slate-400">{label}</span>
+      <span className="text-slate-500">{label}</span>
       <span className="tabular-nums">{value}</span>
     </div>
   );

@@ -21,11 +21,11 @@ const ACTION_COLORS = {
   status_change: "bg-amber-50 text-amber-700 border-amber-200",
   password_reset: "bg-purple-50 text-purple-700 border-purple-200",
   clone: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  global_apply: "bg-white/10 text-slate-200 border-white/10",
+  global_apply: "bg-slate-100 text-slate-700 border-slate-200",
 };
 const badgeCls = (action = "") => {
   const key = action.split(".").pop();
-  return ACTION_COLORS[key] || "bg-white/5 text-slate-200 border-white/10";
+  return ACTION_COLORS[key] || "bg-slate-50 text-slate-700 border-slate-200";
 };
 
 // Satırlardaki saatle aynı (yerel) güne göre YYYY-MM-DD anahtarı üretir
@@ -123,20 +123,20 @@ export default function AdminAuditLogs() {
           {logs.length === 0 && !loading && <EmptyState icon={History} title="Bu filtrelere uyan kayıt yok." />}
           {Object.entries(grouped).map(([date, items]) => (
             <div key={date}>
-              <div className="px-4 py-2 bg-white/5 border-y text-xs font-semibold text-slate-300 uppercase">{new Date(date + "T00:00:00").toLocaleDateString("tr-TR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
+              <div className="px-4 py-2 bg-slate-50 border-y text-xs font-semibold text-slate-600 uppercase">{new Date(date + "T00:00:00").toLocaleDateString("tr-TR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })}</div>
               <div className="overflow-x-auto">
               <table className="min-w-full text-sm">
                 <tbody>
                   {items.map(l => (
-                    <tr key={l.id} className="border-b hover:bg-white/10 cursor-pointer" onClick={()=>setDetail(l)} data-testid={`audit-row-${l.id}`}>
-                      <td className="px-3 py-2 w-24 text-xs text-slate-400 whitespace-nowrap">{fmtDate(l.at).split(" ")[1]}</td>
+                    <tr key={l.id} className="border-b hover:bg-slate-50 cursor-pointer" onClick={()=>setDetail(l)} data-testid={`audit-row-${l.id}`}>
+                      <td className="px-3 py-2 w-24 text-xs text-slate-500 whitespace-nowrap">{fmtDate(l.at).split(" ")[1]}</td>
                       <td className="px-2 py-2 w-40"><span className={`text-[10px] uppercase font-semibold px-2 py-1 rounded border whitespace-nowrap ${badgeCls(l.action)}`}>{l.action}</span></td>
-                      <td className="px-3 py-2 font-medium text-white whitespace-nowrap">{l.user}</td>
-                      <td className="hidden md:table-cell px-3 py-2 text-slate-300 text-xs whitespace-nowrap">{l.tenant_name || <span className="text-slate-400">— sistem —</span>}</td>
-                      <td className="hidden lg:table-cell px-3 py-2 text-xs text-slate-400 font-mono truncate max-w-xs" title={l.entity_id}>
+                      <td className="px-3 py-2 font-medium text-slate-800 whitespace-nowrap">{l.user}</td>
+                      <td className="hidden md:table-cell px-3 py-2 text-slate-600 text-xs whitespace-nowrap">{l.tenant_name || <span className="text-slate-400">— sistem —</span>}</td>
+                      <td className="hidden lg:table-cell px-3 py-2 text-xs text-slate-500 font-mono truncate max-w-xs" title={l.entity_id}>
                         {l.entity_id ? l.entity_id.slice(0,8) : ""}
                         {(l.old_value !== undefined || l.new_value !== undefined) && (
-                          <span className="ml-2 text-slate-300">
+                          <span className="ml-2 text-slate-600">
                             {l.old_value !== undefined && <span>{String(l.old_value)}</span>}
                             {l.old_value !== undefined && l.new_value !== undefined && <span className="mx-1">→</span>}
                             {l.new_value !== undefined && <span className="font-semibold">{Array.isArray(l.new_value) ? l.new_value.join(", ") : String(l.new_value)}</span>}
@@ -165,23 +165,23 @@ export default function AdminAuditLogs() {
           {detail && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
-                <div><div className="text-xs text-slate-400">İşlem</div><span className={`text-[11px] uppercase font-semibold px-2 py-1 rounded border ${badgeCls(detail.action)}`}>{detail.action}</span></div>
-                <div><div className="text-xs text-slate-400">Zaman</div><div className="font-medium">{fmtDate(detail.at)}</div></div>
-                <div><div className="text-xs text-slate-400">Kullanıcı</div><div className="font-medium">{detail.user}</div></div>
-                <div><div className="text-xs text-slate-400">Firma</div><div className="font-medium">{detail.tenant_name || "— sistem —"}</div></div>
-                {detail.entity_id && <div className="col-span-2"><div className="text-xs text-slate-400">Kayıt ID</div><div className="font-mono text-xs">{detail.entity_id}</div></div>}
+                <div><div className="text-xs text-slate-500">İşlem</div><span className={`text-[11px] uppercase font-semibold px-2 py-1 rounded border ${badgeCls(detail.action)}`}>{detail.action}</span></div>
+                <div><div className="text-xs text-slate-500">Zaman</div><div className="font-medium">{fmtDate(detail.at)}</div></div>
+                <div><div className="text-xs text-slate-500">Kullanıcı</div><div className="font-medium">{detail.user}</div></div>
+                <div><div className="text-xs text-slate-500">Firma</div><div className="font-medium">{detail.tenant_name || "— sistem —"}</div></div>
+                {detail.entity_id && <div className="col-span-2"><div className="text-xs text-slate-500">Kayıt ID</div><div className="font-mono text-xs">{detail.entity_id}</div></div>}
               </div>
               {Array.isArray(detail.changes) && detail.changes.length > 0 ? (
                 <div>
-                  <div className="text-xs uppercase text-slate-400 mb-2">Değişen Alanlar ({detail.changes.length})</div>
+                  <div className="text-xs uppercase text-slate-500 mb-2">Değişen Alanlar ({detail.changes.length})</div>
                   <div className="border rounded-md overflow-hidden">
                     <table className="min-w-full text-sm">
-                      <thead className="bg-white/5 text-xs uppercase text-slate-400"><tr><th className="text-left px-3 py-2 w-1/4">Alan</th><th className="text-left px-3 py-2">Önce</th><th className="w-6"></th><th className="text-left px-3 py-2">Sonra</th></tr></thead>
+                      <thead className="bg-slate-50 text-xs uppercase text-slate-500"><tr><th className="text-left px-3 py-2 w-1/4">Alan</th><th className="text-left px-3 py-2">Önce</th><th className="w-6"></th><th className="text-left px-3 py-2">Sonra</th></tr></thead>
                       <tbody>
                         {detail.changes.map((c, i) => (
                           <tr key={i} className="border-t" data-testid={`audit-diff-${c.field}`}>
-                            <td className="px-3 py-2 font-mono text-xs text-slate-200">{c.field}</td>
-                            <td className="px-3 py-2 text-slate-400 line-through decoration-red-400/60 break-all">{c.old || <span className="italic text-slate-400">—</span>}</td>
+                            <td className="px-3 py-2 font-mono text-xs text-slate-700">{c.field}</td>
+                            <td className="px-3 py-2 text-slate-500 line-through decoration-red-400/60 break-all">{c.old || <span className="italic text-slate-400">—</span>}</td>
                             <td className="px-1 text-slate-400"><ArrowRight className="h-3 w-3" /></td>
                             <td className="px-3 py-2 text-emerald-700 font-medium break-all">{c.new || <span className="italic text-slate-400">—</span>}</td>
                           </tr>
@@ -192,10 +192,10 @@ export default function AdminAuditLogs() {
                 </div>
               ) : (detail.old_value !== undefined || detail.new_value !== undefined) ? (
                 <div>
-                  <div className="text-xs uppercase text-slate-400 mb-2">Değer</div>
-                  <div className="border rounded-md p-3 bg-white/5 text-sm">
-                    {detail.old_value !== undefined && <div><span className="text-slate-400">Önce:</span> <span className="line-through decoration-red-400/60">{String(detail.old_value)}</span></div>}
-                    {detail.new_value !== undefined && <div><span className="text-slate-400">Sonra:</span> <span className="font-medium text-emerald-700">{Array.isArray(detail.new_value) ? detail.new_value.join(", ") : String(detail.new_value)}</span></div>}
+                  <div className="text-xs uppercase text-slate-500 mb-2">Değer</div>
+                  <div className="border rounded-md p-3 bg-slate-50 text-sm">
+                    {detail.old_value !== undefined && <div><span className="text-slate-500">Önce:</span> <span className="line-through decoration-red-400/60">{String(detail.old_value)}</span></div>}
+                    {detail.new_value !== undefined && <div><span className="text-slate-500">Sonra:</span> <span className="font-medium text-emerald-700">{Array.isArray(detail.new_value) ? detail.new_value.join(", ") : String(detail.new_value)}</span></div>}
                   </div>
                 </div>
               ) : (

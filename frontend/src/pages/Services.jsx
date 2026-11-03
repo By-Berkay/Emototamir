@@ -56,11 +56,11 @@ export default function Services() {
       />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {items.map(s=>(
-          <Card key={s.id} className="border-white/10"><CardContent className="p-5">
-            <div className="text-xs text-slate-400 font-mono">{s.code}</div>
+          <Card key={s.id} className="border-slate-200"><CardContent className="p-5">
+            <div className="text-xs text-slate-500 font-mono">{s.code}</div>
             <div className="font-heading text-lg font-semibold mt-1">{s.name}</div>
-            {s.description && <div className="text-sm text-slate-400 mt-1">{s.description}</div>}
-            <div className="mt-3 text-xl font-bold text-white">{fmtMoney(s.price)}</div>
+            {s.description && <div className="text-sm text-slate-500 mt-1">{s.description}</div>}
+            <div className="mt-3 text-xl font-bold text-slate-900">{fmtMoney(s.price)}</div>
           </CardContent></Card>
         ))}
       </div>

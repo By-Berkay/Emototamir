@@ -49,9 +49,9 @@ export function KpiTile({ label, value, hint, icon: Icon, tone = "orange", spark
     <div className="glass-card emt-depth relative overflow-hidden rounded-xl p-5" data-testid={testId}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-400">{label}</p>
-          <p className="font-heading mt-2 truncate text-2xl font-bold tracking-tight text-white tabular-nums dark:text-white">{value}</p>
-          {hint && <p className="mt-1 text-xs text-slate-400 dark:text-slate-400">{hint}</p>}
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</p>
+          <p className="font-heading mt-2 truncate text-2xl font-bold tracking-tight text-slate-900 tabular-nums dark:text-white">{value}</p>
+          {hint && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{hint}</p>}
         </div>
         {Icon && (
           <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg" style={{ background: `${color}22`, color }}>
@@ -90,7 +90,7 @@ export function ChartPanel({ title, description, actions, children, footer }) {
         {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">{children}</CardContent>
-      {footer && <div className="border-t border-white/10 px-6 py-3 text-xs text-slate-400 dark:border-white/10 dark:text-slate-400">{footer}</div>}
+      {footer && <div className="border-t border-slate-100 px-6 py-3 text-xs text-slate-500 dark:border-white/10 dark:text-slate-400">{footer}</div>}
     </Card>
   );
 }
@@ -98,7 +98,7 @@ export function ChartPanel({ title, description, actions, children, footer }) {
 /** Tutarlar gizliyken grafik yerine kilit durumu. */
 export function LockedChart({ height = 240 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-white/10 text-center text-sm text-slate-400 dark:border-white/15 dark:text-slate-400" style={{ height }}>
+    <div className="flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-300 text-center text-sm text-slate-500 dark:border-white/15 dark:text-slate-400" style={{ height }}>
       <Lock className="h-5 w-5" />
       <p>Tutarlar gizli. Görmek için PIN ile kilidi açın.</p>
     </div>
@@ -118,8 +118,8 @@ export function Donut({ data, centerLabel, centerValue, height = 200 }) {
         </PieChart>
       </ResponsiveContainer>
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-        <p className="text-[11px] uppercase tracking-wider text-slate-400 dark:text-slate-400">{centerLabel}</p>
-        <p className="font-heading text-xl font-bold text-white tabular-nums dark:text-white">{centerValue}</p>
+        <p className="text-[11px] uppercase tracking-wider text-slate-500 dark:text-slate-400">{centerLabel}</p>
+        <p className="font-heading text-xl font-bold text-slate-900 tabular-nums dark:text-white">{centerValue}</p>
       </div>
     </div>
   );
@@ -157,7 +157,7 @@ export function TrendArea({ data, height = 260 }) {
 export function Bar({ value, max, color = "#f97316" }) {
   const pct = max > 0 ? Math.max(3, Math.round((value / max) * 100)) : 0;
   return (
-    <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/10 dark:bg-white/10">
+    <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-white/10">
       <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
     </div>
   );
@@ -165,7 +165,7 @@ export function Bar({ value, max, color = "#f97316" }) {
 
 /** Sıra rozeti. */
 export function RankBadge({ n }) {
-  const cls = n === 1 ? "from-amber-300 to-orange-500 text-white" : n === 2 ? "from-slate-200 to-slate-400 text-white" : n === 3 ? "from-orange-200 to-orange-400 text-white" : "from-slate-100 to-slate-200 text-slate-300 dark:from-white/10 dark:to-white/5 dark:text-slate-300";
+  const cls = n === 1 ? "from-amber-300 to-orange-500 text-white" : n === 2 ? "from-slate-200 to-slate-400 text-slate-800" : n === 3 ? "from-orange-200 to-orange-400 text-white" : "from-slate-100 to-slate-200 text-slate-600 dark:from-white/10 dark:to-white/5 dark:text-slate-300";
   return <span className={`inline-flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br text-xs font-bold ${cls}`}>{n}</span>;
 }
 

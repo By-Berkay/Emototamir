@@ -73,7 +73,7 @@ function Field({ label, htmlFor, hint, className = "", children }) {
     <div className={cn("space-y-1.5", className)}>
       <Label htmlFor={htmlFor}>{label}</Label>
       {children}
-      {hint && <p className="text-xs text-slate-400">{hint}</p>}
+      {hint && <p className="text-xs text-slate-500">{hint}</p>}
     </div>
   );
 }
@@ -114,7 +114,7 @@ function CustomerPicker({ onPick }) {
         </Button>
       </PopoverTrigger>
       <PopoverContent align="start" className="w-[min(24rem,calc(100vw-2rem))] p-0" data-testid="popover-customer">
-        <div className="border-b border-white/10 p-3">
+        <div className="border-b border-slate-100 p-3">
           <Input
             autoFocus
             value={q}
@@ -126,9 +126,9 @@ function CustomerPicker({ onPick }) {
           />
         </div>
         <ul className="max-h-72 overflow-y-auto p-1">
-          {searching && <li className="px-3 py-3 text-sm text-slate-400">Aranıyor…</li>}
+          {searching && <li className="px-3 py-3 text-sm text-slate-500">Aranıyor…</li>}
           {!searching && results.length === 0 && (
-            <li className="px-3 py-6 text-center text-sm text-slate-400">Müşteri bulunamadı</li>
+            <li className="px-3 py-6 text-center text-sm text-slate-500">Müşteri bulunamadı</li>
           )}
           {!searching &&
             results.map((c) => (
@@ -140,13 +140,13 @@ function CustomerPicker({ onPick }) {
                     setOpen(false);
                     setQ("");
                   }}
-                  className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors duration-150 hover:bg-white/10"
+                  className="flex w-full items-center justify-between gap-3 rounded-md px-3 py-2 text-left transition-colors duration-150 hover:bg-slate-50"
                   data-testid={`pick-customer-${c.id}`}
                 >
-                  <span className="min-w-0 truncate text-sm font-medium text-white">
+                  <span className="min-w-0 truncate text-sm font-medium text-slate-900">
                     {c.first_name} {c.last_name}
                   </span>
-                  <span className="shrink-0 font-mono text-xs tabular-nums text-slate-400">{c.phone || "-"}</span>
+                  <span className="shrink-0 font-mono text-xs tabular-nums text-slate-500">{c.phone || "-"}</span>
                 </button>
               </li>
             ))}
@@ -161,7 +161,7 @@ function ChecklistRow({ item, photos, isEdit, photosOpen, onTogglePhotos, onStat
   return (
     <div className="px-4 py-3.5" data-testid={`row-item-${item.key}`}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-        <p className="min-w-0 text-sm font-medium text-white lg:w-1/3">{item.label}</p>
+        <p className="min-w-0 text-sm font-medium text-slate-900 lg:w-1/3">{item.label}</p>
         <div className="flex flex-wrap items-center gap-2 lg:justify-end">
           <StatusSegment itemKey={item.key} value={item.status} onChange={(s) => onStatus(item.key, s)} />
           <Button
@@ -385,7 +385,7 @@ export default function InspectionEdit() {
   const title = isEdit ? `Rapor ${reportNo}` : "Yeni ekspertiz raporu";
 
   if (loading) {
-    return <p className="py-16 text-center text-sm text-slate-400">Yükleniyor…</p>;
+    return <p className="py-16 text-center text-sm text-slate-500">Yükleniyor…</p>;
   }
 
   return (
@@ -520,14 +520,14 @@ export default function InspectionEdit() {
         <CardHeader className="gap-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>Kontrol listesi</CardTitle>
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-slate-300" data-testid="text-checklist-counts">
+            <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-medium text-slate-600" data-testid="text-checklist-counts">
               {STATUS_OPTIONS.map((opt) => (
                 <span key={opt.value} className="inline-flex items-center gap-1.5">
                   <span className={cn("h-2 w-2 rounded-full", opt.dot)} aria-hidden="true" />
                   {opt.label} {counts[opt.value]}
                 </span>
               ))}
-              <span className="inline-flex items-center gap-1.5 text-slate-400">
+              <span className="inline-flex items-center gap-1.5 text-slate-500">
                 <span className="h-2 w-2 rounded-full bg-slate-300" aria-hidden="true" />
                 Bekleyen {counts.open}
               </span>
@@ -537,12 +537,12 @@ export default function InspectionEdit() {
         </CardHeader>
         <CardContent className="space-y-6">
           {groups.length === 0 && (
-            <p className="py-6 text-center text-sm text-slate-400">Kontrol listesi bulunamadı.</p>
+            <p className="py-6 text-center text-sm text-slate-500">Kontrol listesi bulunamadı.</p>
           )}
           {groups.map(({ group, items: gItems }) => (
             <section key={group} className="space-y-2" aria-label={group}>
-              <h3 className="px-1 text-xs font-semibold uppercase tracking-wider text-slate-400">{group}</h3>
-              <div className="divide-y divide-white/10 overflow-hidden rounded-lg border border-white/10 bg-slate-900/70">
+              <h3 className="px-1 text-xs font-semibold uppercase tracking-wider text-slate-500">{group}</h3>
+              <div className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white">
                 {gItems.map((it) => {
                   const itemPhotos = photos.filter((p) => p.item_key === it.key);
                   const open = photosOpen[it.key] ?? itemPhotos.length > 0;

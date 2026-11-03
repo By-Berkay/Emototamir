@@ -3,13 +3,9 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
-## v2.24 — Tasarım yenilemesi ve süper admin görsel yönetimi
-- Tüm sayfalar referans tasarıma göre yenilendi: koyu kenar çubuğu, turuncu aktif menü, alt promo kartı, üst çubukta arama, bildirim ve "Yeni İş Emri".
-- Panel, Müşteriler, Motosikletler, Servis, İş emri, Ekspertiz, Cari hesap, Raporlar ve diğer ekranlarda banner, KPI kartları, panel ve tablo düzeni uygulandı.
-- Açık (beyaz) yüzeyler tamamen koyu temaya çevrildi.
-- Banner görselleri için paketten gelen atölye arka planları ve motosiklet görselleri varsayılan olarak kullanılıyor.
-- Süper admin → "Görsel Yönetimi": logo, giriş/vitrin, panel, müşteri, motosiklet, servis, ekspertiz, cari ve rapor banner'ları ile kenar promo görselini yükleyip değiştirebilir veya kaldırabilirsiniz (PNG/JPG/WEBP, en fazla 8 MB).
-- Backend: `/public/site-assets` (okuma), `/admin/site-assets` (listele, yükle, sil).
+## v2.25 — v2.24 tasarım yenilemesi geri alındı
+- v2.24 tasarım yenilemesi (tüm sayfalar, kabuk, süper admin görsel yönetimi) geri alındı.
+- Yükleme animasyonu, koyu tema, opaklık ve paket yetkileri korundu.
 
 ## v2.23 — Firma paket yetkileri, şeffaflık ve yükleme ortası
 - Süper admin firma ekranındaki "Abonelik" sekmesine "Paket yetkileri" eklendi: firmanın açabildiği modüller ve modül başına kayıt limitleri (boşsa sınırsız).

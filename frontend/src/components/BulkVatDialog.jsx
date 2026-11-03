@@ -15,7 +15,7 @@ export default function BulkVatDialog({ onDone }) {
   const [vat, setVat] = useState("20");
   const [mode, setMode] = useState("keep");
   const [busy, setBusy] = useState(false);
-  const selectCls = "h-9 w-full rounded-md border border-white/10 bg-slate-900/70 px-2 text-sm";
+  const selectCls = "h-9 w-full rounded-md border border-slate-200 bg-white px-2 text-sm";
   const SCOPE_LABEL = { all: "parça ve hizmet", part: "parça", service: "hizmet" };
 
   const apply = async () => {
@@ -53,7 +53,7 @@ export default function BulkVatDialog({ onDone }) {
       </DialogTrigger>
       <DialogContent>
         <DialogHeader><DialogTitle>Toplu KDV değiştir</DialogTitle></DialogHeader>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-500">
           Vergi oranı değiştiğinde katalogdaki parça ve hizmetleri tek seferde günceller. Geçmiş belgeler etkilenmez.
         </p>
         <div className="grid grid-cols-2 gap-3">

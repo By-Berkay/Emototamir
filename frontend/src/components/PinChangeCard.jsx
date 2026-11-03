@@ -48,7 +48,7 @@ export default function PinChangeCard() {
         <CardTitle className="flex items-center gap-2 text-base">
           <ShieldCheck className="h-4 w-4" /> Yönetici PIN'i
         </CardTitle>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-500">
           Dashboard ve raporlardaki para tutarlarını açmak için kullanılır. {hasPin === false && "Henüz PIN belirlenmedi."}
         </p>
       </CardHeader>

@@ -106,13 +106,13 @@ export default function Reminders() {
       <Card>
         <CardHeader className="flex-row items-center justify-between">
           <CardTitle className="text-base">Liste ({rows.length})</CardTitle>
-          <button onClick={toggleAll} className="text-sm text-slate-300 hover:text-brand-600 flex items-center gap-1" data-testid="toggle-all">
+          <button onClick={toggleAll} className="text-sm text-slate-600 hover:text-brand-600 flex items-center gap-1" data-testid="toggle-all">
             {allSelected ? <CheckSquare className="h-4 w-4" /> : <Square className="h-4 w-4" />} Tümünü Seç
           </button>
         </CardHeader>
         <CardContent className="p-0 overflow-x-auto">
           <table className="min-w-full text-sm">
-            <thead className="bg-white/5 text-xs uppercase text-slate-400">
+            <thead className="bg-slate-50 text-xs uppercase text-slate-500">
               <tr>
                 <th className="px-3 py-2 w-8"></th>
                 <th className="text-left px-3 py-2">Müşteri</th>
@@ -128,9 +128,9 @@ export default function Reminders() {
               {rows.map(r => {
                 const c = r.customer || {};
                 return (
-                  <tr key={r.motorcycle_id} className="border-t hover:bg-white/10" data-testid={`reminder-row-${r.motorcycle_id}`}>
+                  <tr key={r.motorcycle_id} className="border-t hover:bg-slate-50" data-testid={`reminder-row-${r.motorcycle_id}`}>
                     <td className="px-3 py-2"><input type="checkbox" checked={!!selected[r.motorcycle_id]} onChange={()=>setSelected({...selected, [r.motorcycle_id]: !selected[r.motorcycle_id]})} data-testid={`reminder-check-${r.motorcycle_id}`} /></td>
-                    <td className="px-3 py-2">{c.first_name} {c.last_name} <span className="text-xs text-slate-400 block font-mono">{c.phone || "—"}</span></td>
+                    <td className="px-3 py-2">{c.first_name} {c.last_name} <span className="text-xs text-slate-500 block font-mono">{c.phone || "—"}</span></td>
                     <td className="px-3 py-2">{r.brand} {r.model}</td>
                     <td className="px-3 py-2 font-mono">{r.plate}</td>
                     <td className="px-3 py-2 text-right">{(r.last_km || 0).toLocaleString("tr-TR")}</td>
@@ -139,7 +139,7 @@ export default function Reminders() {
                     <td className="px-3 py-2">
                       {r.km_over && <span className="mr-1 text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700">KM+</span>}
                       {r.date_over && <span className="mr-1 text-[10px] uppercase font-semibold px-2 py-0.5 rounded bg-red-100 text-red-700">Tarih</span>}
-                      {r.days_left !== null && r.days_left !== undefined && !r.date_over && <span className="text-xs text-slate-400">{r.days_left} gün</span>}
+                      {r.days_left !== null && r.days_left !== undefined && !r.date_over && <span className="text-xs text-slate-500">{r.days_left} gün</span>}
                     </td>
                   </tr>
                 );
@@ -155,7 +155,7 @@ export default function Reminders() {
       <Dialog open={waOpen} onOpenChange={setWaOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>WhatsApp Toplu Hatırlatma</DialogTitle></DialogHeader>
-          <p className="text-sm text-slate-400">Şablonda kullanılabilecek değişkenler: <code className="bg-white/10 px-1 rounded">{"{{name}}"}</code>, <code className="bg-white/10 px-1 rounded">{"{{plate}}"}</code>, <code className="bg-white/10 px-1 rounded">{"{{brand_model}}"}</code>, <code className="bg-white/10 px-1 rounded">{"{{km}}"}</code>. Boş bırakırsanız firma varsayılan mesajı kullanılır.</p>
+          <p className="text-sm text-slate-500">Şablonda kullanılabilecek değişkenler: <code className="bg-slate-100 px-1 rounded">{"{{name}}"}</code>, <code className="bg-slate-100 px-1 rounded">{"{{plate}}"}</code>, <code className="bg-slate-100 px-1 rounded">{"{{brand_model}}"}</code>, <code className="bg-slate-100 px-1 rounded">{"{{km}}"}</code>. Boş bırakırsanız firma varsayılan mesajı kullanılır.</p>
           <Label>Mesaj Şablonu</Label>
           <Textarea rows={4} value={waTemplate} onChange={(e)=>setWaTemplate(e.target.value)} placeholder={"Merhaba {{name}}, {{brand_model}} ({{plate}}) motosikletinizin bakım zamanı yaklaşıyor…"} data-testid="wa-template" />
           {waLinks.length === 0 ? (
@@ -170,8 +170,8 @@ export default function Reminders() {
                   <tbody>
                     {waLinks.map(l => (
                       <tr key={l.motorcycle_id} className="border-b">
-                        <td className="px-3 py-2 w-1/3">{l.name} <span className="text-xs text-slate-400 block font-mono">{l.phone}</span></td>
-                        <td className="px-3 py-2 text-xs text-slate-300 truncate max-w-md" title={l.message}>{l.message}</td>
+                        <td className="px-3 py-2 w-1/3">{l.name} <span className="text-xs text-slate-500 block font-mono">{l.phone}</span></td>
+                        <td className="px-3 py-2 text-xs text-slate-600 truncate max-w-md" title={l.message}>{l.message}</td>
                         <td className="px-3 py-2 text-right"><a href={l.url} target="_blank" rel="noreferrer" className="text-emerald-600 font-semibold text-xs hover:underline" data-testid={`wa-link-${l.motorcycle_id}`}>Aç →</a></td>
                       </tr>
                     ))}

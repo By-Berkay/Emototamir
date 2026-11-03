@@ -2,7 +2,7 @@ import React from "react";
 import { PRICE_MODES, VAT_RATES } from "../lib/pricing";
 
 const selectCls =
-  "h-8 w-full rounded-md border border-white/10 bg-slate-900/70 px-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:bg-slate-50 disabled:text-slate-500";
+  "h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500/30 disabled:bg-slate-50 disabled:text-slate-500";
 
 /** KDV dahil / KDV hariç seçimi. Eksik değer KDV dahil kabul edilir (varsayılan). */
 export function PriceModeSelect({ value, onChange, disabled = false, testId }) {
