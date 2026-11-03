@@ -113,7 +113,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="emt-aurora flex min-h-screen">
+    <div className="emt-aurora emt-app flex min-h-screen">
       {/* Kenar çubuğu */}
       <aside
         className={`fixed inset-y-0 left-0 z-40 flex w-72 flex-col bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-300 shadow-2xl shadow-black/30 transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:translate-x-0 ${

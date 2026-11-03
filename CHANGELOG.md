@@ -3,6 +3,13 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.21 — Uygulama geneli ana sayfa efekti ve yükleme ekranı
+- Koyu temada tüm sayfa zemini ve kartlar ana sayfadaki efektle aynı görünüyor.
+- Panel karşılama kartı ana sayfadaki cam panel yüzeyine geçti.
+- Yükleme ekranı: dönen marka halkası, logo ve ilerleme çubuğu.
+- Giriş ekranı açılırken kısa marka animasyonu gösteriliyor.
+- Yedek: önceki sürüm `backup/v2.20` dalında.
+
 ## v2.20 — Logo şeffaf zemin
 - Logo, yüklenen şeffaf PNG olarak gösteriliyor; siyah zemin kutusu kaldırıldı.
 - Yedek: önceki sürüm `backup/v2.19` dalında.
