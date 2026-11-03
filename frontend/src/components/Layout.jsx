@@ -10,6 +10,7 @@ import { Input } from "./ui/input";
 import { usePrivacy } from "../context/PrivacyContext";
 import { Lock, LockOpen } from "lucide-react";
 import AuthedImage from "./AuthedImage";
+import { moduleAllowed } from "../lib/modules";
 
 const ROLE_LABELS = {
   super_admin: "Süper Admin",
@@ -105,8 +106,13 @@ export default function Layout() {
   if (isSuper && !pathname.startsWith("/admin") && !SUPER_ADMIN_ALLOWED.includes(pathname)) {
     return <Navigate to="/admin/tenants" replace />;
   }
+  // Paketinde olmayan modüle doğrudan adresle girilirse panele yönlendir
+  if (!isSuper && !moduleAllowed(tenant, pathname)) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const visible = (item) => {
+    if (!isSuper && !moduleAllowed(tenant, item.to)) return false;
     if (item.financeOnly) return ["admin", "accountant"].includes(user?.role);
     return !item.adminOnly || user?.role === "admin" || isSuper;
   };

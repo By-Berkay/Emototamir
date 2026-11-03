@@ -107,7 +107,43 @@ async def get_current_user(request: Request) -> Dict[str, Any]:
             token = h[7:]
     if not token:
         raise HTTPException(status_code=401, detail="Yetkisiz erişim")
-    return await _user_from_token(token)
+    user = await _user_from_token(token)
+    await _check_module_access(user, request.url.path)
+    return user
+
+# Paket yetkileri: firmanın açabildiği modüller (URL'deki ilk segment) ve kayıt limitleri
+ENTITLED_MODULES = {"customers", "motorcycles", "service-orders", "inspections", "quotes",
+                    "reminders", "current-accounts", "payments", "reports", "finance", "products"}
+LIMIT_COLLECTIONS = {"customers": "customers", "motorcycles": "motorcycles", "service_orders": "service_orders",
+                     "inspections": "inspections", "quotes": "quotes"}
+
+async def _tenant_entitlements(tid: str) -> Dict[str, Any]:
+    t = await db.tenants.find_one({"id": tid}, {"_id": 0, "entitlements": 1})
+    return (t or {}).get("entitlements") or {}
+
+async def _check_module_access(user: Dict[str, Any], path: str) -> None:
+    if user.get("role") == "super_admin" or not user.get("tenant_id"):
+        return
+    parts = path.split("/")
+    seg = parts[2] if len(parts) > 2 else ""
+    if seg not in ENTITLED_MODULES:
+        return
+    mods = (await _tenant_entitlements(user["tenant_id"])).get("modules")
+    if mods is None:  # tanımsız = tüm modüller açık
+        return
+    if seg not in mods:
+        raise HTTPException(403, "Bu modül firmanızın paketine dahil değil")
+
+async def enforce_limit(user: Dict[str, Any], key: str) -> None:
+    """Paketteki kayıt limitini kontrol eder. Limit boşsa (tanımsız) sınırsızdır."""
+    if user.get("role") == "super_admin" or not user.get("tenant_id"):
+        return
+    cap = ((await _tenant_entitlements(user["tenant_id"])).get("limits") or {}).get(key)
+    if cap in (None, ""):
+        return
+    n = await db[LIMIT_COLLECTIONS[key]].count_documents({"tenant_id": user["tenant_id"]})
+    if n >= int(cap):
+        raise HTTPException(403, f"Paket kayıt limitiniz doldu ({cap})")
 
 async def get_current_user_flex(request: Request) -> Dict[str, Any]:
     """Token yalnızca Authorization başlığı veya çerezden okunur (URL'de token taşınmaz)."""
@@ -214,6 +250,7 @@ class UserCreate(BaseModel):
 
 class TenantIn(BaseModel):
     name: str
+    entitlements: Optional[Dict[str, Any]] = None  # {"modules": [...] | null, "limits": {...}}
     slug: Optional[str] = ""
     subtitle: Optional[str] = "YETKİLİ SERVİS & SHOWROOM"
     address: Optional[str] = ""
@@ -1201,6 +1238,7 @@ async def list_customers(q: str = "", user=Depends(get_current_user)):
 
 @api.post("/customers")
 async def create_customer(inp: CustomerIn, user=Depends(get_current_user)):
+    await enforce_limit(user, "customers")
     doc = inp.model_dump()
     doc["id"] = uid()
     doc["tenant_id"] = tenant_id_of(user)
@@ -1499,6 +1537,7 @@ async def list_motorcycles(q: str = "", customer_id: str = "", user=Depends(get_
 
 @api.post("/motorcycles")
 async def create_motorcycle(inp: MotorcycleIn, user=Depends(get_current_user)):
+    await enforce_limit(user, "motorcycles")
     doc = inp.model_dump()
     doc["id"] = uid()
     doc["tenant_id"] = tenant_id_of(user)
@@ -1852,6 +1891,7 @@ async def list_service_orders(
 
 @api.post("/service-orders")
 async def create_service_order(inp: ServiceOrderIn, user=Depends(get_current_user)):
+    await enforce_limit(user, "service_orders")
     tid = tenant_id_of(user)
     cust = await db.customers.find_one({"id": inp.customer_id, "tenant_id": tid}, {"_id": 0})
     moto = await db.motorcycles.find_one({"id": inp.motorcycle_id, "tenant_id": tid}, {"_id": 0})
@@ -2881,6 +2921,7 @@ async def list_quotes(status: str = "", user=Depends(get_current_user)):
 
 @api.post("/quotes")
 async def create_quote(inp: QuoteIn, user=Depends(get_current_user)):
+    await enforce_limit(user, "quotes")
     # Validate references belong to tenant
     if not await db.customers.find_one(tf(user, {"id": inp.customer_id}), {"_id":0, "id":1}):
         raise HTTPException(400, "Müşteri bulunamadı")
@@ -3273,6 +3314,7 @@ async def list_inspections(q: str = "", limit: int = Query(100, ge=1, le=500), u
 
 @api.post("/inspections")
 async def create_inspection(inp: InspectionIn, user=Depends(get_current_user)):
+    await enforce_limit(user, "inspections")
     tid = tenant_id_of(user)
     fields = await _inspection_fields(tid, inp)
     now = now_iso()
