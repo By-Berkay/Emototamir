@@ -9,7 +9,7 @@ const RING_MASK = "radial-gradient(farthest-side, transparent calc(100% - 3px), 
  */
 export default function BrandLoader({ label = "Yükleniyor", inline = false }) {
   const wrap = inline
-    ? "relative flex min-h-[60vh] w-full items-center justify-center"
+    ? "relative flex min-h-[calc(100vh-10rem)] w-full items-center justify-center"
     : "emt-night fixed inset-0 z-[100] flex items-center justify-center";
   return (
     <div role="status" aria-live="polite" className={wrap} data-testid="brand-loader">

@@ -15,6 +15,7 @@ import { Upload, ArrowLeft, Save, KeyRound, Trash2, Plus, Building2, Palette, Ma
 import { toast } from "sonner";
 import PageHeader from "../components/PageHeader";
 import PageVisual from "../components/PageVisual";
+import { MODULE_OPTIONS, LIMIT_OPTIONS, MODULE_KEYS } from "../lib/modules";
 
 const THEMES = [
   { key: "orange", label: "Turuncu", primary: "#F97316" },
@@ -54,6 +55,12 @@ export default function AdminTenantEdit() {
   if (!t) return <div>Yükleniyor…</div>;
 
   const upd = (patch) => setT({ ...t, ...patch });
+  const ent = t.entitlements || {};
+  const setEnt = (patch) => upd({ entitlements: { ...ent, ...patch } });
+  const setLimit = (key, val) => {
+    const limits = { ...(ent.limits || {}), [key]: val === "" ? null : Number(val) };
+    setEnt({ limits });
+  };
 
   const saveTenant = async () => {
     try {
@@ -226,6 +233,51 @@ export default function AdminTenantEdit() {
         </TabsContent>
 
         <TabsContent value="abonelik">
+          <Card><CardContent className="p-6 space-y-6" data-testid="entitlements-card">
+            <div>
+              <h3 className="font-semibold">Paket yetkileri</h3>
+              <p className="text-xs text-slate-500 mt-1">Bu firmanın göreceği modüller ve açabileceği kayıt sayısı. Limit boş bırakılırsa sınırsızdır.</p>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={!Array.isArray(ent.modules)}
+                onCheckedChange={(v) => setEnt({ modules: v ? null : [...MODULE_KEYS] })}
+                data-testid="ent-all-modules"
+              />
+              Tüm modüllere izin ver
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {MODULE_OPTIONS.map((m) => (
+                <label key={m.key} className="flex items-center gap-2 text-sm">
+                  <Checkbox
+                    disabled={!Array.isArray(ent.modules)}
+                    checked={Array.isArray(ent.modules) && ent.modules.includes(m.key)}
+                    onCheckedChange={(v) => {
+                      const cur = Array.isArray(ent.modules) ? ent.modules : [];
+                      setEnt({ modules: v ? [...cur, m.key] : cur.filter((k) => k !== m.key) });
+                    }}
+                    data-testid={`ent-mod-${m.key}`}
+                  />
+                  {m.label}
+                </label>
+              ))}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+              {LIMIT_OPTIONS.map((l) => (
+                <div key={l.key}>
+                  <Label>{l.label} limiti</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    placeholder="Sınırsız"
+                    value={ent.limits?.[l.key] ?? ""}
+                    onChange={(e) => setLimit(l.key, e.target.value)}
+                    data-testid={`ent-limit-${l.key}`}
+                  />
+                </div>
+              ))}
+            </div>
+          </CardContent></Card>
           <Card><CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label>Plan</Label>

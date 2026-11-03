@@ -3,6 +3,15 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.23 — Firma paket yetkileri, şeffaflık ve yükleme ortası
+- Süper admin firma ekranındaki "Abonelik" sekmesine "Paket yetkileri" eklendi: firmanın açabildiği modüller ve modül başına kayıt limitleri (boşsa sınırsız).
+- Sunucu, paket dışı modüllere API isteklerini reddediyor ve limit dolunca yeni kaydı engelliyor.
+- Menüde paket dışı modüller gizleniyor; doğrudan adresle girilirse panele yönlendiriliyor.
+- Yetki tanımlanmamış firmalar için davranış değişmedi (tüm modüller açık).
+- Kart ve panel arka planları daha opak yapıldı.
+- Yükleme animasyonu sayfanın ortasında gösteriliyor.
+- Yedek: önceki sürüm `backup/v2.22` dalında.
+
 ## v2.22 — Yalnızca koyu tema ve yeni yükleme animasyonu
 - Açık tema ve tema değiştirme düğmesi kaldırıldı; uygulama her zaman koyu temada açılır.
 - Yükleme animasyonu yenilendi: dönen gradyan halka, ters dönen kesikli halka, yörünge noktası ve nefes alan logo.
