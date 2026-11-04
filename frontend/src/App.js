@@ -1,45 +1,45 @@
-import React from "react";
+import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { PrivacyProvider } from "./context/PrivacyContext";
 import { Toaster } from "sonner";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Customers from "./pages/Customers";
-import CustomerDetail from "./pages/CustomerDetail";
-import Motorcycles from "./pages/Motorcycles";
-import MotorcycleDetail from "./pages/MotorcycleDetail";
-import ServiceOrders from "./pages/ServiceOrders";
-import ServiceOrderCreate from "./pages/ServiceOrderCreate";
-import ServiceOrderDetail from "./pages/ServiceOrderDetail";
-import ServiceOrderEdit from "./pages/ServiceOrderEdit";
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Customers = lazy(() => import("./pages/Customers"));
+const CustomerDetail = lazy(() => import("./pages/CustomerDetail"));
+const Motorcycles = lazy(() => import("./pages/Motorcycles"));
+const MotorcycleDetail = lazy(() => import("./pages/MotorcycleDetail"));
+const ServiceOrders = lazy(() => import("./pages/ServiceOrders"));
+const ServiceOrderCreate = lazy(() => import("./pages/ServiceOrderCreate"));
+const ServiceOrderDetail = lazy(() => import("./pages/ServiceOrderDetail"));
+const ServiceOrderEdit = lazy(() => import("./pages/ServiceOrderEdit"));
 
-import CurrentAccounts from "./pages/CurrentAccounts";
-import Payments from "./pages/Payments";
-import Reports from "./pages/Reports";
-import Reminders from "./pages/Reminders";
-import Settings from "./pages/Settings";
-import Products from "./pages/Products";
-import Services from "./pages/Services";
-import AdminTenants from "./pages/AdminTenants";
-import AdminTenantEdit from "./pages/AdminTenantEdit";
-import AdminAuditLogs from "./pages/AdminAuditLogs";
-import PublicApproval from "./pages/PublicApproval";
-import Quotes from "./pages/Quotes";
-import QuoteEdit from "./pages/QuoteEdit";
-import QuotePublic from "./pages/QuotePublic";
-import Trash from "./pages/Trash";
-import ChangePassword from "./pages/ChangePassword";
-import Profile from "./pages/Profile";
-import Finance from "./pages/Finance";
-import Staff from "./pages/Staff";
-import Inspections from "./pages/Inspections";
-import InspectionEdit from "./pages/InspectionEdit";
-import InspectionDetail from "./pages/InspectionDetail";
+const CurrentAccounts = lazy(() => import("./pages/CurrentAccounts"));
+const Payments = lazy(() => import("./pages/Payments"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Reminders = lazy(() => import("./pages/Reminders"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Products = lazy(() => import("./pages/Products"));
+const Services = lazy(() => import("./pages/Services"));
+const AdminTenants = lazy(() => import("./pages/AdminTenants"));
+const AdminTenantEdit = lazy(() => import("./pages/AdminTenantEdit"));
+const AdminAuditLogs = lazy(() => import("./pages/AdminAuditLogs"));
+const PublicApproval = lazy(() => import("./pages/PublicApproval"));
+const Quotes = lazy(() => import("./pages/Quotes"));
+const QuoteEdit = lazy(() => import("./pages/QuoteEdit"));
+const QuotePublic = lazy(() => import("./pages/QuotePublic"));
+const Trash = lazy(() => import("./pages/Trash"));
+const ChangePassword = lazy(() => import("./pages/ChangePassword"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Finance = lazy(() => import("./pages/Finance"));
+const Staff = lazy(() => import("./pages/Staff"));
+const Inspections = lazy(() => import("./pages/Inspections"));
+const InspectionEdit = lazy(() => import("./pages/InspectionEdit"));
+const InspectionDetail = lazy(() => import("./pages/InspectionDetail"));
 import Landing from "./pages/Landing";
-import AdminLanding from "./pages/AdminLanding";
-import AdminReport3D from "./pages/AdminReport3D";
+const AdminLanding = lazy(() => import("./pages/AdminLanding"));
+const AdminReport3D = lazy(() => import("./pages/AdminReport3D"));
 import BrandLoader from "./components/BrandLoader";
 import "./App.css";
 
@@ -70,7 +70,8 @@ export default function App() {
       <AuthProvider>
         <PrivacyProvider>
         <Toaster position="top-right" richColors />
-        <Routes>
+        <Suspense fallback={<BrandLoader />}>
+          <Routes>
           <Route path="/" element={<RootGate />} />
           <Route path="/landing" element={<Landing />} />
           <Route path="/login" element={<Login />} />
@@ -113,6 +114,7 @@ export default function App() {
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
         </PrivacyProvider>
       </AuthProvider>
     </BrowserRouter>
