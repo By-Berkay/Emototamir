@@ -3,6 +3,10 @@
 Sürüm kuralı: büyük değişiklik → `2.0`, `3.0` …; küçük düzeltme → `2.01`, `2.02` …
 Her sürüm git etiketi (`vX.Y`) ile saklanır; eski kodu `git checkout vX.Y` ile geri alabilirsiniz.
 
+## v2.27 — Açılış gecikmesi: backend sıcak tutma
+- Render ücretsiz planı boşta kalan backend'i uyutuyor; ilk istek dakikalarca sürebiliyordu.
+- `keep-warm` iş akışı her 10 dakikada bir `/api/public/landing` ucuna istek atarak backend'i uyanık tutar.
+
 ## v2.26 — Açılış performansı ve depo temizliği
 - Sayfalar ihtiyaç anında yüklenecek şekilde bölündü (lazy loading); ilk JavaScript paketi ~364 kB'den ~146 kB'ye (gzip) düştü.
 - Logo ve motosiklet görselleri küçültüldü (logo 1,8 MB → 47 KB); şeffaflık korundu.
